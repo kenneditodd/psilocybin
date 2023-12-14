@@ -1,0 +1,19 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 20
+Rules claiming more threads will be scaled down.
+Provided resources: mem_mb=36160, mem_mib=34485, disk_mb=36160, disk_mib=34485
+Select jobs to execute...
+
+[Tue Oct  3 14:21:51 2023]
+rule align_reads:
+    input: trimmedReads/842_IgG_S9_L001_R1_trim.fastq.gz, trimmedReads/842_IgG_S9_L001_R2_trim.fastq.gz, trimmedReads/842_IgG_S9_L002_R1_trim.fastq.gz, trimmedReads/842_IgG_S9_L002_R2_trim.fastq.gz, trimmedReads/842_IgG_S9_L003_R1_trim.fastq.gz, trimmedReads/842_IgG_S9_L003_R2_trim.fastq.gz, trimmedReads/842_IgG_S9_L004_R1_trim.fastq.gz, trimmedReads/842_IgG_S9_L004_R2_trim.fastq.gz, refs/starGenomeDir
+    output: starAligned/842_IgG_S9.Aligned.sortedByCoord.out.bam
+    jobid: 0
+    reason: Missing output files: starAligned/842_IgG_S9.Aligned.sortedByCoord.out.bam
+    wildcards: sample=842_IgG_S9
+    resources: mem_mb=36160, mem_mib=34485, disk_mb=36160, disk_mib=34485, tmpdir=/tmp
+
+[Tue Oct  3 14:37:35 2023]
+Finished job 0.
+1 of 1 steps (100%) done

@@ -1,0 +1,135 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 20
+Rules claiming more threads will be scaled down.
+Provided resources: mem_mb=34891, mem_mib=33275, disk_mb=34891, disk_mib=33275
+Select jobs to execute...
+
+[Tue Oct  3 14:05:17 2023]
+rule trim_bbduk:
+    input: /research/labs/neurology/fryer/projects/aducanumab/mouse/bulkRNA/360_Adu_S40_L001_R1_001.fastq.gz, /research/labs/neurology/fryer/projects/aducanumab/mouse/bulkRNA/360_Adu_S40_L001_R2_001.fastq.gz, /research/labs/neurology/fryer/projects/aducanumab/mouse/bulkRNA/360_Adu_S40_L002_R1_001.fastq.gz, /research/labs/neurology/fryer/projects/aducanumab/mouse/bulkRNA/360_Adu_S40_L002_R2_001.fastq.gz, /research/labs/neurology/fryer/projects/aducanumab/mouse/bulkRNA/360_Adu_S40_L003_R1_001.fastq.gz, /research/labs/neurology/fryer/projects/aducanumab/mouse/bulkRNA/360_Adu_S40_L003_R2_001.fastq.gz, /research/labs/neurology/fryer/projects/aducanumab/mouse/bulkRNA/360_Adu_S40_L004_R1_001.fastq.gz, /research/labs/neurology/fryer/projects/aducanumab/mouse/bulkRNA/360_Adu_S40_L004_R2_001.fastq.gz
+    output: trimmedReads/360_Adu_S40_L001_R1_trim.fastq.gz, trimmedReads/360_Adu_S40_L001_R2_trim.fastq.gz, trimmedReads/360_Adu_S40_L002_R1_trim.fastq.gz, trimmedReads/360_Adu_S40_L002_R2_trim.fastq.gz, trimmedReads/360_Adu_S40_L003_R1_trim.fastq.gz, trimmedReads/360_Adu_S40_L003_R2_trim.fastq.gz, trimmedReads/360_Adu_S40_L004_R1_trim.fastq.gz, trimmedReads/360_Adu_S40_L004_R2_trim.fastq.gz
+    jobid: 0
+    reason: Missing output files: trimmedReads/360_Adu_S40_L004_R2_trim.fastq.gz, trimmedReads/360_Adu_S40_L002_R1_trim.fastq.gz, trimmedReads/360_Adu_S40_L004_R1_trim.fastq.gz, trimmedReads/360_Adu_S40_L003_R1_trim.fastq.gz, trimmedReads/360_Adu_S40_L003_R2_trim.fastq.gz, trimmedReads/360_Adu_S40_L002_R2_trim.fastq.gz, trimmedReads/360_Adu_S40_L001_R2_trim.fastq.gz, trimmedReads/360_Adu_S40_L001_R1_trim.fastq.gz
+    wildcards: sample=360_Adu_S40
+    resources: mem_mb=34891, mem_mib=33275, disk_mb=34891, disk_mib=33275, tmpdir=/tmp
+
+java -ea -Xmx3g -Xms3g -cp /research/labs/neurology/fryer/m214960/tools/miniconda3/envs/aducanumab/opt/bbmap-39.01-1/current/ jgi.BBDuk -Xmx3g in1=/research/labs/neurology/fryer/projects/aducanumab/mouse/bulkRNA/360_Adu_S40_L001_R1_001.fastq.gz in2=/research/labs/neurology/fryer/projects/aducanumab/mouse/bulkRNA/360_Adu_S40_L001_R2_001.fastq.gz out1=trimmedReads/360_Adu_S40_L001_R1_trim.fastq.gz out2=trimmedReads/360_Adu_S40_L001_R2_trim.fastq.gz ref=refs/adapters.fa ktrim=r k=23 mink=11 hdist=1 tpe tbo threads=20 trimpolyg=1 trimpolya=1
+Executing jgi.BBDuk [-Xmx3g, in1=/research/labs/neurology/fryer/projects/aducanumab/mouse/bulkRNA/360_Adu_S40_L001_R1_001.fastq.gz, in2=/research/labs/neurology/fryer/projects/aducanumab/mouse/bulkRNA/360_Adu_S40_L001_R2_001.fastq.gz, out1=trimmedReads/360_Adu_S40_L001_R1_trim.fastq.gz, out2=trimmedReads/360_Adu_S40_L001_R2_trim.fastq.gz, ref=refs/adapters.fa, ktrim=r, k=23, mink=11, hdist=1, tpe, tbo, threads=20, trimpolyg=1, trimpolya=1]
+Version 39.01
+
+Set threads to 20
+maskMiddle was disabled because useShortKmers=true
+0.020 seconds.
+Initial:
+Memory: max=3221m, total=3221m, free=3191m, used=30m
+
+Added 3614 kmers; time: 	0.017 seconds.
+Memory: max=3221m, total=3221m, free=3181m, used=40m
+
+Input is being processed as paired
+Started output streams:	0.159 seconds.
+[W::bgzf_read_block] EOF marker is absent. The input may be truncated
+[W::bgzf_read_block] EOF marker is absent. The input may be truncated
+Processing time:   		89.951 seconds.
+
+Input:                  	81299470 reads 		8211246470 bases.
+Polymer-trimmed:        	122660584 reads (150.88%) 	227749503 bases (2.77%)
+KTrimmed:               	2613320 reads (3.21%) 	89711846 bases (1.09%)
+Trimmed by overlap:     	2034136 reads (2.50%) 	10457860 bases (0.13%)
+Total Removed:          	236932 reads (0.29%) 	327919209 bases (3.99%)
+Result:                 	81062538 reads (99.71%) 	7883327261 bases (96.01%)
+
+Time:                         	90.128 seconds.
+Reads Processed:      81299k 	902.04k reads/sec
+Bases Processed:       8211m 	91.11m bases/sec
+java -ea -Xmx3g -Xms3g -cp /research/labs/neurology/fryer/m214960/tools/miniconda3/envs/aducanumab/opt/bbmap-39.01-1/current/ jgi.BBDuk -Xmx3g in1=/research/labs/neurology/fryer/projects/aducanumab/mouse/bulkRNA/360_Adu_S40_L002_R1_001.fastq.gz in2=/research/labs/neurology/fryer/projects/aducanumab/mouse/bulkRNA/360_Adu_S40_L002_R2_001.fastq.gz out1=trimmedReads/360_Adu_S40_L002_R1_trim.fastq.gz out2=trimmedReads/360_Adu_S40_L002_R2_trim.fastq.gz ref=refs/adapters.fa ktrim=r k=23 mink=11 hdist=1 tpe tbo threads=20 trimpolyg=1 trimpolya=1
+Executing jgi.BBDuk [-Xmx3g, in1=/research/labs/neurology/fryer/projects/aducanumab/mouse/bulkRNA/360_Adu_S40_L002_R1_001.fastq.gz, in2=/research/labs/neurology/fryer/projects/aducanumab/mouse/bulkRNA/360_Adu_S40_L002_R2_001.fastq.gz, out1=trimmedReads/360_Adu_S40_L002_R1_trim.fastq.gz, out2=trimmedReads/360_Adu_S40_L002_R2_trim.fastq.gz, ref=refs/adapters.fa, ktrim=r, k=23, mink=11, hdist=1, tpe, tbo, threads=20, trimpolyg=1, trimpolya=1]
+Version 39.01
+
+Set threads to 20
+maskMiddle was disabled because useShortKmers=true
+0.018 seconds.
+Initial:
+Memory: max=3221m, total=3221m, free=3191m, used=30m
+
+Added 3614 kmers; time: 	0.025 seconds.
+Memory: max=3221m, total=3221m, free=3181m, used=40m
+
+Input is being processed as paired
+Started output streams:	0.161 seconds.
+[W::bgzf_read_block] EOF marker is absent. The input may be truncated
+[W::bgzf_read_block] EOF marker is absent. The input may be truncated
+Processing time:   		87.618 seconds.
+
+Input:                  	81241914 reads 		8205433314 bases.
+Polymer-trimmed:        	122569199 reads (150.87%) 	227755935 bases (2.78%)
+KTrimmed:               	2572066 reads (3.17%) 	88330766 bases (1.08%)
+Trimmed by overlap:     	2002884 reads (2.47%) 	10303864 bases (0.13%)
+Total Removed:          	237078 reads (0.29%) 	326390565 bases (3.98%)
+Result:                 	81004836 reads (99.71%) 	7879042749 bases (96.02%)
+
+Time:                         	87.806 seconds.
+Reads Processed:      81241k 	925.24k reads/sec
+Bases Processed:       8205m 	93.45m bases/sec
+java -ea -Xmx3g -Xms3g -cp /research/labs/neurology/fryer/m214960/tools/miniconda3/envs/aducanumab/opt/bbmap-39.01-1/current/ jgi.BBDuk -Xmx3g in1=/research/labs/neurology/fryer/projects/aducanumab/mouse/bulkRNA/360_Adu_S40_L003_R1_001.fastq.gz in2=/research/labs/neurology/fryer/projects/aducanumab/mouse/bulkRNA/360_Adu_S40_L003_R2_001.fastq.gz out1=trimmedReads/360_Adu_S40_L003_R1_trim.fastq.gz out2=trimmedReads/360_Adu_S40_L003_R2_trim.fastq.gz ref=refs/adapters.fa ktrim=r k=23 mink=11 hdist=1 tpe tbo threads=20 trimpolyg=1 trimpolya=1
+Executing jgi.BBDuk [-Xmx3g, in1=/research/labs/neurology/fryer/projects/aducanumab/mouse/bulkRNA/360_Adu_S40_L003_R1_001.fastq.gz, in2=/research/labs/neurology/fryer/projects/aducanumab/mouse/bulkRNA/360_Adu_S40_L003_R2_001.fastq.gz, out1=trimmedReads/360_Adu_S40_L003_R1_trim.fastq.gz, out2=trimmedReads/360_Adu_S40_L003_R2_trim.fastq.gz, ref=refs/adapters.fa, ktrim=r, k=23, mink=11, hdist=1, tpe, tbo, threads=20, trimpolyg=1, trimpolya=1]
+Version 39.01
+
+Set threads to 20
+maskMiddle was disabled because useShortKmers=true
+0.018 seconds.
+Initial:
+Memory: max=3221m, total=3221m, free=3191m, used=30m
+
+Added 3614 kmers; time: 	0.018 seconds.
+Memory: max=3221m, total=3221m, free=3182m, used=39m
+
+Input is being processed as paired
+Started output streams:	0.177 seconds.
+[W::bgzf_read_block] EOF marker is absent. The input may be truncated
+[W::bgzf_read_block] EOF marker is absent. The input may be truncated
+Processing time:   		83.814 seconds.
+
+Input:                  	81163428 reads 		8197506228 bases.
+Polymer-trimmed:        	122783422 reads (151.28%) 	228669314 bases (2.79%)
+KTrimmed:               	2564324 reads (3.16%) 	88248512 bases (1.08%)
+Trimmed by overlap:     	1997646 reads (2.46%) 	10276556 bases (0.13%)
+Total Removed:          	241568 reads (0.30%) 	327194382 bases (3.99%)
+Result:                 	80921860 reads (99.70%) 	7870311846 bases (96.01%)
+
+Time:                         	84.011 seconds.
+Reads Processed:      81163k 	966.11k reads/sec
+Bases Processed:       8197m 	97.58m bases/sec
+java -ea -Xmx3g -Xms3g -cp /research/labs/neurology/fryer/m214960/tools/miniconda3/envs/aducanumab/opt/bbmap-39.01-1/current/ jgi.BBDuk -Xmx3g in1=/research/labs/neurology/fryer/projects/aducanumab/mouse/bulkRNA/360_Adu_S40_L004_R1_001.fastq.gz in2=/research/labs/neurology/fryer/projects/aducanumab/mouse/bulkRNA/360_Adu_S40_L004_R2_001.fastq.gz out1=trimmedReads/360_Adu_S40_L004_R1_trim.fastq.gz out2=trimmedReads/360_Adu_S40_L004_R2_trim.fastq.gz ref=refs/adapters.fa ktrim=r k=23 mink=11 hdist=1 tpe tbo threads=20 trimpolyg=1 trimpolya=1
+Executing jgi.BBDuk [-Xmx3g, in1=/research/labs/neurology/fryer/projects/aducanumab/mouse/bulkRNA/360_Adu_S40_L004_R1_001.fastq.gz, in2=/research/labs/neurology/fryer/projects/aducanumab/mouse/bulkRNA/360_Adu_S40_L004_R2_001.fastq.gz, out1=trimmedReads/360_Adu_S40_L004_R1_trim.fastq.gz, out2=trimmedReads/360_Adu_S40_L004_R2_trim.fastq.gz, ref=refs/adapters.fa, ktrim=r, k=23, mink=11, hdist=1, tpe, tbo, threads=20, trimpolyg=1, trimpolya=1]
+Version 39.01
+
+Set threads to 20
+maskMiddle was disabled because useShortKmers=true
+0.018 seconds.
+Initial:
+Memory: max=3221m, total=3221m, free=3191m, used=30m
+
+Added 3614 kmers; time: 	0.017 seconds.
+Memory: max=3221m, total=3221m, free=3181m, used=40m
+
+Input is being processed as paired
+Started output streams:	0.130 seconds.
+[W::bgzf_read_block] EOF marker is absent. The input may be truncated
+[W::bgzf_read_block] EOF marker is absent. The input may be truncated
+Processing time:   		91.215 seconds.
+
+Input:                  	81226596 reads 		8203886196 bases.
+Polymer-trimmed:        	122934610 reads (151.35%) 	228800633 bases (2.79%)
+KTrimmed:               	2554094 reads (3.14%) 	87678600 bases (1.07%)
+Trimmed by overlap:     	1997104 reads (2.46%) 	10281714 bases (0.13%)
+Total Removed:          	237620 reads (0.29%) 	326760947 bases (3.98%)
+Result:                 	80988976 reads (99.71%) 	7877125249 bases (96.02%)
+
+Time:                         	91.364 seconds.
+Reads Processed:      81226k 	889.04k reads/sec
+Bases Processed:       8203m 	89.79m bases/sec
+[Tue Oct  3 14:11:38 2023]
+Finished job 0.
+1 of 1 steps (100%) done

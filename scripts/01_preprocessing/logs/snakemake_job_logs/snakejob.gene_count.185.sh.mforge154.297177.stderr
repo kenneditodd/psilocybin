@@ -1,0 +1,73 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 20
+Rules claiming more threads will be scaled down.
+Provided resources: mem_mb=30047, mem_mib=28656, disk_mb=30047, disk_mib=28656
+Select jobs to execute...
+
+[Tue Oct  3 14:02:29 2023]
+rule gene_count:
+    input: starAligned/891_Adu_S1.Aligned.sortedByCoord.out.bam, /research/labs/neurology/fryer/projects/references/mouse/refdata-gex-mm10-2020-A/genes/genes.gtf
+    output: featureCounts/891_Adu_S1_gene.counts
+    jobid: 0
+    reason: Missing output files: featureCounts/891_Adu_S1_gene.counts
+    wildcards: sample=891_Adu_S1
+    resources: mem_mb=30047, mem_mib=28656, disk_mb=30047, disk_mib=28656, tmpdir=/tmp
+
+
+        ==========     _____ _    _ ____  _____  ______          _____  
+        =====         / ____| |  | |  _ \|  __ \|  ____|   /\   |  __ \ 
+          =====      | (___ | |  | | |_) | |__) | |__     /  \  | |  | |
+            ====      \___ \| |  | |  _ <|  _  /|  __|   / /\ \ | |  | |
+              ====    ____) | |__| | |_) | | \ \| |____ / ____ \| |__| |
+        ==========   |_____/ \____/|____/|_|  \_\______/_/    \_\_____/
+	  v2.0.6
+
+//========================== featureCounts setting ===========================\\
+||                                                                            ||
+||             Input files : 1 BAM file                                       ||
+||                                                                            ||
+||                           891_Adu_S1.Aligned.sortedByCoord.out.bam         ||
+||                                                                            ||
+||             Output file : 891_Adu_S1_gene.counts                           ||
+||                 Summary : 891_Adu_S1_gene.counts.summary                   ||
+||              Paired-end : yes                                              ||
+||        Count read pairs : no                                               ||
+||              Annotation : genes.gtf (GTF)                                  ||
+||      Dir for temp files : featureCounts                                    ||
+||                                                                            ||
+||                 Threads : 20                                               ||
+||                   Level : meta-feature level                               ||
+||      Multimapping reads : not counted                                      ||
+||     Multiple alignments : primary alignment only                           ||
+|| Multi-overlapping reads : not counted                                      ||
+||   Min overlapping bases : 1                                                ||
+||                                                                            ||
+\\============================================================================//
+
+//================================= Running ==================================\\
+||                                                                            ||
+|| Load annotation file genes.gtf ...                                         ||
+||    Features : 32285                                                        ||
+||    Meta-features : 32285                                                   ||
+||    Chromosomes/contigs : 41                                                ||
+||                                                                            ||
+|| Process BAM file 891_Adu_S1.Aligned.sortedByCoord.out.bam...               ||
+||    Strand specific : reversely stranded                                    ||
+||    Paired-end reads are included.                                          ||
+||    The reads are assigned on the single-end mode.                          ||
+||    Total alignments : 330236654                                            ||
+||    Successfully assigned alignments : 272734956 (82.6%)                    ||
+||    Running time : 0.41 minutes                                             ||
+||                                                                            ||
+|| Write the final count table.                                               ||
+|| Write the read assignment summary.                                         ||
+||                                                                            ||
+|| Summary of counting results can be found in file "featureCounts/891_Adu_S  ||
+|| 1_gene.counts.summary"                                                     ||
+||                                                                            ||
+\\============================================================================//
+
+[Tue Oct  3 14:02:56 2023]
+Finished job 0.
+1 of 1 steps (100%) done
