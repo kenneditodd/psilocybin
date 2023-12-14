@@ -1,5 +1,5 @@
 # read table
-mouse.meta <- read.delim2("../../refs/mouse_meta.tsv", sep = "\t", header = TRUE)
+mouse.meta <- read.delim2("../../refs/joes_meta.tsv", sep = "\t", header = TRUE)
 
 # rename columns
 names <- c("animal_id", "filename", "RLIMS_number", "RLIMS_name", "sacrifice_batch", 
