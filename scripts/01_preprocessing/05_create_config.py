@@ -33,7 +33,7 @@ header = '''{{
     "allSamples": {0},
 
     "CLUSTER INFORMATION",
-    "threads" : "20",
+    "threads" : "10",
 '''
 outfile.write(header.format(allSamples))
 
