@@ -10,4 +10,4 @@ ls -1 | grep .fastq.gz > $out
 # Get sample file list
 cd /research/labs/neurology/fryer/projects/psilocybin/psil1
 out=/research/labs/neurology/fryer/m214960/psilocybin/refs/sample_file_list.txt
-ls -1 | grep _L001_R1_001.fastq.gz > $out
+ls -1 | grep _R1_ > $out
