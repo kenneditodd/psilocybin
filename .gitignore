@@ -11,3 +11,4 @@ trimmedQC/*
 trimmedReads/*
 featureCounts/*
 starAligned/*
+.snakemake
