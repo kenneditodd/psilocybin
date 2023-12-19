@@ -19,8 +19,8 @@ salmon -v
 # note this same sample has other lanes but this should be sufficient to check
 salmon quant --libType A \
              --index /research/labs/neurology/fryer/projects/references/mouse/salmonIndexGRCm39 \
-             --mates1 /research/labs/neurology/fryer/projects/aducanumab/mouse/bulkRNA/442_Adu_S28_L004_R1_001.fastq.gz \
-             --mates2 /research/labs/neurology/fryer/projects/aducanumab/mouse/bulkRNA/442_Adu_S28_L004_R2_001.fastq.gz \
+             --mates1 /research/labs/neurology/fryer/projects/psilocybin/psil1/Psi1_A10_High_Female.FCHTWCMDSX7_L3_R1_IAGTCAGACGA-ACCAGCGACA.fastq.gz \
+             --mates2 /research/labs/neurology/fryer/projects/psilocybin/psil1/Psi1_A10_High_Female.FCHTWCMDSX7_L3_R2_IAGTCAGACGA-ACCAGCGACA.fastq.gz \
              --output ../../refs/transcript_quant \
              --threads 15 \
              --validateMappings
@@ -33,14 +33,6 @@ salmon quant --libType A \
 
 # Results
 # Automatically detected most likely library type as ISR
+# ISR = inward stranded reverse
 
-# Job stats
-# State: COMPLETED (exit code 0)
-# Nodes: 1
-# Cores per node: 16
-# CPU Utilized: 00:30:13
-# CPU Efficiency: 75.04% of 00:40:16 core-walltime
-# Job Wall-clock time: 00:02:31
-# Memory Utilized: 1.72 GB
-# Memory Efficiency: 17.24% of 10.00 GB
 

@@ -12,12 +12,12 @@ with open('../../refs/sample_file_list.txt', 'r') as infile:
     for line in infile:
         numSamples += 1
         sample = line.strip()
-        allSamples.append(sample.replace("_L001_R1_001.fastq.gz", ""))
+        allSamples.append(sample.replace(".fastq.gz", ""))
 
 # create header and write to outfile
 header = '''{{
     "DIRECTORIES",
-    "rawReads" : "/research/labs/neurology/fryer/projects/aducanumab/mouse/bulkRNA/",
+    "rawReads" : "rawReads/",
     "rawQC" : "rawQC/",
     "trimmedReads" : "trimmedReads/",
     "trimmedQC" : "trimmedQC/",
