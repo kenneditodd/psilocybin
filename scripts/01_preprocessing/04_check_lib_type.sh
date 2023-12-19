@@ -19,8 +19,8 @@ salmon -v
 # note this same sample has other lanes but this should be sufficient to check
 salmon quant --libType A \
              --index /research/labs/neurology/fryer/projects/references/mouse/salmonIndexGRCm39 \
-             --mates1 /research/labs/neurology/fryer/projects/psilocybin/psil1/Psi1_A10_High_Female.FCHTWCMDSX7_L3_R1_IAGTCAGACGA-ACCAGCGACA.fastq.gz \
-             --mates2 /research/labs/neurology/fryer/projects/psilocybin/psil1/Psi1_A10_High_Female.FCHTWCMDSX7_L3_R2_IAGTCAGACGA-ACCAGCGACA.fastq.gz \
+             --mates1 ../rawReads/Psi1_A10_High_Female_L3_R1.fastq.gz \
+             --mates2 ../rawReads/Psi1_A10_High_Female_L3_R2.fastq.gz \
              --output ../../refs/transcript_quant \
              --threads 15 \
              --validateMappings

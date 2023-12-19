@@ -12,7 +12,7 @@ with open('../../refs/sample_file_list.txt', 'r') as infile:
     for line in infile:
         numSamples += 1
         sample = line.strip()
-        allSamples.append(sample.replace(".fastq.gz", ""))
+        allSamples.append(sample.replace("_R1.fastq.gz", ""))
 
 # create header and write to outfile
 header = '''{{
@@ -31,12 +31,11 @@ header = '''{{
 
     "SAMPLE INFORMATION",
     "allSamples": {0},
-    "read": {1},
 
     "CLUSTER INFORMATION",
     "threads" : "20",
 '''
-outfile.write(header.format(allSamples, read))
+outfile.write(header.format(allSamples))
 
 
 # config formatting
@@ -47,15 +46,9 @@ with open('../../refs/sample_file_list.txt', 'r') as infile:
 
         # store filename
         sample = line.strip()
-        lane1read1 = sample.replace("L001_R1_001.fastq.gz", "L001_R1")
-        lane1read2 = sample.replace("L001_R1_001.fastq.gz", "L001_R2")
-        lane2read1 = sample.replace("L001_R1_001.fastq.gz", "L002_R1")
-        lane2read2 = sample.replace("L001_R1_001.fastq.gz", "L002_R2")
-        lane3read1 = sample.replace("L001_R1_001.fastq.gz", "L003_R1")
-        lane3read2 = sample.replace("L001_R1_001.fastq.gz", "L003_R2")
-        lane4read1 = sample.replace("L001_R1_001.fastq.gz", "L004_R1")
-        lane4read2 = sample.replace("L001_R1_001.fastq.gz", "L004_R2")
-        baseName = sample.replace("_L001_R1_001.fastq.gz", "")
+        read1 = sample.replace(".fastq.gz", "")
+        read2 = sample.replace("_R1.fastq.gz", "_R2")
+        baseName = sample.replace("_R1.fastq.gz", "")
 
         # break down fastq file info
         # @A00127:312:HVNLJDSXY:2:1101:2211:1000
@@ -63,16 +56,10 @@ with open('../../refs/sample_file_list.txt', 'r') as infile:
 
         out = '''
     "{0}":{{
-        "lane1read1": "{1}",
-        "lane1read2": "{2}",
-        "lane2read1": "{3}",
-        "lane2read2": "{4}",
-        "lane3read1": "{5}",
-        "lane3read2": "{6}",
-        "lane4read1": "{7}",
-        "lane4read2": "{8}"
+        "read1": "{1}",
+        "read2": "{2}",
         '''
-        outfile.write(out.format(baseName, lane1read1, lane1read2, lane2read1, lane2read2, lane3read1, lane3read2, lane4read1, lane4read2))
+        outfile.write(out.format(baseName, read1, read2))
         if (counter == numSamples):
             outfile.write("}\n}")
         else:
