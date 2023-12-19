@@ -12,3 +12,4 @@ trimmedReads/*
 featureCounts/*
 starAligned/*
 .snakemake
+refs/starGenomeDir
