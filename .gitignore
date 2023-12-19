@@ -5,3 +5,9 @@
 psilocybin.Rproj
 scripts/*/logs/*
 rawReads/*
+refs/transcript_quant/*
+rawQC/*
+trimmedQC/*
+trimmedReads/*
+featureCounts/*
+starAligned/*
