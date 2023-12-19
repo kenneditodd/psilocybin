@@ -10,7 +10,7 @@
 
 # activate conda environment
 source $HOME/.bash_profile
-conda activate snakemake
+conda activate psilo
 
 # change directory to where Snakefile is located
 cd ../..
