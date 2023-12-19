@@ -10,7 +10,7 @@
 
 # activate conda environment
 source $HOME/.bash_profile
-conda activate aducanumab
+conda activate snakemake
 
 # change directory to where Snakefile is located
 cd ../..

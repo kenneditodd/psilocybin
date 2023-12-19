@@ -15,13 +15,16 @@ conda activate salmon
 # salmon version
 salmon -v
 
+# go to raw reads dir
+cd ../../rawReads
+
 # validate mappings
 # note this same sample has other lanes but this should be sufficient to check
 salmon quant --libType A \
              --index /research/labs/neurology/fryer/projects/references/mouse/salmonIndexGRCm39 \
-             --mates1 ../rawReads/Psi1_A10_High_Female_L3_R1.fastq.gz \
-             --mates2 ../rawReads/Psi1_A10_High_Female_L3_R2.fastq.gz \
-             --output ../../refs/transcript_quant \
+             --mates1 Psi1_A10_High_Female_L3_R1.fastq.gz \
+             --mates2 Psi1_A10_High_Female_L3_R2.fastq.gz \
+             --output ../refs/transcript_quant \
              --threads 15 \
              --validateMappings
 
@@ -34,5 +37,6 @@ salmon quant --libType A \
 # Results
 # Automatically detected most likely library type as ISR
 # ISR = inward stranded reverse
+# This is the -s2 argument for featureCounts (reversely stranded)
 
 

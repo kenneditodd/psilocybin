@@ -11,17 +11,17 @@
 
 # activate conda environment
 source $HOME/.bash_profile
-conda activate aducanumab
+conda activate psilo
 
 # change directory to raw reads
-#cd /research/labs/neurology/fryer/projects/aducanumab/mouse/bulkRNA
+cd ../../rawReads
 
 # run raw fastqc
-#fastqc --threads 30 --outdir /research/labs/neurology/fryer/m214960/aducanumab/bulkRNA/rawQC *_R*_001.fastq.gz
+fastqc --threads 30 --outdir ../rawQC *.fastq.gz
 
 # change directory to trimmed reads
-cd /research/labs/neurology/fryer/m214960/aducanumab/bulkRNA/trimmedReads
+#cd ../trimmedReads
 
 # run trimmed fastqc
-fastqc --threads 30 --outdir /research/labs/neurology/fryer/m214960/aducanumab/bulkRNA/trimmedQC *.fastq.gz
+#fastqc --threads 30 --outdir ../trimmedQC *.fastq.gz
 
