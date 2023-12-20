@@ -15,13 +15,13 @@ source $HOME/.bash_profile
 conda activate psilo
 
 # change directory to raw reads
-#cd ../../rawReads
+cd ../../rawReads
 
 # run raw fastqc
-#fastqc --threads 30 --outdir ../rawQC *.fastq.gz
+fastqc --threads 30 --outdir ../rawQC *.fastq.gz
 
 # change directory to trimmed reads
-cd ../../trimmedReads
+cd ../trimmedReads
 
 # run trimmed fastqc
 fastqc --threads 30 --outdir ../trimmedQC *.fastq.gz

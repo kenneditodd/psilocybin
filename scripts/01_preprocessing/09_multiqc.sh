@@ -2,7 +2,7 @@
 
 # activate conda environment
 source $HOME/.bash_profile
-conda activate aducanumab
+conda activate psilo
 
 # run multiqc on rawQC
 cd ../../rawQC
