@@ -43,4 +43,8 @@ df <- df[!df$timepoint == "28 day",]
 table(paste0(df$group, df$lane))
 table(paste0(df$group,".",df$sex,".lane",df$lane))
 
+# save meta
+write.table(x = df, file = "../../refs/metadata.tsv", sep = "\t",
+            quote = FALSE)
+
 
