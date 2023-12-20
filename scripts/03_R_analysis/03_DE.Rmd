@@ -284,6 +284,54 @@ for (dim in dims) {
 }
 ```
 
+### Lane
+```{r}
+# loop through dimensions and top genes
+names <- v$targets$lane
+dims <- list(c(1,2),c(2,3),c(3,4))
+topGenes <- c(100,500)
+
+for (dim in dims) {
+  
+  for (numGenes in topGenes) {
+      
+    mds <- plotMDS(v, 
+                   labels = names, 
+                   top = numGenes,
+                   plot = FALSE,
+                   dim.plot = dim)
+
+    toplot <- data.frame(DimX = mds$x, 
+                         DimY = mds$y,
+                         Sample = rownames(mds$distance.matrix.squared),
+                         lane = factor(v$targets$lane))
+    
+    x.lab <- paste0(mds$axislabel," ",mds$dim.plot[1]," (",
+                    round(mds$var.explained[mds$dim.plot[1]] * 100, digits = 2),
+                    "%)")
+    y.lab <- paste0(mds$axislabel," ",mds$dim.plot[2]," (",
+                    round(mds$var.explained[mds$dim.plot[2]] * 100, digits = 2),
+                    "%)")
+    
+    p <- ggplot(toplot, aes(x = DimX, y = DimY, color = lane, label = Sample)) + 
+      geom_point(size = 3) +
+      theme_bw() +
+      geom_text(aes(label = Sample), size=4, vjust = -1) +
+      xlab(x.lab) + ylab(y.lab) + 
+      ggtitle(paste0("MDS Filtered: Top ", numGenes, ", Log2(CPM)"))
+    print(p)
+    
+    # save
+    dimTitle <- as.character(dim)
+    path <- paste0("../../results/postfiltering_QC/MDS_top_",
+                   numGenes,"_genes/MDS_filtered_top_", numGenes, "_",
+                   "dim", as.character(dim)[1], "&", as.character(dim[2]), 
+                   "_colored_by_lane")
+    saveToPDF(paste0(path, ".pdf"), width = 8, height = 8)
+  }
+}
+```
+
 # Differential Expressioin
 ## Number of DEGs
 Identify number of differentially expressed genes.
@@ -383,10 +431,10 @@ for (i in allComparisons) {
 thresh <- 0.1
 
 # get file list
-files <- list.files(paste0("../../results/DEGs_both_sexes"))
+files <- list.files("../../results/DEGs")
 keep <- grep("_1.00.tsv", files)
 files <- files[keep]
-files <- paste0("../../results/DEGs_both_sexes/",files)
+files <- paste0("../../results/DEGs/", files)
 
 for (i in files) {
   
@@ -412,7 +460,7 @@ for (i in files) {
   data$color_adjpval <- factor(color_values)
   
  # comparison name
- comparison <- gsub("../../results/DEGs_both_sexes/DEGs_", "", i)
+ comparison <- gsub("../../results/DEGs/", "", i)
  comparison <- gsub("_FDRq_1.00.tsv","",comparison)
     
  # plot only if there are DEGs with adj.P.Val < thresh
@@ -481,7 +529,7 @@ for (i in files) {
      p
       
     # save
-    path <- paste0("../../results/DEGs_both_sexes/volcano_", comparison, "_FDRq_", 
+    path <- paste0("../../results/volcano/volcano_", comparison, "_FDRq_", 
                    format(thresh, nsmall = 2), ".pdf")
     pdf(path, height = 8, width = 8)
     print(p)
@@ -489,6 +537,144 @@ for (i in files) {
   }
 } # end loop through variables
 ```
+
+## Metascape input
+```{r}
+# set variables
+thresh <- 0.05
+
+# get file list
+files <- list.files("../../results/DEGs")
+keep <- grep("_1.00.tsv", files)
+files <- files[keep]
+files <- paste0("../../results/DEGs/", files)
+
+# loop through files
+for (i in 1:length(files)) {
+  # read table
+  data <- read.delim2(files[i], header = TRUE, sep = "\t")
+  data <- subset(data, adj.P.Val < thresh)
+  
+  # subset
+  up <- subset(data, data$logFC > 0)
+  up <- up$gene_name
+  down <- subset(data, data$logFC < 0)
+  down <- down$gene_name
+  
+  # file name
+ comparison <- gsub("../../results/DEGs/", "", files[i])
+ comparison <- gsub("_FDRq_1.00.tsv","",comparison)
+ 
+  # save
+  write.table(x = up,
+            file = paste0("../../results/metascape_input/", comparison,
+                          "_upregulated_", format(thresh, nsmall = 2), ".tsv"),
+            quote = FALSE,
+            row.names = FALSE,
+            col.names = FALSE)
+    write.table(x = down,
+            file = paste0("../../results/metascape_input/", comparison,
+                          "_downregulated_", format(thresh, nsmall = 2), ".tsv"),
+            quote = FALSE,
+            row.names = FALSE,
+            col.names = FALSE)
+}
+```
+
+## Upset
+```{r, eval=FALSE, echo=FALSE}
+# set var
+thresh <- 0.1
+
+# read tables
+week3 <- read.table("../../results/DEGs_both_sexes/DEGs_Adu.3_vs_IgG.3_FDRq_1.00.tsv", 
+                    sep = "\t", header = TRUE)
+rownames(week3) <- week3$gene_name_unique
+week5 <- read.table("../../results/DEGs_both_sexes/DEGs_Adu.5_vs_IgG.5_FDRq_1.00.tsv", 
+                    sep = "\t", header = TRUE)
+rownames(week5) <- week5$gene_name_unique
+week19 <- read.table("../../results/DEGs_both_sexes/DEGs_Adu.19_vs_IgG.19_FDRq_1.00.tsv",
+                     sep = "\t", header = TRUE)
+rownames(week19) <- week19$gene_name_unique
+week34 <- read.table("../../results/DEGs_both_sexes/DEGs_Adu.34_vs_IgG.34_FDRq_1.00.tsv", 
+                     sep = "\t", header = TRUE)
+rownames(week34) <- week34$gene_name_unique
+
+# filter tables
+week3 <- week3[week3$adj.P.Val < thresh,]
+week5 <- week5[week5$adj.P.Val < thresh,]
+week19 <- week19[week19$adj.P.Val < thresh,]
+week34 <- week34[week34$adj.P.Val < thresh,]
+
+# Subset lists
+week3_up <- subset(week3$gene_name_unique, week3$logFC > 0)
+week3_down <- subset(week3$gene_name_unique, week3$logFC < 0)
+week5_up <- subset(week5$gene_name_unique, week5$logFC > 0)
+week5_down <- subset(week5$gene_name_unique, week5$logFC < 0)
+week19_up <- subset(week19$gene_name_unique, week19$logFC > 0)
+week19_down <- subset(week19$gene_name_unique, week19$logFC < 0)
+week34_up <- subset(week34$gene_name_unique, week34$logFC > 0)
+week34_down <- subset(week34$gene_name_unique, week34$logFC < 0)
+list_input <- list("Adu vs IgG Week 3 Up-regulated" = week3_up,
+                   "Adu vs IgG Week 5 Up-regulated" = week5_up,
+                   "Adu vs IgG Week 19 Up-regulated" = week19_up,
+                   "Adu vs IgG Week 34 Up-regulated" = week34_up,
+                   "Adu vs IgG Week 3 Down-regulated" = week3_down,
+                   "Adu vs IgG Week 5 Down-regulated" = week5_down,
+                   "Adu vs IgG Week 19 Down-regulated" = week19_down,
+                   "Adu vs IgG Week 34 Down-regulated" = week34_down)
+data <- fromList(list_input)
+  
+# store names
+names <- colnames(data)
+  
+# plot
+upset_gene <- ComplexUpset::upset(data, 
+				  names,
+				  set_sizes=(
+					upset_set_size()
+					+ geom_text(aes(label=..count..), hjust=1.1, stat='count')
+					+ expand_limits(y=200)),
+				  queries = list(upset_query("Adu vs IgG Week 3 Up-regulated", fill = "red"),
+								 upset_query("Adu vs IgG Week 5 Up-regulated", fill = "red"),
+								 upset_query("Adu vs IgG Week 19 Up-regulated", fill = "red"),
+								 upset_query("Adu vs IgG Week 34 Up-regulated", fill = "red"),
+								 upset_query("Adu vs IgG Week 3 Down-regulated", fill = "blue"),
+								 upset_query("Adu vs IgG Week 5 Down-regulated", fill = "blue"),
+								 upset_query("Adu vs IgG Week 19 Down-regulated", fill = "blue"),
+								 upset_query("Adu vs IgG Week 34 Down-regulated", fill = "blue")),
+				  base_annotations = list('Intersection size' = (
+					intersection_size(bar_number_threshold=1, width=0.5)
+					+ scale_y_continuous(expand=expansion(mult=c(0, 0.05)),limits = c(0,150)) # space on top
+					+ theme(
+						  # hide grid lines
+						  panel.grid.major=element_blank(),
+						  panel.grid.minor=element_blank(),
+						  # show axis lines
+						  axis.line=element_line(colour='black')))),
+				  stripes = upset_stripes(
+					geom=geom_segment(size=12),  # make the stripes larger
+					colors=c('grey95', 'white')),
+				  # to prevent connectors from getting the colorured
+				  # use `fill` instead of `color`, together with `shape='circle filled'`
+				  matrix = intersection_matrix(
+					geom=geom_point(
+					  shape='circle filled',
+					  size=3,
+					  stroke=0.45)),
+				  sort_sets=FALSE,
+				  sort_intersections='descending'
+				)
+
+upset_gene <- upset_gene + ggtitle(paste0("adj_p_val < ", format(thresh, nsmall = 2)))
+
+# save
+pdf(paste0("../../results/DEGs_both_sexes/upset_plot_FDRq_", format(thresh, nsmall = 2), ".pdf"), 
+    height = 6, width = 8)
+upset_gene
+```
+
+
 
 ```{r}
 sessionInfo()

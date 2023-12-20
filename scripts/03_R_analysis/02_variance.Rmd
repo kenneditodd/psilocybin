@@ -73,7 +73,7 @@ variables <- c("group",
                "sex",
                "weight_at_treatment",
                "RIN",
-               "RNA_extraction_batch")
+               "lane")
 meta <- meta %>% select(all_of(variables))
 
 # log2 transform lib.size
@@ -85,7 +85,7 @@ meta$weight_at_treatment <- as.numeric(gsub(" grams","",meta$weight_at_treatment
 
 # make class categorical
 meta$timepoint <- factor(meta$timepoint)
-meta$RNA_extraction_batch <- factor(meta$RNA_extraction_batch)
+meta$lane <- factor(meta$lane)
 
 # check and change classes
 sapply(meta, class)
@@ -98,7 +98,6 @@ sapply(meta, class)
 - Fibroblasts: COL1A1, COL1A2, LUM, DCN \
 - Macrophages/Microglia: MRC1, MKI67, C1QB \
 - Neurons: GAD1, GAD2, SNAP25, SYT1, MEG3
-- NPCs: SOX2, NES
 - Oligodendrocytes: MBP
 - OPCs: OLIG1, TNR
 - Pericytes & SMCs: MYH11, ACTA2, VTN \
@@ -202,7 +201,8 @@ plotCorrMatrix(cor(info))
 MRC1, MKI67, C1QB
 ```{r CCA_heatmap}
 # formula
-form <- ~0 + group + treatment + dose + timepoint +  sex + log2.lib + weight_at_treatment + RIN
+form <- ~0 + group + treatment + dose + timepoint +  sex + log2.lib +
+  weight_at_treatment + RIN + lane
 
 # correlation plot
 model.matrix(form, data = meta) %>% 
@@ -244,7 +244,7 @@ colnames(meta)
 
 # age is usually a continuous so model it as a fixed effect "age"
 # group is categorical, so model them as random effects "(1|group)"
-form <- ~ (1|group) + (1|sex) + weight_at_treatment + log2.lib + RIN
+form <- ~ (1|group) + (1|sex) + (1|lane) + weight_at_treatment + log2.lib
 
 varPart <- fitExtractVarPartModel(geneExpr, form, meta)
 vp <- sortCols(varPart)
@@ -324,7 +324,7 @@ bestModel <- mvForwardStepwise(exprObj = counts,
 # Save
 ```{r}
 all.equal(rownames(meta), rownames(dge.filtered.norm$samples))
-dge.filtered.norm$samples <- cbind(dge.filtered.norm$samples, meta[,10:19])
+dge.filtered.norm$samples <- cbind(dge.filtered.norm$samples, meta[,c(6,7,8:19)])
 saveRDS(dge.filtered.norm, paste0("../../rObjects/DGEList_cell_markers.rds"))
 ```
 

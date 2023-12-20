@@ -134,6 +134,7 @@ remove(counts, meta, genes)
 # set levels
 dge$samples$treatment <- factor(dge$samples$treatment, levels = treatment_order)
 dge$samples$sex <- factor(dge$samples$sex, levels = sex_order)
+dge$samples$lane <- factor(dge$samples$lane)
 ```
 
 ## Remove MT genes
@@ -152,18 +153,12 @@ dge <- dge[keep,,keep.lib.sizes = FALSE]
 dim(dge)
 ```
 
-## Remove sample
-```{r remove_sample}
-#dim(dge)
-#dge <- dge[,!colnames(dge) %in% "Adu.34.F.241"]
-#dim(dge)
-```
 
 # QC: Raw
 ## Bargraph
 ```{r cpm_bar_graph}
 # user input
-goi <- c("Uty")
+goi <- c("Uty","Ddx3y","Kdm5d")
 
 # plot and save
 for (i in 1:length(goi)) {
@@ -391,6 +386,59 @@ for (dim in dims) {
                    numGenes,"_genes/MDS_raw_top_", numGenes, "_",
                    "dim", as.character(dim)[1], "&", as.character(dim[2]), 
                    "_colored_by_treatment")
+    saveToPDF(paste0(path, ".pdf"), width = 8, height = 8)
+  }
+}
+
+remove(data)
+```
+
+### Lane
+```{r MDS_colored_by_sex}
+# set colors and get data
+data <- cpm(dge$counts, log = TRUE)
+names <- dge$samples$sample_id
+
+# loop through dimensions and top genes
+dims <- list(c(1,2),c(2,3),c(3,4))
+topGenes <- c(100,500)
+
+for (dim in dims) {
+  
+  for (numGenes in topGenes) {
+      
+    mds <- plotMDS(data, 
+                   labels = names, 
+                   top = numGenes,
+                   plot = FALSE,
+                   dim.plot = dim)
+
+    toplot <- data.frame(DimX = mds$x, 
+                         DimY = mds$y,
+                         Sample = rownames(mds$distance.matrix.squared),
+                         lane = factor(dge$samples$lane))
+    
+    x.lab <- paste0(mds$axislabel," ",mds$dim.plot[1]," (",
+                    round(mds$var.explained[mds$dim.plot[1]] * 100, digits = 2),
+                    "%)")
+    y.lab <- paste0(mds$axislabel," ",mds$dim.plot[2]," (",
+                    round(mds$var.explained[mds$dim.plot[2]] * 100, digits = 2),
+                    "%)")
+    
+    p <- ggplot(toplot, aes(x = DimX, y = DimY, color = lane, label = Sample)) + 
+      geom_point(size = 3) +
+      theme_bw() +
+      geom_text(aes(label = Sample), size=4, vjust = -1) +
+      xlab(x.lab) + ylab(y.lab) + 
+      ggtitle(paste0("MDS Raw: Top ", numGenes, ", Log2(CPM)"))
+    print(p)
+    
+    # save
+    dimTitle <- as.character(dim)
+    path <- paste0("../../results/prefiltering_QC/MDS_top_",
+                   numGenes,"_genes/MDS_raw_top_", numGenes, "_",
+                   "dim", as.character(dim)[1], "&", as.character(dim[2]), 
+                   "_colored_by_lane")
     saveToPDF(paste0(path, ".pdf"), width = 8, height = 8)
   }
 }
