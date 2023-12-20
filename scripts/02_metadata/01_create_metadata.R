@@ -60,8 +60,11 @@ mouse.meta[c(1:8),"RNA_extraction_batch"] <- 8
 colnames(mouse.meta)[c(15,4:8,1,9:14,3,16,2)]
 meta <- mouse.meta[,c(15,4:8,1,9:14,3,16,2)]
 
+# remove time point 28 (wasn't sent for sequencing)
+meta <- meta[!meta$timepoint == "28 day",]
+
 # save meta
-write.table(x = mouse.meta, file = "../../refs/metadata.tsv", sep = "\t",
+write.table(x = meta, file = "../../refs/metadata.tsv", sep = "\t",
             quote = FALSE)
 
 

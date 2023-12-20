@@ -1,121 +1,91 @@
-animal_id	filename	sacrifice_batch	group	treatment	dose	timepoint	sex	age_at_treatment	weight_at_treatment	RIN	genotype	notes	project_id	sample_id	RNA_extraction_batch
-1	1	Psi1_A1_High_Male	1	psilo.high.8h	psilocybin	1 mg / kg	8 hour	M	8 weeks	26 grams	8.5	C57BL/6		Psil1	psilo.high.8h.M.1	8
-2	2	Psi1_A2_High_Male	1	psilo.high.8h	psilocybin	1 mg / kg	8 hour	M	8 weeks	26 grams	9.2	C57BL/6		Psil1	psilo.high.8h.M.2	8
-3	3	Psi1_A3_High_Male	1	psilo.high.8h	psilocybin	1 mg / kg	8 hour	M	8 weeks	26 grams	9.3	C57BL/6		Psil1	psilo.high.8h.M.3	8
-4	4	Psi1_A4_High_Male	1	psilo.high.8h	psilocybin	1 mg / kg	8 hour	M	8 weeks	26 grams	9.3	C57BL/6		Psil1	psilo.high.8h.M.4	8
-5	5	Psi1_A5_High_Male	1	psilo.high.8h	psilocybin	1 mg / kg	8 hour	M	8 weeks	26 grams	9.2	C57BL/6		Psil1	psilo.high.8h.M.5	8
-6	6	Psi1_A6_High_Female	1	psilo.high.8h	psilocybin	1 mg / kg	8 hour	F	8 weeks	18 grams	9.6	C57BL/6		Psil1	psilo.high.8h.F.6	8
-7	7	Psi1_A7_High_Female	1	psilo.high.8h	psilocybin	1 mg / kg	8 hour	F	8 weeks	18 grams	9.3	C57BL/6		Psil1	psilo.high.8h.F.7	8
-8	8	Psi1_A8_High_Female	1	psilo.high.8h	psilocybin	1 mg / kg	8 hour	F	8 weeks	18 grams	9.4	C57BL/6		Psil1	psilo.high.8h.F.8	8
-9	9	Psi1_A9_High_Female	1	psilo.high.8h	psilocybin	1 mg / kg	8 hour	F	8 weeks	18 grams	9.3	C57BL/6		Psil1	psilo.high.8h.F.9	7
-10	10	Psi1_A10_High_Female	1	psilo.high.8h	psilocybin	1 mg / kg	8 hour	F	8 weeks	18 grams	9.3	C57BL/6		Psil1	psilo.high.8h.F.10	7
-11	11	Psi1_A11_Low_Male	1	psilo.low.8h	psilocybin	0.25 mg / kg	8 hour	M	8 weeks	26 grams	9.2	C57BL/6		Psil1	psilo.low.8h.M.11	7
-12	12	Psi1_A12_Low_Male	1	psilo.low.8h	psilocybin	0.25 mg / kg	8 hour	M	8 weeks	26 grams	9.2	C57BL/6		Psil1	psilo.low.8h.M.12	7
-13	13	Psi1_A13_Low_Male	1	psilo.low.8h	psilocybin	0.25 mg / kg	8 hour	M	8 weeks	26 grams	9.3	C57BL/6		Psil1	psilo.low.8h.M.13	7
-14	14	Psi1_A14_Low_Male	1	psilo.low.8h	psilocybin	0.25 mg / kg	8 hour	M	8 weeks	26 grams	9.2	C57BL/6		Psil1	psilo.low.8h.M.14	7
-15	15	Psi1_A15_Low_Male	1	psilo.low.8h	psilocybin	0.25 mg / kg	8 hour	M	8 weeks	26 grams	9.4	C57BL/6		Psil1	psilo.low.8h.M.15	7
-16	16	Psi1_A16_Low_Female	1	psilo.low.8h	psilocybin	0.25 mg / kg	8 hour	F	8 weeks	18 grams	9.3	C57BL/6		Psil1	psilo.low.8h.F.16	7
-17	17	Psi1_A17_Low_Female	1	psilo.low.8h	psilocybin	0.25 mg / kg	8 hour	F	8 weeks	18 grams	9.3	C57BL/6		Psil1	psilo.low.8h.F.17	7
-18	18	Psi1_A18_Low_Female	1	psilo.low.8h	psilocybin	0.25 mg / kg	8 hour	F	8 weeks	18 grams	9.2	C57BL/6		Psil1	psilo.low.8h.F.18	7
-19	19	Psi1_A19_Low_Female	1	psilo.low.8h	psilocybin	0.25 mg / kg	8 hour	F	8 weeks	18 grams	9.6	C57BL/6		Psil1	psilo.low.8h.F.19	7
-20	20	Psi1_A20_Low_Female	1	psilo.low.8h	psilocybin	0.25 mg / kg	8 hour	F	8 weeks	18 grams	9.5	C57BL/6		Psil1	psilo.low.8h.F.20	7
-21	21	Psi1_A21_NS_Male	1	sal.8h	saline	0.9%	8 hour	M	8 weeks	26 grams	9.6	C57BL/6		Psil1	sal.8h.M.21	7
-22	22	Psi1_A22_NS_Male	1	sal.8h	saline	0.9%	8 hour	M	8 weeks	26 grams	9.2	C57BL/6		Psil1	sal.8h.M.22	7
-23	23	Psi1_A23_NS_Male	1	sal.8h	saline	0.9%	8 hour	M	8 weeks	26 grams	9.2	C57BL/6		Psil1	sal.8h.M.23	6
-24	24	Psi1_A24_NS_Male	1	sal.8h	saline	0.9%	8 hour	M	8 weeks	26 grams	9.2	C57BL/6		Psil1	sal.8h.M.24	6
-25	25	Psi1_A25_NS_Male	1	sal.8h	saline	0.9%	8 hour	M	8 weeks	26 grams	9.1	C57BL/6		Psil1	sal.8h.M.25	6
-26	26	Psi1_A26_NS_Female	1	sal.8h	saline	0.9%	8 hour	F	8 weeks	18 grams	9	C57BL/6		Psil1	sal.8h.F.26	6
-27	27	Psi1_A27_NS_Female	1	sal.8h	saline	0.9%	8 hour	F	8 weeks	18 grams	9.3	C57BL/6		Psil1	sal.8h.F.27	6
-28	28	Psi1_A28_NS_Female	1	sal.8h	saline	0.9%	8 hour	F	8 weeks	18 grams	9.6	C57BL/6		Psil1	sal.8h.F.28	6
-29	29	Psi1_A29_NS_Female	1	sal.8h	saline	0.9%	8 hour	F	8 weeks	18 grams	9.6	C57BL/6		Psil1	sal.8h.F.29	6
-30	30	Psi1_A30_NS_Female	1	sal.8h	saline	0.9%	8 hour	F	8 weeks	18 grams	9.5	C57BL/6		Psil1	sal.8h.F.30	6
-31	31	Psi1_A31_High_Male	2	psilo.high.24h	psilocybin	1 mg / kg	24 hour	M	8 weeks	26 grams	9.6	C57BL/6		Psil1	psilo.high.24h.M.31	6
-32	32	Psi1_A32_High_Male	2	psilo.high.24h	psilocybin	1 mg / kg	24 hour	M	8 weeks	26 grams	9.5	C57BL/6		Psil1	psilo.high.24h.M.32	6
-33	33	Psi1_A33_High_Male	2	psilo.high.24h	psilocybin	1 mg / kg	24 hour	M	8 weeks	26 grams	7.5	C57BL/6		Psil1	psilo.high.24h.M.33	6
-34	34	Psi1_A34_High_Male	2	psilo.high.24h	psilocybin	1 mg / kg	24 hour	M	8 weeks	26 grams	9.5	C57BL/6		Psil1	psilo.high.24h.M.34	6
-35	35	Psi1_A35_High_Male	2	psilo.high.24h	psilocybin	1 mg / kg	24 hour	M	8 weeks	26 grams	9.2	C57BL/6		Psil1	psilo.high.24h.M.35	6
-36	36	Psi1_A36_High_Female	2	psilo.high.24h	psilocybin	1 mg / kg	24 hour	F	8 weeks	18 grams	9.4	C57BL/6		Psil1	psilo.high.24h.F.36	6
-37	37	Psi1_A37_High_Female	2	psilo.high.24h	psilocybin	1 mg / kg	24 hour	F	8 weeks	18 grams	9.3	C57BL/6		Psil1	psilo.high.24h.F.37	5
-38	38	Psi1_A38_High_Female	2	psilo.high.24h	psilocybin	1 mg / kg	24 hour	F	8 weeks	18 grams	9.2	C57BL/6		Psil1	psilo.high.24h.F.38	5
-39	39	Psi1_A39_High_Female	2	psilo.high.24h	psilocybin	1 mg / kg	24 hour	F	8 weeks	18 grams	9.4	C57BL/6		Psil1	psilo.high.24h.F.39	5
-40	40	Psi1_A40_High_Female	2	psilo.high.24h	psilocybin	1 mg / kg	24 hour	F	8 weeks	18 grams	9.6	C57BL/6		Psil1	psilo.high.24h.F.40	5
-41	41	Psi1_A41_Low_Male	2	psilo.low.24h	psilocybin	0.25 mg / kg	24 hour	M	8 weeks	26 grams	9.5	C57BL/6		Psil1	psilo.low.24h.M.41	5
-42	42	Psi1_A42_Low_Male	2	psilo.low.24h	psilocybin	0.25 mg / kg	24 hour	M	8 weeks	26 grams	9.5	C57BL/6		Psil1	psilo.low.24h.M.42	5
-43	43	Psi1_A43_Low_Male	2	psilo.low.24h	psilocybin	0.25 mg / kg	24 hour	M	8 weeks	26 grams	9.5	C57BL/6		Psil1	psilo.low.24h.M.43	5
-44	44	Psi1_A44_Low_Male	2	psilo.low.24h	psilocybin	0.25 mg / kg	24 hour	M	8 weeks	26 grams	9.8	C57BL/6		Psil1	psilo.low.24h.M.44	5
-45	45	Psi1_A45_Low_Male	2	psilo.low.24h	psilocybin	0.25 mg / kg	24 hour	M	8 weeks	26 grams	9.9	C57BL/6		Psil1	psilo.low.24h.M.45	5
-46	46	Psi1_A46_Low_Female	2	psilo.low.24h	psilocybin	0.25 mg / kg	24 hour	F	8 weeks	18 grams	8.1	C57BL/6		Psil1	psilo.low.24h.F.46	5
-47	47	Psi1_A47_Low_Female	2	psilo.low.24h	psilocybin	0.25 mg / kg	24 hour	F	8 weeks	18 grams	9.5	C57BL/6		Psil1	psilo.low.24h.F.47	5
-48	48	Psi1_A48_Low_Female	2	psilo.low.24h	psilocybin	0.25 mg / kg	24 hour	F	8 weeks	18 grams	9.4	C57BL/6		Psil1	psilo.low.24h.F.48	5
-49	49	Psi1_A49_Low_Female	2	psilo.low.24h	psilocybin	0.25 mg / kg	24 hour	F	8 weeks	18 grams	9.3	C57BL/6		Psil1	psilo.low.24h.F.49	5
-50	50	Psi1_A50_Low_Female	2	psilo.low.24h	psilocybin	0.25 mg / kg	24 hour	F	8 weeks	18 grams	9.2	C57BL/6		Psil1	psilo.low.24h.F.50	5
-51	51	Psi1_A51_NS_Male	2	sal.24h	saline	0.9%	24 hour	M	8 weeks	26 grams	9.4	C57BL/6		Psil1	sal.24h.M.51	4
-52	52	Psi1_A52_NS_Male	2	sal.24h	saline	0.9%	24 hour	M	8 weeks	26 grams	9.3	C57BL/6		Psil1	sal.24h.M.52	4
-53	53	Psi1_A53_NS_Male	2	sal.24h	saline	0.9%	24 hour	M	8 weeks	26 grams	9.5	C57BL/6		Psil1	sal.24h.M.53	4
-54	54	Psi1_A54_NS_Male	2	sal.24h	saline	0.9%	24 hour	M	8 weeks	26 grams	9.5	C57BL/6		Psil1	sal.24h.M.54	4
-55	55	Psi1_A55_NS_Male	2	sal.24h	saline	0.9%	24 hour	M	8 weeks	26 grams	9.4	C57BL/6		Psil1	sal.24h.M.55	4
-56	56	Psi1_A56_NS_Female	2	sal.24h	saline	0.9%	24 hour	F	8 weeks	18 grams	9.4	C57BL/6		Psil1	sal.24h.F.56	4
-57	57	Psi1_A57_NS_Female	2	sal.24h	saline	0.9%	24 hour	F	8 weeks	18 grams	9.4	C57BL/6		Psil1	sal.24h.F.57	4
-58	58	Psi1_A58_NS_Female	2	sal.24h	saline	0.9%	24 hour	F	8 weeks	18 grams	9.3	C57BL/6		Psil1	sal.24h.F.58	4
-59	59	Psi1_A59_NS_Female	2	sal.24h	saline	0.9%	24 hour	F	8 weeks	18 grams	9.5	C57BL/6		Psil1	sal.24h.F.59	4
-60	60	Psi1_A60_NS_Female	2	sal.24h	saline	0.9%	24 hour	F	8 weeks	18 grams	9.3	C57BL/6		Psil1	sal.24h.F.60	4
-61	61	Psi1_A61_High_Male	3	psilo.high.7d	psilocybin	1 mg / kg	7 day	M	8 weeks	26 grams	9.3	C57BL/6		Psil1	psilo.high.7d.M.61	4
-62	62	Psi1_A62_High_Male	3	psilo.high.7d	psilocybin	1 mg / kg	7 day	M	8 weeks	26 grams	9.5	C57BL/6		Psil1	psilo.high.7d.M.62	4
-63	63	Psi1_A63_High_Male	3	psilo.high.7d	psilocybin	1 mg / kg	7 day	M	8 weeks	26 grams	9.2	C57BL/6		Psil1	psilo.high.7d.M.63	4
-64	64	Psi1_A64_High_Male	3	psilo.high.7d	psilocybin	1 mg / kg	7 day	M	8 weeks	26 grams	9.4	C57BL/6		Psil1	psilo.high.7d.M.64	4
-65	65	Psi1_A65_High_Male	3	psilo.high.7d	psilocybin	1 mg / kg	7 day	M	8 weeks	26 grams	9.3	C57BL/6		Psil1	psilo.high.7d.M.65	4
-66	66	Psi1_A66_High_Female	3	psilo.high.7d	psilocybin	1 mg / kg	7 day	F	8 weeks	18 grams	9.4	C57BL/6		Psil1	psilo.high.7d.F.66	3
-67	67	Psi1_A67_High_Female	3	psilo.high.7d	psilocybin	1 mg / kg	7 day	F	8 weeks	18 grams	9.5	C57BL/6		Psil1	psilo.high.7d.F.67	3
-68	68	Psi1_A68_High_Female	3	psilo.high.7d	psilocybin	1 mg / kg	7 day	F	8 weeks	18 grams	9.4	C57BL/6		Psil1	psilo.high.7d.F.68	3
-69	69	Psi1_A69_High_Female	3	psilo.high.7d	psilocybin	1 mg / kg	7 day	F	8 weeks	18 grams	9.5	C57BL/6		Psil1	psilo.high.7d.F.69	3
-70	70	Psi1_A70_High_Female	3	psilo.high.7d	psilocybin	1 mg / kg	7 day	F	8 weeks	18 grams	9.4	C57BL/6		Psil1	psilo.high.7d.F.70	3
-71	71	Psi1_A71_Low_Male	3	psilo.low.7d	psilocybin	0.25 mg / kg	7 day	M	8 weeks	26 grams	9.1	C57BL/6		Psil1	psilo.low.7d.M.71	3
-72	72	Psi1_A72_Low_Male	3	psilo.low.7d	psilocybin	0.25 mg / kg	7 day	M	8 weeks	26 grams	9.5	C57BL/6		Psil1	psilo.low.7d.M.72	3
-73	73	Psi1_A73_Low_Male	3	psilo.low.7d	psilocybin	0.25 mg / kg	7 day	M	8 weeks	26 grams	9.1	C57BL/6		Psil1	psilo.low.7d.M.73	3
-74	74	Psi1_A74_Low_Male	3	psilo.low.7d	psilocybin	0.25 mg / kg	7 day	M	8 weeks	26 grams	9.4	C57BL/6		Psil1	psilo.low.7d.M.74	3
-75	75	Psi1_A75_Low_Male	3	psilo.low.7d	psilocybin	0.25 mg / kg	7 day	M	8 weeks	26 grams	9.4	C57BL/6		Psil1	psilo.low.7d.M.75	3
-76	76	Psi1_A76_Low_Female	3	psilo.low.7d	psilocybin	0.25 mg / kg	7 day	F	8 weeks	18 grams	9.3	C57BL/6		Psil1	psilo.low.7d.F.76	3
-77	77	Psi1_A77_Low_Female	3	psilo.low.7d	psilocybin	0.25 mg / kg	7 day	F	8 weeks	18 grams	9.4	C57BL/6		Psil1	psilo.low.7d.F.77	2
-78	78	Psi1_A78_Low_Female	3	psilo.low.7d	psilocybin	0.25 mg / kg	7 day	F	8 weeks	18 grams	7	C57BL/6		Psil1	psilo.low.7d.F.78	2
-79	79	Psi1_A79_Low_Female	3	psilo.low.7d	psilocybin	0.25 mg / kg	7 day	F	8 weeks	18 grams	9.3	C57BL/6		Psil1	psilo.low.7d.F.79	2
-80	80	Psi1_A80_Low_Female	3	psilo.low.7d	psilocybin	0.25 mg / kg	7 day	F	8 weeks	18 grams	9.6	C57BL/6		Psil1	psilo.low.7d.F.80	2
-81	81	Psi1_A81_NS_Male	3	sal.7d	saline	0.9%	7 day	M	8 weeks	26 grams	9.4	C57BL/6		Psil1	sal.7d.M.81	1
-82	82	Psi1_A82_NS_Male	3	sal.7d	saline	0.9%	7 day	M	8 weeks	26 grams	9.3	C57BL/6		Psil1	sal.7d.M.82	2
-83	83	Psi1_A83_NS_Male	3	sal.7d	saline	0.9%	7 day	M	8 weeks	26 grams	9.1	C57BL/6		Psil1	sal.7d.M.83	2
-84	84	Psi1_A84_NS_Male	3	sal.7d	saline	0.9%	7 day	M	8 weeks	26 grams	9.4	C57BL/6		Psil1	sal.7d.M.84	2
-85	85	Psi1_A85_NS_Male	3	sal.7d	saline	0.9%	7 day	M	8 weeks	26 grams	9.4	C57BL/6		Psil1	sal.7d.M.85	2
-86	86	Psi1_A86_NS_Female	3	sal.7d	saline	0.9%	7 day	F	8 weeks	18 grams	9.4	C57BL/6		Psil1	sal.7d.F.86	1
-87	87	Psi1_A87_NS_Female	3	sal.7d	saline	0.9%	7 day	F	8 weeks	18 grams	9.3	C57BL/6		Psil1	sal.7d.F.87	3
-88	88	Psi1_A88_NS_Female	3	sal.7d	saline	0.9%	7 day	F	8 weeks	18 grams	9.3	C57BL/6		Psil1	sal.7d.F.88	3
-89	89	Psi1_A89_NS_Female	3	sal.7d	saline	0.9%	7 day	F	8 weeks	18 grams	9.2	C57BL/6		Psil1	sal.7d.F.89	3
-90	90	Psi1_A90_NS_Female	3	sal.7d	saline	0.9%	7 day	F	8 weeks	18 grams	9.1	C57BL/6		Psil1	sal.7d.F.90	3
-91	91	Psi1_A91_High_Male	4	psilo.high.28d	psilocybin	1 mg / kg	28 day	M	8 weeks	26 grams		C57BL/6		Psil1	psilo.high.28d.M.91	
-92	92	Psi1_A92_High_Male	4	psilo.high.28d	psilocybin	1 mg / kg	28 day	M	8 weeks	26 grams		C57BL/6		Psil1	psilo.high.28d.M.92	
-93	93	Psi1_A93_High_Male	4	psilo.high.28d	psilocybin	1 mg / kg	28 day	M	8 weeks	26 grams		C57BL/6		Psil1	psilo.high.28d.M.93	
-94	94	Psi1_A94_High_Male	4	psilo.high.28d	psilocybin	1 mg / kg	28 day	M	8 weeks	26 grams		C57BL/6		Psil1	psilo.high.28d.M.94	
-95	95	Psi1_A95_High_Male	4	psilo.high.28d	psilocybin	1 mg / kg	28 day	M	8 weeks	26 grams		C57BL/6		Psil1	psilo.high.28d.M.95	
-96	96	Psi1_A96_High_Female	4	psilo.high.28d	psilocybin	1 mg / kg	28 day	F	8 weeks	18 grams		C57BL/6		Psil1	psilo.high.28d.F.96	
-97	97	Psi1_A97_High_Female	4	psilo.high.28d	psilocybin	1 mg / kg	28 day	F	8 weeks	18 grams		C57BL/6		Psil1	psilo.high.28d.F.97	
-98	98	Psi1_A98_High_Female	4	psilo.high.28d	psilocybin	1 mg / kg	28 day	F	8 weeks	18 grams		C57BL/6		Psil1	psilo.high.28d.F.98	
-99	99	Psi1_A99_High_Female	4	psilo.high.28d	psilocybin	1 mg / kg	28 day	F	8 weeks	18 grams		C57BL/6		Psil1	psilo.high.28d.F.99	
-100	100	Psi1_A100_High_Female	4	psilo.high.28d	psilocybin	1 mg / kg	28 day	F	8 weeks	18 grams		C57BL/6		Psil1	psilo.high.28d.F.100	
-101	101	Psi1_A101_Low_Male	4	psilo.low.28d	psilocybin	0.25 mg / kg	28 day	M	8 weeks	26 grams		C57BL/6	This animal was singly housed for ~week before sacrifice due to barbering behavior	Psil1	psilo.low.28d.M.101	
-102	102	Psi1_A102_Low_Male	4	psilo.low.28d	psilocybin	0.25 mg / kg	28 day	M	8 weeks	26 grams		C57BL/6	Cage mate of barber	Psil1	psilo.low.28d.M.102	
-103	103	Psi1_A103_Low_Male	4	psilo.low.28d	psilocybin	0.25 mg / kg	28 day	M	8 weeks	26 grams		C57BL/6	Cage mate of barber	Psil1	psilo.low.28d.M.103	
-104	104	Psi1_A104_Low_Male	4	psilo.low.28d	psilocybin	0.25 mg / kg	28 day	M	8 weeks	26 grams		C57BL/6	Cage mate of barber	Psil1	psilo.low.28d.M.104	
-105	105	Psi1_A105_Low_Male	4	psilo.low.28d	psilocybin	0.25 mg / kg	28 day	M	8 weeks	26 grams		C57BL/6	Cage mate of barber	Psil1	psilo.low.28d.M.105	
-106	106	Psi1_A106_Low_Female	4	psilo.low.28d	psilocybin	0.25 mg / kg	28 day	F	8 weeks	18 grams		C57BL/6		Psil1	psilo.low.28d.F.106	
-107	107	Psi1_A107_Low_Female	4	psilo.low.28d	psilocybin	0.25 mg / kg	28 day	F	8 weeks	18 grams		C57BL/6		Psil1	psilo.low.28d.F.107	
-108	108	Psi1_A108_Low_Female	4	psilo.low.28d	psilocybin	0.25 mg / kg	28 day	F	8 weeks	18 grams		C57BL/6		Psil1	psilo.low.28d.F.108	
-109	109	Psi1_A109_Low_Female	4	psilo.low.28d	psilocybin	0.25 mg / kg	28 day	F	8 weeks	18 grams		C57BL/6		Psil1	psilo.low.28d.F.109	
-110	110	Psi1_A110_Low_Female	4	psilo.low.28d	psilocybin	0.25 mg / kg	28 day	F	8 weeks	18 grams		C57BL/6		Psil1	psilo.low.28d.F.110	
-111	111	Psi1_A111_NS_Male	4	sal.28d	saline	0.9%	28 day	M	8 weeks	26 grams		C57BL/6		Psil1	sal.28d.M.111	
-112	112	Psi1_A112_NS_Male	4	sal.28d	saline	0.9%	28 day	M	8 weeks	26 grams		C57BL/6		Psil1	sal.28d.M.112	
-113	113	Psi1_A113_NS_Male	4	sal.28d	saline	0.9%	28 day	M	8 weeks	26 grams		C57BL/6		Psil1	sal.28d.M.113	
-114	114	Psi1_A114_NS_Male	4	sal.28d	saline	0.9%	28 day	M	8 weeks	26 grams		C57BL/6		Psil1	sal.28d.M.114	
-115	115	Psi1_A115_NS_Male	4	sal.28d	saline	0.9%	28 day	M	8 weeks	26 grams		C57BL/6		Psil1	sal.28d.M.115	
-116	116	Psi1_A116_NS_Female	4	sal.28d	saline	0.9%	28 day	F	8 weeks	18 grams		C57BL/6		Psil1	sal.28d.F.116	
-117	117	Psi1_A117_NS_Female	4	sal.28d	saline	0.9%	28 day	F	8 weeks	18 grams		C57BL/6		Psil1	sal.28d.F.117	
-118	118	Psi1_A118_NS_Female	4	sal.28d	saline	0.9%	28 day	F	8 weeks	18 grams		C57BL/6		Psil1	sal.28d.F.118	
-119	119	Psi1_A119_NS_Female	4	sal.28d	saline	0.9%	28 day	F	8 weeks	18 grams		C57BL/6		Psil1	sal.28d.F.119	
-120	120	Psi1_A120_NS_Female	4	sal.28d	saline	0.9%	28 day	F	8 weeks	18 grams		C57BL/6		Psil1	sal.28d.F.120	
+sample_id	group	treatment	dose	timepoint	sex	animal_id	age_at_treatment	weight_at_treatment	RIN	genotype	notes	project_id	sacrifice_batch	RNA_extraction_batch	filename
+1	psilo.high.8h.M.1	psilo.high.8h	psilocybin	1 mg / kg	8 hour	M	1	8 weeks	26 grams	8.5	C57BL/6		Psil1	1	8	Psi1_A1_High_Male
+2	psilo.high.8h.M.2	psilo.high.8h	psilocybin	1 mg / kg	8 hour	M	2	8 weeks	26 grams	9.2	C57BL/6		Psil1	1	8	Psi1_A2_High_Male
+3	psilo.high.8h.M.3	psilo.high.8h	psilocybin	1 mg / kg	8 hour	M	3	8 weeks	26 grams	9.3	C57BL/6		Psil1	1	8	Psi1_A3_High_Male
+4	psilo.high.8h.M.4	psilo.high.8h	psilocybin	1 mg / kg	8 hour	M	4	8 weeks	26 grams	9.3	C57BL/6		Psil1	1	8	Psi1_A4_High_Male
+5	psilo.high.8h.M.5	psilo.high.8h	psilocybin	1 mg / kg	8 hour	M	5	8 weeks	26 grams	9.2	C57BL/6		Psil1	1	8	Psi1_A5_High_Male
+6	psilo.high.8h.F.6	psilo.high.8h	psilocybin	1 mg / kg	8 hour	F	6	8 weeks	18 grams	9.6	C57BL/6		Psil1	1	8	Psi1_A6_High_Female
+7	psilo.high.8h.F.7	psilo.high.8h	psilocybin	1 mg / kg	8 hour	F	7	8 weeks	18 grams	9.3	C57BL/6		Psil1	1	8	Psi1_A7_High_Female
+8	psilo.high.8h.F.8	psilo.high.8h	psilocybin	1 mg / kg	8 hour	F	8	8 weeks	18 grams	9.4	C57BL/6		Psil1	1	8	Psi1_A8_High_Female
+9	psilo.high.8h.F.9	psilo.high.8h	psilocybin	1 mg / kg	8 hour	F	9	8 weeks	18 grams	9.3	C57BL/6		Psil1	1	7	Psi1_A9_High_Female
+10	psilo.high.8h.F.10	psilo.high.8h	psilocybin	1 mg / kg	8 hour	F	10	8 weeks	18 grams	9.3	C57BL/6		Psil1	1	7	Psi1_A10_High_Female
+11	psilo.low.8h.M.11	psilo.low.8h	psilocybin	0.25 mg / kg	8 hour	M	11	8 weeks	26 grams	9.2	C57BL/6		Psil1	1	7	Psi1_A11_Low_Male
+12	psilo.low.8h.M.12	psilo.low.8h	psilocybin	0.25 mg / kg	8 hour	M	12	8 weeks	26 grams	9.2	C57BL/6		Psil1	1	7	Psi1_A12_Low_Male
+13	psilo.low.8h.M.13	psilo.low.8h	psilocybin	0.25 mg / kg	8 hour	M	13	8 weeks	26 grams	9.3	C57BL/6		Psil1	1	7	Psi1_A13_Low_Male
+14	psilo.low.8h.M.14	psilo.low.8h	psilocybin	0.25 mg / kg	8 hour	M	14	8 weeks	26 grams	9.2	C57BL/6		Psil1	1	7	Psi1_A14_Low_Male
+15	psilo.low.8h.M.15	psilo.low.8h	psilocybin	0.25 mg / kg	8 hour	M	15	8 weeks	26 grams	9.4	C57BL/6		Psil1	1	7	Psi1_A15_Low_Male
+16	psilo.low.8h.F.16	psilo.low.8h	psilocybin	0.25 mg / kg	8 hour	F	16	8 weeks	18 grams	9.3	C57BL/6		Psil1	1	7	Psi1_A16_Low_Female
+17	psilo.low.8h.F.17	psilo.low.8h	psilocybin	0.25 mg / kg	8 hour	F	17	8 weeks	18 grams	9.3	C57BL/6		Psil1	1	7	Psi1_A17_Low_Female
+18	psilo.low.8h.F.18	psilo.low.8h	psilocybin	0.25 mg / kg	8 hour	F	18	8 weeks	18 grams	9.2	C57BL/6		Psil1	1	7	Psi1_A18_Low_Female
+19	psilo.low.8h.F.19	psilo.low.8h	psilocybin	0.25 mg / kg	8 hour	F	19	8 weeks	18 grams	9.6	C57BL/6		Psil1	1	7	Psi1_A19_Low_Female
+20	psilo.low.8h.F.20	psilo.low.8h	psilocybin	0.25 mg / kg	8 hour	F	20	8 weeks	18 grams	9.5	C57BL/6		Psil1	1	7	Psi1_A20_Low_Female
+21	sal.8h.M.21	sal.8h	saline	0.9%	8 hour	M	21	8 weeks	26 grams	9.6	C57BL/6		Psil1	1	7	Psi1_A21_NS_Male
+22	sal.8h.M.22	sal.8h	saline	0.9%	8 hour	M	22	8 weeks	26 grams	9.2	C57BL/6		Psil1	1	7	Psi1_A22_NS_Male
+23	sal.8h.M.23	sal.8h	saline	0.9%	8 hour	M	23	8 weeks	26 grams	9.2	C57BL/6		Psil1	1	6	Psi1_A23_NS_Male
+24	sal.8h.M.24	sal.8h	saline	0.9%	8 hour	M	24	8 weeks	26 grams	9.2	C57BL/6		Psil1	1	6	Psi1_A24_NS_Male
+25	sal.8h.M.25	sal.8h	saline	0.9%	8 hour	M	25	8 weeks	26 grams	9.1	C57BL/6		Psil1	1	6	Psi1_A25_NS_Male
+26	sal.8h.F.26	sal.8h	saline	0.9%	8 hour	F	26	8 weeks	18 grams	9	C57BL/6		Psil1	1	6	Psi1_A26_NS_Female
+27	sal.8h.F.27	sal.8h	saline	0.9%	8 hour	F	27	8 weeks	18 grams	9.3	C57BL/6		Psil1	1	6	Psi1_A27_NS_Female
+28	sal.8h.F.28	sal.8h	saline	0.9%	8 hour	F	28	8 weeks	18 grams	9.6	C57BL/6		Psil1	1	6	Psi1_A28_NS_Female
+29	sal.8h.F.29	sal.8h	saline	0.9%	8 hour	F	29	8 weeks	18 grams	9.6	C57BL/6		Psil1	1	6	Psi1_A29_NS_Female
+30	sal.8h.F.30	sal.8h	saline	0.9%	8 hour	F	30	8 weeks	18 grams	9.5	C57BL/6		Psil1	1	6	Psi1_A30_NS_Female
+31	psilo.high.24h.M.31	psilo.high.24h	psilocybin	1 mg / kg	24 hour	M	31	8 weeks	26 grams	9.6	C57BL/6		Psil1	2	6	Psi1_A31_High_Male
+32	psilo.high.24h.M.32	psilo.high.24h	psilocybin	1 mg / kg	24 hour	M	32	8 weeks	26 grams	9.5	C57BL/6		Psil1	2	6	Psi1_A32_High_Male
+33	psilo.high.24h.M.33	psilo.high.24h	psilocybin	1 mg / kg	24 hour	M	33	8 weeks	26 grams	7.5	C57BL/6		Psil1	2	6	Psi1_A33_High_Male
+34	psilo.high.24h.M.34	psilo.high.24h	psilocybin	1 mg / kg	24 hour	M	34	8 weeks	26 grams	9.5	C57BL/6		Psil1	2	6	Psi1_A34_High_Male
+35	psilo.high.24h.M.35	psilo.high.24h	psilocybin	1 mg / kg	24 hour	M	35	8 weeks	26 grams	9.2	C57BL/6		Psil1	2	6	Psi1_A35_High_Male
+36	psilo.high.24h.F.36	psilo.high.24h	psilocybin	1 mg / kg	24 hour	F	36	8 weeks	18 grams	9.4	C57BL/6		Psil1	2	6	Psi1_A36_High_Female
+37	psilo.high.24h.F.37	psilo.high.24h	psilocybin	1 mg / kg	24 hour	F	37	8 weeks	18 grams	9.3	C57BL/6		Psil1	2	5	Psi1_A37_High_Female
+38	psilo.high.24h.F.38	psilo.high.24h	psilocybin	1 mg / kg	24 hour	F	38	8 weeks	18 grams	9.2	C57BL/6		Psil1	2	5	Psi1_A38_High_Female
+39	psilo.high.24h.F.39	psilo.high.24h	psilocybin	1 mg / kg	24 hour	F	39	8 weeks	18 grams	9.4	C57BL/6		Psil1	2	5	Psi1_A39_High_Female
+40	psilo.high.24h.F.40	psilo.high.24h	psilocybin	1 mg / kg	24 hour	F	40	8 weeks	18 grams	9.6	C57BL/6		Psil1	2	5	Psi1_A40_High_Female
+41	psilo.low.24h.M.41	psilo.low.24h	psilocybin	0.25 mg / kg	24 hour	M	41	8 weeks	26 grams	9.5	C57BL/6		Psil1	2	5	Psi1_A41_Low_Male
+42	psilo.low.24h.M.42	psilo.low.24h	psilocybin	0.25 mg / kg	24 hour	M	42	8 weeks	26 grams	9.5	C57BL/6		Psil1	2	5	Psi1_A42_Low_Male
+43	psilo.low.24h.M.43	psilo.low.24h	psilocybin	0.25 mg / kg	24 hour	M	43	8 weeks	26 grams	9.5	C57BL/6		Psil1	2	5	Psi1_A43_Low_Male
+44	psilo.low.24h.M.44	psilo.low.24h	psilocybin	0.25 mg / kg	24 hour	M	44	8 weeks	26 grams	9.8	C57BL/6		Psil1	2	5	Psi1_A44_Low_Male
+45	psilo.low.24h.M.45	psilo.low.24h	psilocybin	0.25 mg / kg	24 hour	M	45	8 weeks	26 grams	9.9	C57BL/6		Psil1	2	5	Psi1_A45_Low_Male
+46	psilo.low.24h.F.46	psilo.low.24h	psilocybin	0.25 mg / kg	24 hour	F	46	8 weeks	18 grams	8.1	C57BL/6		Psil1	2	5	Psi1_A46_Low_Female
+47	psilo.low.24h.F.47	psilo.low.24h	psilocybin	0.25 mg / kg	24 hour	F	47	8 weeks	18 grams	9.5	C57BL/6		Psil1	2	5	Psi1_A47_Low_Female
+48	psilo.low.24h.F.48	psilo.low.24h	psilocybin	0.25 mg / kg	24 hour	F	48	8 weeks	18 grams	9.4	C57BL/6		Psil1	2	5	Psi1_A48_Low_Female
+49	psilo.low.24h.F.49	psilo.low.24h	psilocybin	0.25 mg / kg	24 hour	F	49	8 weeks	18 grams	9.3	C57BL/6		Psil1	2	5	Psi1_A49_Low_Female
+50	psilo.low.24h.F.50	psilo.low.24h	psilocybin	0.25 mg / kg	24 hour	F	50	8 weeks	18 grams	9.2	C57BL/6		Psil1	2	5	Psi1_A50_Low_Female
+51	sal.24h.M.51	sal.24h	saline	0.9%	24 hour	M	51	8 weeks	26 grams	9.4	C57BL/6		Psil1	2	4	Psi1_A51_NS_Male
+52	sal.24h.M.52	sal.24h	saline	0.9%	24 hour	M	52	8 weeks	26 grams	9.3	C57BL/6		Psil1	2	4	Psi1_A52_NS_Male
+53	sal.24h.M.53	sal.24h	saline	0.9%	24 hour	M	53	8 weeks	26 grams	9.5	C57BL/6		Psil1	2	4	Psi1_A53_NS_Male
+54	sal.24h.M.54	sal.24h	saline	0.9%	24 hour	M	54	8 weeks	26 grams	9.5	C57BL/6		Psil1	2	4	Psi1_A54_NS_Male
+55	sal.24h.M.55	sal.24h	saline	0.9%	24 hour	M	55	8 weeks	26 grams	9.4	C57BL/6		Psil1	2	4	Psi1_A55_NS_Male
+56	sal.24h.F.56	sal.24h	saline	0.9%	24 hour	F	56	8 weeks	18 grams	9.4	C57BL/6		Psil1	2	4	Psi1_A56_NS_Female
+57	sal.24h.F.57	sal.24h	saline	0.9%	24 hour	F	57	8 weeks	18 grams	9.4	C57BL/6		Psil1	2	4	Psi1_A57_NS_Female
+58	sal.24h.F.58	sal.24h	saline	0.9%	24 hour	F	58	8 weeks	18 grams	9.3	C57BL/6		Psil1	2	4	Psi1_A58_NS_Female
+59	sal.24h.F.59	sal.24h	saline	0.9%	24 hour	F	59	8 weeks	18 grams	9.5	C57BL/6		Psil1	2	4	Psi1_A59_NS_Female
+60	sal.24h.F.60	sal.24h	saline	0.9%	24 hour	F	60	8 weeks	18 grams	9.3	C57BL/6		Psil1	2	4	Psi1_A60_NS_Female
+61	psilo.high.7d.M.61	psilo.high.7d	psilocybin	1 mg / kg	7 day	M	61	8 weeks	26 grams	9.3	C57BL/6		Psil1	3	4	Psi1_A61_High_Male
+62	psilo.high.7d.M.62	psilo.high.7d	psilocybin	1 mg / kg	7 day	M	62	8 weeks	26 grams	9.5	C57BL/6		Psil1	3	4	Psi1_A62_High_Male
+63	psilo.high.7d.M.63	psilo.high.7d	psilocybin	1 mg / kg	7 day	M	63	8 weeks	26 grams	9.2	C57BL/6		Psil1	3	4	Psi1_A63_High_Male
+64	psilo.high.7d.M.64	psilo.high.7d	psilocybin	1 mg / kg	7 day	M	64	8 weeks	26 grams	9.4	C57BL/6		Psil1	3	4	Psi1_A64_High_Male
+65	psilo.high.7d.M.65	psilo.high.7d	psilocybin	1 mg / kg	7 day	M	65	8 weeks	26 grams	9.3	C57BL/6		Psil1	3	4	Psi1_A65_High_Male
+66	psilo.high.7d.F.66	psilo.high.7d	psilocybin	1 mg / kg	7 day	F	66	8 weeks	18 grams	9.4	C57BL/6		Psil1	3	3	Psi1_A66_High_Female
+67	psilo.high.7d.F.67	psilo.high.7d	psilocybin	1 mg / kg	7 day	F	67	8 weeks	18 grams	9.5	C57BL/6		Psil1	3	3	Psi1_A67_High_Female
+68	psilo.high.7d.F.68	psilo.high.7d	psilocybin	1 mg / kg	7 day	F	68	8 weeks	18 grams	9.4	C57BL/6		Psil1	3	3	Psi1_A68_High_Female
+69	psilo.high.7d.F.69	psilo.high.7d	psilocybin	1 mg / kg	7 day	F	69	8 weeks	18 grams	9.5	C57BL/6		Psil1	3	3	Psi1_A69_High_Female
+70	psilo.high.7d.F.70	psilo.high.7d	psilocybin	1 mg / kg	7 day	F	70	8 weeks	18 grams	9.4	C57BL/6		Psil1	3	3	Psi1_A70_High_Female
+71	psilo.low.7d.M.71	psilo.low.7d	psilocybin	0.25 mg / kg	7 day	M	71	8 weeks	26 grams	9.1	C57BL/6		Psil1	3	3	Psi1_A71_Low_Male
+72	psilo.low.7d.M.72	psilo.low.7d	psilocybin	0.25 mg / kg	7 day	M	72	8 weeks	26 grams	9.5	C57BL/6		Psil1	3	3	Psi1_A72_Low_Male
+73	psilo.low.7d.M.73	psilo.low.7d	psilocybin	0.25 mg / kg	7 day	M	73	8 weeks	26 grams	9.1	C57BL/6		Psil1	3	3	Psi1_A73_Low_Male
+74	psilo.low.7d.M.74	psilo.low.7d	psilocybin	0.25 mg / kg	7 day	M	74	8 weeks	26 grams	9.4	C57BL/6		Psil1	3	3	Psi1_A74_Low_Male
+75	psilo.low.7d.M.75	psilo.low.7d	psilocybin	0.25 mg / kg	7 day	M	75	8 weeks	26 grams	9.4	C57BL/6		Psil1	3	3	Psi1_A75_Low_Male
+76	psilo.low.7d.F.76	psilo.low.7d	psilocybin	0.25 mg / kg	7 day	F	76	8 weeks	18 grams	9.3	C57BL/6		Psil1	3	3	Psi1_A76_Low_Female
+77	psilo.low.7d.F.77	psilo.low.7d	psilocybin	0.25 mg / kg	7 day	F	77	8 weeks	18 grams	9.4	C57BL/6		Psil1	3	2	Psi1_A77_Low_Female
+78	psilo.low.7d.F.78	psilo.low.7d	psilocybin	0.25 mg / kg	7 day	F	78	8 weeks	18 grams	7	C57BL/6		Psil1	3	2	Psi1_A78_Low_Female
+79	psilo.low.7d.F.79	psilo.low.7d	psilocybin	0.25 mg / kg	7 day	F	79	8 weeks	18 grams	9.3	C57BL/6		Psil1	3	2	Psi1_A79_Low_Female
+80	psilo.low.7d.F.80	psilo.low.7d	psilocybin	0.25 mg / kg	7 day	F	80	8 weeks	18 grams	9.6	C57BL/6		Psil1	3	2	Psi1_A80_Low_Female
+81	sal.7d.M.81	sal.7d	saline	0.9%	7 day	M	81	8 weeks	26 grams	9.4	C57BL/6		Psil1	3	1	Psi1_A81_NS_Male
+82	sal.7d.M.82	sal.7d	saline	0.9%	7 day	M	82	8 weeks	26 grams	9.3	C57BL/6		Psil1	3	2	Psi1_A82_NS_Male
+83	sal.7d.M.83	sal.7d	saline	0.9%	7 day	M	83	8 weeks	26 grams	9.1	C57BL/6		Psil1	3	2	Psi1_A83_NS_Male
+84	sal.7d.M.84	sal.7d	saline	0.9%	7 day	M	84	8 weeks	26 grams	9.4	C57BL/6		Psil1	3	2	Psi1_A84_NS_Male
+85	sal.7d.M.85	sal.7d	saline	0.9%	7 day	M	85	8 weeks	26 grams	9.4	C57BL/6		Psil1	3	2	Psi1_A85_NS_Male
+86	sal.7d.F.86	sal.7d	saline	0.9%	7 day	F	86	8 weeks	18 grams	9.4	C57BL/6		Psil1	3	1	Psi1_A86_NS_Female
+87	sal.7d.F.87	sal.7d	saline	0.9%	7 day	F	87	8 weeks	18 grams	9.3	C57BL/6		Psil1	3	3	Psi1_A87_NS_Female
+88	sal.7d.F.88	sal.7d	saline	0.9%	7 day	F	88	8 weeks	18 grams	9.3	C57BL/6		Psil1	3	3	Psi1_A88_NS_Female
+89	sal.7d.F.89	sal.7d	saline	0.9%	7 day	F	89	8 weeks	18 grams	9.2	C57BL/6		Psil1	3	3	Psi1_A89_NS_Female
+90	sal.7d.F.90	sal.7d	saline	0.9%	7 day	F	90	8 weeks	18 grams	9.1	C57BL/6		Psil1	3	3	Psi1_A90_NS_Female
