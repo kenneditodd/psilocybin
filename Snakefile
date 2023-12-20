@@ -53,7 +53,7 @@ rule trim_bbduk:
 	  threads = config["threads"]
 	shell:
 		"""
-		bbduk.sh -Xmx3g in1={input.R1} in2={input.R2} out1={output.trimR1} out2={output.trimR2} ref=refs/adapters.fa ktrim=r k=23 mink=11 hdist=1 tpe tbo threads={params.threads}
+		bbduk.sh -Xmx3g in1={input.R1} in2={input.R2} out1={output.trimR1} out2={output.trimR2} ref=refs/adapters.fa ktrim=r k=23 mink=11 hdist=1 tpe tbo threads={params.threads} trimpolyg=1 trimpolya=1
 		"""
 
 
