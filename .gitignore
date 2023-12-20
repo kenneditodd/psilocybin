@@ -15,3 +15,8 @@ starAligned/*
 refs/starGenomeDir
 results/*
 rObjects/*
+scripts/04_shiny/counts
+scripts/04_shiny/DEGs
+scripts/04_shiny/input_options.tsv
+scripts/04_shiny/prep
+scripts/04_shiny/rsconnect
