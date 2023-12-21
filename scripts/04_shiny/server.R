@@ -1,6 +1,6 @@
 # load input options
 comparisons <- readr::read_tsv("input_options.tsv")
-cpm <- read.delim2("counts/CPM_prefiltering.tsv")
+cpm <- read.delim2(file = "counts/CPM_prefiltering.tsv")
 group1_options <- comparisons$group1
 group_order <- c("sal.8h","sal.24h","sal.7d",
                  "psilo.low.8h","psilo.low.24h","psilo.low.7d",
@@ -25,6 +25,7 @@ plotBoxplot <- function(counts, gene) {
   ggplot(df, aes(x = group, y = value, fill = group)) +
     geom_boxplot(outlier.shape = NA) +
     geom_jitter() + 
+    theme_bw() +
     theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
     theme(plot.title = element_text(hjust = 0)) +
     ggtitle(gene) +
@@ -49,8 +50,9 @@ plotBar <- function(counts, gene) {
   df$group <- factor(df$group, levels = group_order)
   
   # Visualize the distribution of genes detected per sample via boxplot
-  b <- ggplot(df, aes(x = names, y = value, fill = group)) +
+  b <- ggplot(df, aes(x = factor(names, levels = unique(names)), y = value, fill = group)) +
     geom_bar(stat = "identity") +
+    theme_bw() +
     theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
     theme(plot.title = element_text(hjust = 0)) +
     ggtitle(gene) +
@@ -168,7 +170,7 @@ server <- function(input, output) {
     selectizeInput(inputId = "goi",
                    label = "Select a gene",
                    choices = rownames(cpm),
-                   selected = "Sik2",
+                   selected = "Hbb-bs",
                    options = list(maxOptions = 5))
   })
   

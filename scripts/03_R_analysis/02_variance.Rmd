@@ -2,7 +2,7 @@
 title: "Psilocybin Project 1"
 subtitle: "Variance"
 author: "Kennedi Todd"
-date: "12/19/2023"
+date: "12/20/2023"
 output:
   html_document:
     theme: cerulean
@@ -32,6 +32,7 @@ library(variancePartition) # fitExtractVarPartModel()
 
 ## User defined variables
 ```{r set_variables}
+out <- "../../results/high_hbb_samples_removed/"
 treatment_order <- c("saline","psilocybin")
 treatment_colors <- c("gray60","springgreen2")
 sex_order <- c("M","F")
@@ -43,16 +44,6 @@ group_colors <- c("gray90","gray60","gray30","lightblue","cornflowerblue","blue"
                           "sienna1","red2","red4")
 ```
 
-## Save functions
-These functions with help simultaneously save plots as a png, pdf, and tiff 
-file.
-```{r save_functions}
-saveToPDF <- function(...) {
-    d = dev.copy(pdf,...)
-    dev.off(d)
-}
-```
-
 ## Load data
 ```{r load_data}
 dge.filtered.norm <- readRDS(paste0("../../rObjects/DGEList_filtered_normalized.rds"))
@@ -60,11 +51,11 @@ dge.filtered.norm <- readRDS(paste0("../../rObjects/DGEList_filtered_normalized.
 
 # Cell Markers
 ## Extract metadata
-```{r}
+```{r extract_meta}
 # get meta
 meta <- as.data.frame(dge.filtered.norm$samples)
 
-# keep variables with all fields known
+# select variables of interest
 variables <- c("group",
                "treatment",
                "dose",
@@ -80,29 +71,27 @@ meta <- meta %>% select(all_of(variables))
 meta$log2.lib <- log2(meta$lib.size)
 meta$lib.size <- NULL
 
-# make class numerical
+# change class
 meta$weight_at_treatment <- as.numeric(gsub(" grams","",meta$weight_at_treatment))
-
-# make class categorical
 meta$timepoint <- factor(meta$timepoint)
 meta$lane <- factor(meta$lane)
 
-# check and change classes
+# check classes
 sapply(meta, class)
 ```
 
 ## Markers
-- Astrocytes: GFAP, GJA1, CLU, AQP4
-- Choroid: TTR
+- Astrocytes: GFAP, GJA1, CLU, AQP4 \
+- Choroid: TTR \
 - Endothelial: FLT1, PECAM1, VWF \
 - Fibroblasts: COL1A1, COL1A2, LUM, DCN \
 - Macrophages/Microglia: MRC1, MKI67, C1QB \
-- Neurons: GAD1, GAD2, SNAP25, SYT1, MEG3
-- Oligodendrocytes: MBP
-- OPCs: OLIG1, TNR
+- Neurons: GAD1, GAD2, SNAP25, SYT1, MEG3 \
+- Oligodendrocytes: MBP \
+- OPCs: OLIG1, TNR \
 - Pericytes & SMCs: MYH11, ACTA2, VTN \
 - RBCs - HBB, HBA1, HBA2 \
-```{r}
+```{r markers}
 # choose cell type markers
 markers <- c("Gfap","Ttr","Flt1","Col1a1","C1qb","Syt1","Mbp","Olig1",
              "Acta2","Hbb-bs")
@@ -199,7 +188,11 @@ remove(saline_shapiro,psilocybin_shapiro,
 - Spearman's correlation can be used to analyzed categorical data, as well as continuous data, because it uses ranks instead of assumptions of normality ().
 plotCorrMatrix(cor(info))
 MRC1, MKI67, C1QB
-```{r CCA_heatmap}
+```{r spearman_heatmap}
+# save
+path <- paste0(out, "variance/spearman_correlation_heatmap.pdf")
+pdf(path, width = 8, height = 8)
+
 # formula
 form <- ~0 + group + treatment + dose + timepoint +  sex + log2.lib +
   weight_at_treatment + RIN + lane
@@ -208,14 +201,17 @@ form <- ~0 + group + treatment + dose + timepoint +  sex + log2.lib +
 model.matrix(form, data = meta) %>% 
   cor(method = "spearman") %>% 
   ggcorrplot(show.diag = FALSE, type = "lower", lab = TRUE, lab_size = 2)
-
-# save
-path <- paste0("../../results/variance/spearman_correlation_heatmap")
-saveToPDF(paste0(path, ".pdf"), width = 8, height = 8)
 ```
 
 ## CCA heatmap
-```{r}
+```{r CCA_heatmap}
+# save
+path <- paste0(out, "variance/canonical_correlation_analysis_heatmap.pdf")
+pdf(path, width = 8, height = 8)
+
+# formula
+form <- ~0 + group + sex + log2.lib + RIN + lane
+
 c <- canCorPairs(form, meta)
 
 corrplot(c,
@@ -229,10 +225,6 @@ corrplot(c,
          tl.cex = 0.8,
          number.cex = 0.7,
          diag = TRUE)
-
-# save
-path <- paste0("../../results/variance/canonical_correlation_analysis_heatmap")
-saveToPDF(paste0(path, ".pdf"), width = 8, height = 8)
 ```
 
 # Variance partition
@@ -244,7 +236,7 @@ colnames(meta)
 
 # age is usually a continuous so model it as a fixed effect "age"
 # group is categorical, so model them as random effects "(1|group)"
-form <- ~ (1|group) + (1|sex) + (1|lane) + weight_at_treatment + log2.lib
+form <- ~ (1|group) + (1|sex) + log2.lib + RIN
 
 varPart <- fitExtractVarPartModel(geneExpr, form, meta)
 vp <- sortCols(varPart)
@@ -253,22 +245,22 @@ saveRDS(vp, paste0("../../rObjects/var_par.rds"))
 
 ## Violins
 ```{r variance_violins, eval=FALSE}
+# save
+path <- paste0(out, "variance/variance_violins.pdf")
+pdf(paste0(path, ".pdf"), width = 12, height = 6)
+
 # plot
 plotVarPart(vp)
-
-# save
-path <- paste0("../../results/variance/variance_violins")
-saveToPDF(paste0(path, ".pdf"), width = 12, height = 6)
 ```
 
 ## Percent bars
 ```{r variance_percent_bars}
+# save
+path <- paste0(out, "variance/variance_gene_percent_bars.pdf")
+pdf(paste0(path, ".pdf"), width = 12, height = 6)
+
 # plot
 plotPercentBars(vp[1:10,])
-
-# save
-path <- paste0("../../results/variance/variance_gene_percent_bars")
-saveToPDF(paste0(path, ".pdf"), width = 8, height = 8)
 ```
 
 ## Group var
@@ -297,7 +289,7 @@ head(order.varPart.df["log2.lib"], 10)
 variancePartition::voomWithDreamWeights() is the same as limma::voom(), except that it allows random effects in the formula. limma::voomWithQualityWeights() includes observational and sample specific quality weights whereas voomWithDreamWeights only includes observational quality weights.
 
 ## Forward stepwise regression
-```{r}
+```{r find_best_model}
 # get matrix of expression data
 v <- voomWithDreamWeights(counts = dge.filtered.norm$counts,
                           formula = (~ 0 + group + sex),
@@ -305,6 +297,7 @@ v <- voomWithDreamWeights(counts = dge.filtered.norm$counts,
                           BPPARAM = BiocParallel::SnowParam(cores),
                           plot = FALSE)
 counts <- v$E
+colnames(meta) <- make.names(colnames(meta))
 
 # set base formula
 base <- ~ (1 | group) + (1 | sex)
@@ -312,7 +305,16 @@ base <- ~ (1 | group) + (1 | sex)
 # variable we wish to test
 variables <- c("log2.lib",
                "RIN",
-               "weight_at_treatment")
+               "C1qb",
+               "Flt1",
+               "Hbb.bs",
+               "Syt1",
+               "Col1a1",
+               "Gfap",
+               "Olig1",
+               "Ttr",
+               "Mbp",
+               "Acta2")
 
 # multivariate forward stepwise regression evaluated by multivariate BIC
 bestModel <- mvForwardStepwise(exprObj = counts,
@@ -321,13 +323,12 @@ bestModel <- mvForwardStepwise(exprObj = counts,
                                variables = variables)
 ```
 
-# Save
-```{r}
+```{r save_object, eval=FALSE, echo=FALSE}
 all.equal(rownames(meta), rownames(dge.filtered.norm$samples))
-dge.filtered.norm$samples <- cbind(dge.filtered.norm$samples, meta[,c(6,7,8:19)])
+dge.filtered.norm$samples <- cbind(dge.filtered.norm$samples, meta[,c(9:19)])
 saveRDS(dge.filtered.norm, paste0("../../rObjects/DGEList_cell_markers.rds"))
 ```
 
-```{r}
+```{r session_info}
 sessionInfo()
 ```

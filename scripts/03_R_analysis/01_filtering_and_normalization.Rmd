@@ -42,6 +42,7 @@ library(stringr)            # str_match()
 
 ## User defined variables
 ```{r set_variables}
+out <- "../../results/high_hbb_samples_removed/"
 treatment_order <- c("saline","psilocybin")
 treatment_colors <- c("gray60","springgreen2")
 sex_order <- c("M","F")
@@ -52,16 +53,6 @@ group_order <- c("sal.8h","sal.24h","sal.7d",
 group_colors <- c("gray90","gray60","gray30","lightblue","cornflowerblue","blue",
                           "sienna1","red2","red4")
 ann <- "/research/labs/neurology/fryer/projects/references/mouse/refdata-gex-mm10-2020-A/genes/genes.gtf"
-```
-
-## Save functions
-These functions with help simultaneously save plots as a png, pdf, and tiff 
-file.
-```{r save_functions}
-saveToPDF <- function(...) {
-    d = dev.copy(pdf,...)
-    dev.off(d)
-}
 ```
 
 # DGE object
@@ -153,12 +144,19 @@ dge <- dge[keep,,keep.lib.sizes = FALSE]
 dim(dge)
 ```
 
+## Remove high Hbb-bs samples
+```{r}
+hbb.cpm <- cpm(dge$counts)["Hbb-bs",]
+keep <- !hbb.cpm > 10
+dge <- dge[,keep]
+dim(dge)
+```
 
 # QC: Raw
 ## Bargraph
 ```{r cpm_bar_graph}
 # user input
-goi <- c("Uty","Ddx3y","Kdm5d")
+goi <- c("Uty","Ddx3y","Kdm5d","Hbb-bs")
 
 # plot and save
 for (i in 1:length(goi)) {
@@ -181,7 +179,7 @@ for (i in 1:length(goi)) {
   print(p)
   
   # save
-  path <- paste0("../../results/prefiltering_QC/", goi[i], "_bar_graph_raw")
+  path <- paste0(out,"prefiltering_QC/", goi[i], "_bar_graph_raw")
   saveToPDF(paste0(path, ".pdf"), width = 12, height = 4)
   dev.off()
 }
@@ -200,8 +198,8 @@ rownames(data) <- names
 round.data <- round(data, digits = 4) # round 2 decimal places
 
 # save
-path <- "../../results/prefiltering_QC/JSD_heatmap"
-pdf(paste0(path,".pdf"), width = 15, height = 15)
+path <- paste0(out,"prefiltering_QC/JSD_heatmap.pdf")
+pdf(path, width = 15, height = 15)
 
 # set heatmap colors and names
 meta <- dge$samples[,c("treatment","sex")]
@@ -273,7 +271,7 @@ for (dim in dims) {
     
     # save
     dimTitle <- as.character(dim)
-    path <- paste0("../../results/prefiltering_QC/MDS_top_",
+    path <- paste0(out,"prefiltering_QC/MDS_top_",
                    numGenes,"_genes/MDS_raw_top_", numGenes, "_",
                    "dim", as.character(dim)[1], "&", as.character(dim[2]), 
                    "_colored_by_sex")
@@ -328,7 +326,7 @@ for (dim in dims) {
     
     # save
     dimTitle <- as.character(dim)
-    path <- paste0("../../results/prefiltering_QC/MDS_top_",
+    path <- paste0(out,"prefiltering_QC/MDS_top_",
                    numGenes,"_genes/MDS_raw_top_", numGenes, "_",
                    "dim", as.character(dim)[1], "&", as.character(dim[2]), 
                    "_colored_by_group")
@@ -382,7 +380,7 @@ for (dim in dims) {
     
     # save
     dimTitle <- as.character(dim)
-    path <- paste0("../../results/prefiltering_QC/MDS_top_",
+    path <- paste0(out,"prefiltering_QC/MDS_top_",
                    numGenes,"_genes/MDS_raw_top_", numGenes, "_",
                    "dim", as.character(dim)[1], "&", as.character(dim[2]), 
                    "_colored_by_treatment")
@@ -435,7 +433,7 @@ for (dim in dims) {
     
     # save
     dimTitle <- as.character(dim)
-    path <- paste0("../../results/prefiltering_QC/MDS_top_",
+    path <- paste0(out,"prefiltering_QC/MDS_top_",
                    numGenes,"_genes/MDS_raw_top_", numGenes, "_",
                    "dim", as.character(dim)[1], "&", as.character(dim[2]), 
                    "_colored_by_lane")
@@ -451,7 +449,7 @@ remove(data)
 # CPM, Counts Per Million
 # normalize by sequencing depth
 cpm <- cpm(dge)
-path <- paste0("../../results/counts/CPM_prefiltering.tsv")
+path <- paste0(out, "counts/CPM_prefiltering.tsv")
 write.table(cpm, path, quote = FALSE, sep = "\t")
 
 # FPKM, Fragments Per Kilobase Million
@@ -460,7 +458,7 @@ exonic.length <- dge$genes$exonic_length
 exonic.length.kb <- exonic.length / 1000
 fpkm <- cpm / exonic.length.kb
 fpkm <- sweep(cpm, 1, exonic.length.kb, FUN = '/') # 1 = row
-path <- paste0("../../results/counts/FPKM_prefiltering.tsv")
+path <- paste0(out, "counts/FPKM_prefiltering.tsv")
 write.table(fpkm, path, quote = FALSE, sep = "\t")
 
 # TPM, Transcripts Per Kilobase Million
@@ -469,7 +467,7 @@ counts <- dge$counts
 fpk <- counts / exonic.length.kb
 sum.col <- colSums(fpk) / 1000000
 tpm <- sweep(fpk, 2, sum.col, FUN = '/') # 2 = column
-path <- paste0("../../results/counts/TPM_prefiltering.tsv")
+path <- paste0(out, "counts/TPM_prefiltering.tsv")
 write.table(tpm, path, quote = FALSE, sep = "\t")
 
 remove(counts,cpm,fpk,fpkm,tpm)
@@ -555,7 +553,7 @@ for (i in 2:nsamples) {
 }
 
 # save
-path <- paste0("../../results/postfiltering_QC/density_plots")
+path <- paste0(out, "postfiltering_QC/density_plots")
 saveToPDF(paste0(path, ".pdf"), width = 6, height = 4)
 remove(den)
 ```
@@ -603,7 +601,7 @@ axis(2)
 axis(1,at=1:nsamples,labels=colnames(log2cpm.norm),las=2,cex.axis=0.8)
 
 # save
-path <- paste0("../../results/postfiltering_QC/counts_per_gene_boxplot")
+path <- paste0(out, "postfiltering_QC/counts_per_gene_boxplot")
 saveToPDF(paste0(path, ".pdf"), width = 20, height = 10)
 #remove(log2cpm.raw, log2cpm.norm, log2cpm.filtered)
 ```
@@ -613,7 +611,7 @@ saveToPDF(paste0(path, ".pdf"), width = 20, height = 10)
 # CPM, Counts Per Million
 # normalize by sequencing depth
 cpm <- cpm(dge.filtered.norm)
-path <- paste0("../../results/counts/CPM_postfiltering.tsv")
+path <- paste0(out, "counts/CPM_postfiltering.tsv")
 write.table(cpm, path, quote = FALSE, sep = "\t")
 
 # FPKM, Fragments Per Kilobase Million
@@ -622,7 +620,7 @@ exonic.length <- dge.filtered.norm$genes$exonic_length
 exonic.length.kb <- exonic.length / 1000
 fpkm <- cpm / exonic.length.kb
 fpkm <- sweep(cpm, 1, exonic.length.kb, FUN = '/') # 1 = row
-path <- paste0("../../results/counts/FPKM_postfiltering.tsv")
+path <- paste0(out, "counts/FPKM_postfiltering.tsv")
 write.table(fpkm, path, quote = FALSE, sep = "\t")
 
 # TPM, Transcripts Per Kilobase Million
@@ -631,7 +629,7 @@ counts <- dge.filtered.norm$counts
 fpk <- counts / exonic.length.kb
 sum.col <- colSums(fpk) / 1000000
 tpm <- sweep(fpk, 2, sum.col, FUN = '/') # 2 = column
-path <- paste0("../../results/counts/TPM_postfiltering.tsv")
+path <- paste0(out, "counts/TPM_postfiltering.tsv")
 write.table(tpm, path, quote = FALSE, sep = "\t")
 
 remove(counts,cpm,fpk,fpkm,tpm)
@@ -647,7 +645,7 @@ df <- df[order(df$rsum, decreasing = TRUE),]
 rownames(df) <- 1:nrow(df)
 head(df, 20)
 
-path <- paste0("../../results/counts/top_transcripts_counts_postfiltering.tsv")
+path <- paste0(out, "counts/top_transcripts_counts_postfiltering.tsv")
 write.table(df, path, quote = FALSE, sep = "\t")
 ```
 

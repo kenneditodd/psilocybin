@@ -3,6 +3,7 @@ library(dplyr)
 library(ggrepel)
 library(plotly)
 library(shiny)
+library(stringr)
 
 # load input options
 comparisons <- readr::read_tsv("input_options.tsv")
@@ -32,7 +33,7 @@ ui <- fluidPage(
                       selected = NULL),
           numericInput(inputId = "fdrq",
                        label = "Select FDRq cutoff",
-                       value = 0.1,
+                       value = 0.05,
                        min = 0,
                        max = 1,
                        step = 0.01),
@@ -44,6 +45,8 @@ ui <- fluidPage(
         
         # plot
         mainPanel(
+          h4("Samples: removed if Hbb-bs > 10 CPM"),
+          h4("Model: group + sex"),
           plotlyOutput("volcano")
         )
         
