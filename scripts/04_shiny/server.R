@@ -164,16 +164,6 @@ server <- function(input, output) {
     plotly::ggplotly(p, tooltip = c("gene_name","logFC","adj.P.Val"))
   })
   
-  # get gene options from input table
-  options(shiny.maxRequestSize = 30 * 1024^2)
-  output$geneOptions <- renderUI({
-    selectizeInput(inputId = "goi",
-                   label = "Select a gene",
-                   choices = rownames(cpm),
-                   selected = "Hbb-bs",
-                   options = list(maxOptions = 5))
-  })
-  
   # box plot
   output$boxplot <- renderPlot({
     req(input$goi)
@@ -184,6 +174,19 @@ server <- function(input, output) {
   output$bar <- renderPlot({
     req(input$goi)
     plotBar(counts = cpm, gene = input$goi)
+  })
+  
+  output$manhattan <- renderPlotly({
+    req(input$gprofilerInput)
+    # read list
+    data <- as.data.frame(read.table(paste0("gprofilerInput/",input$gprofilerInput), sep = "\t"))
+    data <- data$V1
+    # query
+    gost.up <- gost(query = data,
+                    organism = "hsapiens",
+                    ordered_query = TRUE)
+    # plot
+    gostplot(gostres = gost.up, capped = FALSE)
   })
   
 }

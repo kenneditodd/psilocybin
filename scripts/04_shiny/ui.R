@@ -1,13 +1,16 @@
 # load libraries
 library(dplyr)
 library(ggrepel)
+library(gprofiler2)
 library(plotly)
 library(shiny)
 library(stringr)
 
 # load input options
 comparisons <- readr::read_tsv("input_options.tsv")
+genes <- readRDS("genes.rds")
 group1_options <- comparisons$group1
+gprofilerInputFiles <- readRDS("gprofilerInputFiles.rds")
 
 # user interface
 ui <- fluidPage(
@@ -17,7 +20,7 @@ ui <- fluidPage(
   
   tabsetPanel(
     
-    # volcano tab
+    ############################### VOLCANO TAB ################################
     tabPanel(
       title = "volcano",
       # Sidebar with two select input options 
@@ -45,34 +48,71 @@ ui <- fluidPage(
         
         # plot
         mainPanel(
-          h4("Samples: removed if Hbb-bs > 10 CPM"),
-          h4("Model: group + sex"),
+          h5("Samples: removed if Hbb-bs > 10 CPM"),
+          h5("Filtering: keep genes with a group average CPM of 1 in at least 1 group"),
+          h5("Model: group + sex + Hbb-bs"),
           plotlyOutput("volcano")
         )
         
       ) # end sidebarLayout
     ), # end tabPanel - volcano
       
-    # CPM tab
+    ################################# CPM TAB ##################################
     tabPanel(
       title = "CPM",
       # Sidebar with a slider input for number of bins 
       sidebarLayout(
         sidebarPanel(
           # Populate gene options based on selected tissue
-          uiOutput(
-            outputId = "geneOptions"
-          )
+          selectizeInput(inputId = "goi",
+                         label = "Select a gene",
+                         choices = genes,
+                         selected = "Hbb-bs",
+                         options = list(maxOptions = 5))
         ), # end sidebarPanel
         
         # Show a plot of the generated distribution
         mainPanel(
+          h3("The prefiltering CPM table is used for these graphs."),
           plotOutput("boxplot"),
           br(),
           plotOutput("bar")
         )
       ) # end SidebarLayout
-    ) # end tabPanel - CPM
+    ), # end tabPanel - CPM
+    
+    ############################### GPROFILER TAB ###############################
+    tabPanel(
+      title = "gprofiler2",
+      sidebarLayout(
+        sidebarPanel(
+          selectInput(
+            inputId = "gprofilerInput",
+            label = "Select gene list for input",
+            choice = gprofilerInputFiles)
+        ), # end sidebarPanel
+        mainPanel(
+          h3("Gprofiler2"),
+          p("Gprofiler2 performs a functional enrichment analysis on an input gene list. 
+            It maps genes to known functional information sources and detects statistically significantly enriched terms. 
+            In addition to Gene Ontology, pathways from KEGG Reactome and WikiPathways are included; miRNA targets from miRTarBase and regulatory motif matches from TRANSFAC; tissue specificity from Human Protein Atlas; protein complexes from CORUM and human disease phenotypes from Human Phenotype Ontology.
+            GO hierarchy: MF = molecular function, BP = biological process, CC = cellular component"),
+          br(),
+          p("May take a minute to load. Some gene lists contain too few genes to 
+            return significant results. One unique feature of Gprofiler2 over 
+            metascape is it takes into account the order of importance in the 
+            gene list. So, it takes into account that the genes at the top of the 
+            list are more significant than the genes in the bottom of the list."),
+          br(),
+          p("The plot below is called a Manhattan plot. The size of the points 
+            refer to how many genes are in the pathway which is also listed in 
+            parenthesis if you hover over a point. The x-axis has various 
+            databases. The y-axis shows the adjusted p-value from the functional 
+            enrichment analysis query."),
+          plotlyOutput("manhattan")
+        )
+      ) # sidebarPanel
+    ) # end gprofiler2 tabPanel
   ) # end of tabsetPanel
   
 
