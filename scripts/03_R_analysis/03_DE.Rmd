@@ -45,7 +45,7 @@ library(reshape)            # melt()
 ## User defined variables
 ```{r set_variables}
 out <- "../../results/high_hbb_samples_removed/"
-model <- "DEGs_group_sex/"
+model <- "DEGs_group_sex_Hbb-bs/"
 treatment_order <- c("saline","psilocybin")
 treatment_colors <- c("gray60","springgreen2")
 sex_order <- c("M","F")
@@ -77,7 +77,7 @@ group <- interaction(dge.filtered.norm$samples$group)
 sex <- dge.filtered.norm$samples$sex
 hbb <- dge.filtered.norm$samples$`Hbb-bs`
 
-design <- model.matrix(~ 0 + group + sex)
+design <- model.matrix(~ 0 + group + sex + hbb)
 design.names <- gsub("group","", colnames(design))
 design.names <- gsub("sex", "", design.names)
 colnames(design) <- design.names
@@ -340,7 +340,7 @@ for (dim in dims) {
 ## Number of DEGs
 Identify number of differentially expressed genes.
 ```{r decide_tests}
-pval <- 0.05
+pval <- 0.1
 
 sumTable <- 
   summary(decideTests(

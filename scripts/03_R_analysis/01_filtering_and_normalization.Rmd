@@ -38,6 +38,7 @@ library(gridExtra)          # grid.arrange()
 library(philentropy)        # JSD()
 library(rtracklayer)        # import()
 library(stringr)            # str_match()
+library(tidyverse)          # pivot_wider()
 ```
 
 ## User defined variables
@@ -53,6 +54,16 @@ group_order <- c("sal.8h","sal.24h","sal.7d",
 group_colors <- c("gray90","gray60","gray30","lightblue","cornflowerblue","blue",
                           "sienna1","red2","red4")
 ann <- "/research/labs/neurology/fryer/projects/references/mouse/refdata-gex-mm10-2020-A/genes/genes.gtf"
+```
+
+## Save functions
+These functions with help simultaneously save plots as a png, pdf, and tiff 
+file.
+```{r save_functions}
+saveToPDF <- function(...) {
+    d = dev.copy(pdf,...)
+    dev.off(d)
+}
 ```
 
 # DGE object
@@ -151,6 +162,7 @@ keep <- !hbb.cpm > 10
 dge <- dge[,keep]
 dim(dge)
 ```
+
 
 # QC: Raw
 ## Bargraph
@@ -479,14 +491,30 @@ remove(counts,cpm,fpk,fpkm,tpm)
 ```{r filter_genes_by_expr}
 start <- dim(dge)[1]
 
+# get dataframes
 cpm <- as.data.frame(cpm(dge))
-cpm <- as.data.frame(cpm >= 0.5)
-cpm$rsums <- rowSums(cpm)
-keep <- cpm$rsums >= 4
+meta <- dge$samples[,c("sample_id","group")]
+
+# find CPM avg per group
+mean.group <- cpm |>
+  mutate(gene = row.names(cpm)) |>
+  pivot_longer(-gene, names_to = "sample_id") |>
+  left_join(meta, by = "sample_id") |>
+  summarize(mean = mean(value), .by = c(gene, group)) |>
+  pivot_wider(names_from = group, values_from = mean)
+mean.group <- as.data.frame(mean.group)
+rownames(mean.group) <- mean.group$gene
+mean.group$gene <- NULL
+
+# keep genes if 1 CPM in at least 1 group
+mean.group <- as.data.frame(mean.group > 1) # true when CPM > 1
+mean.group$rsums <- Matrix::rowSums(mean.group) # num groups with CPM > 1
+keep <- mean.group$rsums >= 1 # genes with at least 1 CPM in 1 group
 dge.filtered <- dge[keep,,keep.lib.sizes = FALSE]
 
 end <- dim(dge.filtered)[1]
 print(paste(start - end, "genes removed and", end, "genes leftover."))
+remove(meta,mean.group,cpm,keep,start,end)
 ```
 
 ## TMM

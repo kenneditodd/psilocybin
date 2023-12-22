@@ -20,3 +20,7 @@ scripts/04_shiny/DEGs
 scripts/04_shiny/input_options.tsv
 scripts/04_shiny/prep
 scripts/04_shiny/rsconnect
+scripts/test_shiny
+scripts/04_shiny/gprofilerInput/
+scripts/04_shiny/gprofilerInputFiles.rds
+scripts/04_shiny/genes.rds
