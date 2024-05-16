@@ -3,7 +3,7 @@
 #SBATCH --mem 10G
 #SBATCH --output logs/%x.%j.stdout
 #SBATCH --error logs/%x.%j.stderr
-#SBATCH --partition cpu-med
+#SBATCH --partition cpu-short
 #SBATCH --tasks 15
 #SBATCH --time 02:00:00 ## HH:MM:SS
 
