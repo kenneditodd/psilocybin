@@ -2,7 +2,7 @@
 title: "Psilocybin Project 1"
 subtitle: "Filtering and Normalization"
 author: "Kennedi Todd"
-date: "12/19/2023"
+date: "04/04/2024"
 output:
   html_document:
     theme: cerulean
@@ -43,7 +43,8 @@ library(tidyverse)          # pivot_wider()
 
 ## User defined variables
 ```{r set_variables}
-out <- "../../results/high_hbb_samples_removed/"
+out <- "../../results/all_samples_strict/"
+out2 <- "all_samples_strict"
 treatment_order <- c("saline","psilocybin")
 treatment_colors <- c("gray60","springgreen2")
 sex_order <- c("M","F")
@@ -82,6 +83,7 @@ meta <- read.delim("../../refs/metadata.tsv",
 meta$group <- factor(meta$group, levels = group_order)
 meta <- meta %>% arrange(group)
 rownames(meta) <- meta$filename
+meta$group2 <- factor(paste0(meta$group, ".", meta$sex))
 
 # rename counts columns
 counts.names <- gsub("_L4", "", colnames(counts))
@@ -156,11 +158,17 @@ dim(dge)
 ```
 
 ## Remove high Hbb-bs samples
-```{r}
-hbb.cpm <- cpm(dge$counts)["Hbb-bs",]
-keep <- !hbb.cpm > 10
-dge <- dge[,keep]
-dim(dge)
+```{r remove_high_hemoglobin}
+# Add Hbb-bs to metadata
+hbb <- as.data.frame(cpm(dge, log = TRUE))["Hbb-bs",]
+dge$samples$hbb <- as.numeric(hbb)
+
+#hbb.cpm <- cpm(dge$counts)["Hbb-bs",]
+#keep <- !hbb.cpm > 10
+#dge <- dge[,keep]
+#dim(dge)
+
+remove(hbb)
 ```
 
 
@@ -403,59 +411,6 @@ for (dim in dims) {
 remove(data)
 ```
 
-### Lane
-```{r MDS_colored_by_sex}
-# set colors and get data
-data <- cpm(dge$counts, log = TRUE)
-names <- dge$samples$sample_id
-
-# loop through dimensions and top genes
-dims <- list(c(1,2),c(2,3),c(3,4))
-topGenes <- c(100,500)
-
-for (dim in dims) {
-  
-  for (numGenes in topGenes) {
-      
-    mds <- plotMDS(data, 
-                   labels = names, 
-                   top = numGenes,
-                   plot = FALSE,
-                   dim.plot = dim)
-
-    toplot <- data.frame(DimX = mds$x, 
-                         DimY = mds$y,
-                         Sample = rownames(mds$distance.matrix.squared),
-                         lane = factor(dge$samples$lane))
-    
-    x.lab <- paste0(mds$axislabel," ",mds$dim.plot[1]," (",
-                    round(mds$var.explained[mds$dim.plot[1]] * 100, digits = 2),
-                    "%)")
-    y.lab <- paste0(mds$axislabel," ",mds$dim.plot[2]," (",
-                    round(mds$var.explained[mds$dim.plot[2]] * 100, digits = 2),
-                    "%)")
-    
-    p <- ggplot(toplot, aes(x = DimX, y = DimY, color = lane, label = Sample)) + 
-      geom_point(size = 3) +
-      theme_bw() +
-      geom_text(aes(label = Sample), size=4, vjust = -1) +
-      xlab(x.lab) + ylab(y.lab) + 
-      ggtitle(paste0("MDS Raw: Top ", numGenes, ", Log2(CPM)"))
-    print(p)
-    
-    # save
-    dimTitle <- as.character(dim)
-    path <- paste0(out,"prefiltering_QC/MDS_top_",
-                   numGenes,"_genes/MDS_raw_top_", numGenes, "_",
-                   "dim", as.character(dim)[1], "&", as.character(dim[2]), 
-                   "_colored_by_lane")
-    saveToPDF(paste0(path, ".pdf"), width = 8, height = 8)
-  }
-}
-
-remove(data)
-```
-
 ## CPM, FPKM, TPM
 ```{r cpm_fpkm_tpm}
 # CPM, Counts Per Million
@@ -505,16 +460,54 @@ mean.group <- cpm |>
 mean.group <- as.data.frame(mean.group)
 rownames(mean.group) <- mean.group$gene
 mean.group$gene <- NULL
+mean.group <- round(mean.group, digits = 4)
 
-# keep genes if 1 CPM in at least 1 group
-mean.group <- as.data.frame(mean.group > 1) # true when CPM > 1
-mean.group$rsums <- Matrix::rowSums(mean.group) # num groups with CPM > 1
-keep <- mean.group$rsums >= 1 # genes with at least 1 CPM in 1 group
+# save
+write.table(x = mean.group, 
+            file = paste0(out, "counts/avgCPM_per_group_before_filtering.tsv"),
+            quote = FALSE,
+            sep = "\t")
+
+# Option 1 filtering method
+# one group must have CPM > 1
+#mean.group <- as.data.frame(mean.group > 1) # true when CPM > 1
+#mean.group$rsums <- Matrix::rowSums(mean.group) # num groups with CPM > 1
+#keep <- mean.group$rsums >= 1 # genes with at least 1 CPM in 1 group
+#dge.filtered <- dge[keep,,keep.lib.sizes = FALSE]
+
+# Option 2 filtering method
+# all samples in a group (sal/psi) must have CPM > 1
+# create separate df
+sal.samples <- dge$samples$sample_id[dge$samples$treatment %in% "saline"]
+num.sal <- length(sal.samples)
+psi.samples <- dge$samples$sample_id[dge$samples$treatment %in% "psilocybin"]
+num.psi <- length(psi.samples)
+# true when CPM >= 1
+sal.df <- cpm[,colnames(cpm) %in% sal.samples] >= 1
+psi.df <- cpm[,colnames(cpm) %in% psi.samples] >= 1
+# find row sum
+sal.df <- as.data.frame(sal.df)
+psi.df <- as.data.frame(psi.df)
+sal.df$rsum <- as.numeric(Matrix::rowSums(sal.df))
+psi.df$rsum <- as.numeric(Matrix::rowSums(psi.df))
+# keep if all samples in group had CPM >= 1
+sal.df$keep <- sal.df$rsum == num.sal
+psi.df$keep <- psi.df$rsum == num.psi
+# keep gene if TRUE in sal or psi df
+keep <- sal.df$keep | psi.df$keep
 dge.filtered <- dge[keep,,keep.lib.sizes = FALSE]
+
+
+# save
+mean.group.final <- mean.group[keep,]
+write.table(x = mean.group.final, 
+            file = paste0(out, "counts/avgCPM_per_group_after_filtering.tsv"),
+            quote = FALSE,
+            sep = "\t")
 
 end <- dim(dge.filtered)[1]
 print(paste(start - end, "genes removed and", end, "genes leftover."))
-remove(meta,mean.group,cpm,keep,start,end)
+remove(meta,mean.group,cpm,keep,start,end,mean.group.final,psi.df,sal.df)
 ```
 
 ## TMM
@@ -677,9 +670,17 @@ path <- paste0(out, "counts/top_transcripts_counts_postfiltering.tsv")
 write.table(df, path, quote = FALSE, sep = "\t")
 ```
 
+# Power analysis
+- power - usually set to 0.8 which means 80% probability
+-
+```{r}
+
+```
+
 # Save
 ```{r save_final_object, eval=FALSE}
-saveRDS(dge.filtered.norm, "../../rObjects/DGEList_filtered_normalized.rds")
+saveRDS(dge.filtered.norm, 
+        paste0("../../rObjects/", out2, "_DGEList_filtered_normalized.rds"))
 ```
 
 ```{r session_info}

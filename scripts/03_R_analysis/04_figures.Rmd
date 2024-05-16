@@ -1,0 +1,300 @@
+---
+title: "Psilocybin Project 1"
+subtitle: "Figures"
+author: "Kennedi Todd"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    theme: cerulean
+    toc: true
+    toc_float: true
+editor_options: 
+  chunk_output_type: inline
+---
+
+# Setup
+## Working directory
+```{r setup}
+knitr::opts_knit$set(root.dir = ".")
+```
+
+## Libraries
+```{r libraries, message=FALSE, warning=FALSE}
+library(plotly) # plot_ly()
+library(tidyr)  # pivot_longer()
+```
+
+## User defined variables
+```{r set_variables}
+out <- "../../results/all_samples_strict/"
+out2 <- "all_samples_strict"
+model <- "DEGs_both_sexes/"
+treatment_order <- c("saline","psilocybin")
+treatment_colors <- c("gray60","springgreen2")
+sex_order <- c("M","F")
+sex_colors <- c("gold2","purple")
+group_order <- c("sal.8h","sal.24h","sal.7d",
+                 "psilo.low.8h","psilo.low.24h","psilo.low.7d",
+                 "psilo.high.8h","psilo.high.24h","psilo.high.7d")
+group_colors <- c("gray90","gray60","gray30","lightblue","cornflowerblue","blue",
+                          "sienna1","red2","red4")
+```
+
+## Save functions
+```{r save_functions}
+saveToPDF <- function(...) {
+    d = dev.copy(pdf,...)
+    dev.off(d)
+}
+```
+
+# 3D LogFC Correaltion
+## Low dose
+```{r low_dose_3D}
+# read tables
+low.8h <- read.delim(paste0(out, model, "DEG_tables/psilo.low.8h_vs_sal.8h_FDRq_1.00.tsv"))
+low.24h <- read.delim(paste0(out, model, "DEG_tables/psilo.low.24h_vs_sal.24h_FDRq_1.00.tsv"))
+low.7d <- read.delim(paste0(out, model, "DEG_tables/psilo.low.7d_vs_sal.7d_FDRq_1.00.tsv"))
+
+# extract logFC
+df <- data.frame(genes = low.8h$gene_name_unique,
+                 low.8h = low.8h$logFC,
+                 low.24h = low.24h$logFC,
+                 low.7d = low.7d$logFC)
+rownames(df) <- df$genes
+
+# direction, 1 = upreg, 2 = downreg, 3 = other
+df$direction <- ""
+for (gene in df$genes) {
+  if((df[gene,"low.8h"] > 0) && (df[gene,"low.24h"] > 0) && (df[gene,"low.7d"] > 0)) {
+    df[gene, "direction"] <- "up-up-up"
+  } else if ((df[gene,"low.8h"] < 0) && (df[gene,"low.24h"] < 0) && (df[gene,"low.7d"] < 0)) {
+    df[gene, "direction"] <- "down-down-down"
+  } else if((df[gene,"low.8h"] < 0) && (df[gene,"low.24h"] < 0) && (df[gene,"low.7d"] > 0)) {
+    df[gene, "direction"] <- "down-down-up"
+  } else if((df[gene,"low.8h"] > 0) && (df[gene,"low.24h"] > 0) && (df[gene,"low.7d"] < 0)) {
+    df[gene, "direction"] <- "up-up-down"
+  } else if((df[gene,"low.8h"] < 0) && (df[gene,"low.24h"] > 0) && (df[gene,"low.7d"] < 0)) {
+    df[gene, "direction"] <- "down-up-down"
+  } else if((df[gene,"low.8h"] < 0) && (df[gene,"low.24h"] > 0) && (df[gene,"low.7d"] > 0)) {
+    df[gene, "direction"] <- "down-up-up"
+  } else if((df[gene,"low.8h"] < 0) && (df[gene,"low.24h"] < 0) && (df[gene,"low.7d"] > 0)) {
+    df[gene, "direction"] <- "down-down-up"
+  } else if((df[gene,"low.8h"] < 0) && (df[gene,"low.24h"] < 0) && (df[gene,"low.7d"] > 0)) {
+    df[gene, "direction"] <- "down-down-up"
+  } else if((df[gene,"low.8h"] > 0) && (df[gene,"low.24h"] < 0) && (df[gene,"low.7d"] > 0)) {
+    df[gene, "direction"] <- "up-down-up"
+  } else if((df[gene,"low.8h"] > 0) && (df[gene,"low.24h"] < 0) && (df[gene,"low.7d"] < 0)) {
+    df[gene, "direction"] <- "up-down-down"
+  } else {
+    df[gene, "direction"] <- "other"
+  }
+}
+df$direction <- factor(df$direction)
+
+# plot
+fig1 <- plot_ly(df, 
+                x = ~low.8h, 
+                y = ~low.24h, 
+                z = ~low.7d, 
+                color = ~direction, 
+                colors = c("blue","purple","yellow","orange","green",
+                                 "gray","pink","red"),
+                text = ~genes) %>%
+  add_markers() %>% 
+  layout(legend=list(title=list(text='<b> Low: 8h vs 24h vs 7d </b>')))
+fig1
+```
+
+## High dose
+```{r high_dose_3D}
+# read tables
+high.8h <- read.delim(paste0(out, model, "DEG_tables/psilo.high.8h_vs_sal.8h_FDRq_1.00.tsv"))
+high.24h <- read.delim(paste0(out, model, "DEG_tables/psilo.high.24h_vs_sal.24h_FDRq_1.00.tsv"))
+high.7d <- read.delim(paste0(out, model, "DEG_tables/psilo.high.7d_vs_sal.7d_FDRq_1.00.tsv"))
+
+# extract logFC
+df <- data.frame(genes = high.8h$gene_name_unique,
+                 high.8h = high.8h$logFC,
+                 high.24h = high.24h$logFC,
+                 high.7d = high.7d$logFC)
+rownames(df) <- df$genes
+
+# direction, 1 = upreg, 2 = downreg, 3 = other
+df$direction <- ""
+for (gene in df$genes) {
+  if((df[gene,"high.8h"] > 0) && (df[gene,"high.24h"] > 0) && (df[gene,"high.7d"] > 0)) {
+    df[gene, "direction"] <- "up-up-up"
+  } else if ((df[gene,"high.8h"] < 0) && (df[gene,"high.24h"] < 0) && (df[gene,"high.7d"] < 0)) {
+    df[gene, "direction"] <- "down-down-down"
+  } else if((df[gene,"high.8h"] < 0) && (df[gene,"high.24h"] < 0) && (df[gene,"high.7d"] > 0)) {
+    df[gene, "direction"] <- "down-down-up"
+  } else if((df[gene,"high.8h"] > 0) && (df[gene,"high.24h"] > 0) && (df[gene,"high.7d"] < 0)) {
+    df[gene, "direction"] <- "up-up-down"
+  } else if((df[gene,"high.8h"] < 0) && (df[gene,"high.24h"] > 0) && (df[gene,"high.7d"] < 0)) {
+    df[gene, "direction"] <- "down-up-down"
+  } else if((df[gene,"high.8h"] < 0) && (df[gene,"high.24h"] > 0) && (df[gene,"high.7d"] > 0)) {
+    df[gene, "direction"] <- "down-up-up"
+  } else if((df[gene,"high.8h"] < 0) && (df[gene,"high.24h"] < 0) && (df[gene,"high.7d"] > 0)) {
+    df[gene, "direction"] <- "down-down-up"
+  } else if((df[gene,"high.8h"] < 0) && (df[gene,"high.24h"] < 0) && (df[gene,"high.7d"] > 0)) {
+    df[gene, "direction"] <- "down-down-up"
+  } else if((df[gene,"high.8h"] > 0) && (df[gene,"high.24h"] < 0) && (df[gene,"high.7d"] > 0)) {
+    df[gene, "direction"] <- "up-down-up"
+  } else if((df[gene,"high.8h"] > 0) && (df[gene,"high.24h"] < 0) && (df[gene,"high.7d"] < 0)) {
+    df[gene, "direction"] <- "up-down-down"
+  } else {
+    df[gene, "direction"] <- "other"
+  }
+}
+df$direction <- factor(df$direction)
+
+# plot
+fig2 <- plot_ly(df, 
+                x = ~high.8h, 
+                y = ~high.24h, 
+                z = ~high.7d, 
+                color = ~direction, 
+                colors = c("blue","purple","yellow","orange","green",
+                                 "gray","pink","red"),
+                text = ~genes) %>%
+  add_markers() %>% 
+  layout(legend=list(title=list(text='<b> High: 8h vs 24h vs 7d </b>')))
+fig2
+```
+
+# Line graph
+## Low dose
+```{r low_dose_line}
+# read tables
+low.8h <- read.delim(paste0(out, model, "DEG_tables/psilo.low.8h_vs_sal.8h_FDRq_1.00.tsv"))
+low.24h <- read.delim(paste0(out, model, "DEG_tables/psilo.low.24h_vs_sal.24h_FDRq_1.00.tsv"))
+low.7d <- read.delim(paste0(out, model, "DEG_tables/psilo.low.7d_vs_sal.7d_FDRq_1.00.tsv"))
+
+# extract logFC
+df <- data.frame(genes = low.8h$gene_name_unique,
+                 low.8h = low.8h$logFC,
+                 low.24h = low.24h$logFC,
+                 low.7d = low.7d$logFC)
+rownames(df) <- df$genes
+
+# find absolute diff
+df$diff_8h_vs_24h <- abs(df$low.8h - df$low.24h)
+df$diff_24h_vs_7d <- abs(df$low.24h - df$low.7d)
+df <- df[df$diff_24h_vs_7d > 0.2,]
+df <- df[df$diff_8h_vs_24h > 0.2,]
+
+# direction, 1 = upreg, 2 = downreg, 3 = other
+df$direction <- ""
+for (gene in df$genes) {
+  if((df[gene,"low.8h"] > 0) && (df[gene,"low.24h"] > 0) && (df[gene,"low.7d"] > 0)) {
+    df[gene, "direction"] <- "up-up-up"
+  } else if ((df[gene,"low.8h"] < 0) && (df[gene,"low.24h"] < 0) && (df[gene,"low.7d"] < 0)) {
+    df[gene, "direction"] <- "down-down-down"
+  } else if((df[gene,"low.8h"] < 0) && (df[gene,"low.24h"] < 0) && (df[gene,"low.7d"] > 0)) {
+    df[gene, "direction"] <- "down-down-up"
+  } else if((df[gene,"low.8h"] > 0) && (df[gene,"low.24h"] > 0) && (df[gene,"low.7d"] < 0)) {
+    df[gene, "direction"] <- "up-up-down"
+  } else if((df[gene,"low.8h"] < 0) && (df[gene,"low.24h"] > 0) && (df[gene,"low.7d"] < 0)) {
+    df[gene, "direction"] <- "down-up-down"
+  } else if((df[gene,"low.8h"] < 0) && (df[gene,"low.24h"] > 0) && (df[gene,"low.7d"] > 0)) {
+    df[gene, "direction"] <- "down-up-up"
+  } else if((df[gene,"low.8h"] < 0) && (df[gene,"low.24h"] < 0) && (df[gene,"low.7d"] > 0)) {
+    df[gene, "direction"] <- "down-down-up"
+  } else if((df[gene,"low.8h"] < 0) && (df[gene,"low.24h"] < 0) && (df[gene,"low.7d"] > 0)) {
+    df[gene, "direction"] <- "down-down-up"
+  } else if((df[gene,"low.8h"] > 0) && (df[gene,"low.24h"] < 0) && (df[gene,"low.7d"] > 0)) {
+    df[gene, "direction"] <- "up-down-up"
+  } else if((df[gene,"low.8h"] > 0) && (df[gene,"low.24h"] < 0) && (df[gene,"low.7d"] < 0)) {
+    df[gene, "direction"] <- "up-down-down"
+  } else {
+    df[gene, "direction"] <- "other"
+  }
+}
+df$direction <- factor(df$direction)
+
+# reformat
+df <- pivot_longer(data = df, cols = 2:4, names_to = "dose")
+colnames(df)[6] <- "logFC"
+df$dose <- factor(df$dose, levels = c("low.8h", "low.24h", "low.7d"))
+
+# plot
+fig3 <- plot_ly(df,
+                x = ~dose,
+                y = ~logFC,
+                type = "scatter",
+                mode = "lines",
+                text = df$genes,
+                color = ~direction,
+                colors = c("blue","purple","yellow","orange","green",
+                                 "gray","pink","red"))
+fig3
+```
+
+## High dose
+```{r high_dose_line}
+# read tables
+high.8h <- read.delim(paste0(out, model, "DEG_tables/psilo.high.8h_vs_sal.8h_FDRq_1.00.tsv"))
+high.24h <- read.delim(paste0(out, model, "DEG_tables/psilo.high.24h_vs_sal.24h_FDRq_1.00.tsv"))
+high.7d <- read.delim(paste0(out, model, "DEG_tables/psilo.high.7d_vs_sal.7d_FDRq_1.00.tsv"))
+
+# extract logFC
+df <- data.frame(genes = high.8h$gene_name_unique,
+                 high.8h = high.8h$logFC,
+                 high.24h = high.24h$logFC,
+                 high.7d = high.7d$logFC)
+rownames(df) <- df$genes
+
+# find absolute diff
+df$diff_8h_vs_24h <- abs(df$high.8h - df$high.24h)
+df$diff_24h_vs_7d <- abs(df$high.24h - df$high.7d)
+df <- df[df$diff_24h_vs_7d > 0.2,]
+df <- df[df$diff_8h_vs_24h > 0.2,]
+
+# direction, 1 = upreg, 2 = downreg, 3 = other
+df$direction <- ""
+for (gene in df$genes) {
+  if((df[gene,"high.8h"] > 0) && (df[gene,"high.24h"] > 0) && (df[gene,"high.7d"] > 0)) {
+    df[gene, "direction"] <- "up-up-up"
+  } else if ((df[gene,"high.8h"] < 0) && (df[gene,"high.24h"] < 0) && (df[gene,"high.7d"] < 0)) {
+    df[gene, "direction"] <- "down-down-down"
+  } else if((df[gene,"high.8h"] < 0) && (df[gene,"high.24h"] < 0) && (df[gene,"high.7d"] > 0)) {
+    df[gene, "direction"] <- "down-down-up"
+  } else if((df[gene,"high.8h"] > 0) && (df[gene,"high.24h"] > 0) && (df[gene,"high.7d"] < 0)) {
+    df[gene, "direction"] <- "up-up-down"
+  } else if((df[gene,"high.8h"] < 0) && (df[gene,"high.24h"] > 0) && (df[gene,"high.7d"] < 0)) {
+    df[gene, "direction"] <- "down-up-down"
+  } else if((df[gene,"high.8h"] < 0) && (df[gene,"high.24h"] > 0) && (df[gene,"high.7d"] > 0)) {
+    df[gene, "direction"] <- "down-up-up"
+  } else if((df[gene,"high.8h"] < 0) && (df[gene,"high.24h"] < 0) && (df[gene,"high.7d"] > 0)) {
+    df[gene, "direction"] <- "down-down-up"
+  } else if((df[gene,"high.8h"] < 0) && (df[gene,"high.24h"] < 0) && (df[gene,"high.7d"] > 0)) {
+    df[gene, "direction"] <- "down-down-up"
+  } else if((df[gene,"high.8h"] > 0) && (df[gene,"high.24h"] < 0) && (df[gene,"high.7d"] > 0)) {
+    df[gene, "direction"] <- "up-down-up"
+  } else if((df[gene,"high.8h"] > 0) && (df[gene,"high.24h"] < 0) && (df[gene,"high.7d"] < 0)) {
+    df[gene, "direction"] <- "up-down-down"
+  } else {
+    df[gene, "direction"] <- "other"
+  }
+}
+df$direction <- factor(df$direction)
+
+# reformat
+df <- pivot_longer(data = df, cols = 2:4, names_to = "dose")
+colnames(df)[6] <- "logFC"
+df$dose <- factor(df$dose, levels = c("high.8h", "high.24h", "high.7d"))
+
+# plot
+fig4 <- plot_ly(df,
+                x = ~dose,
+                y = ~logFC,
+                type = "scatter",
+                mode = "lines",
+                text = df$genes,
+                color = ~direction,
+                colors = c("blue","purple","yellow","orange","green",
+                                 "gray","pink","red"))
+fig4
+```
+

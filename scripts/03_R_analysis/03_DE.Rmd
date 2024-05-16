@@ -37,6 +37,7 @@ library(philentropy)        # JSD()
 library(rtracklayer)        # import()
 library(Seurat)             # GetAssayData()
 library(stringr)            # str_match()
+library(tidyverse)
 library(UpSetR)             # fromList()
 library(variancePartition)  # fitExtractVarPartModel()
 library(reshape)            # melt()
@@ -44,8 +45,9 @@ library(reshape)            # melt()
 
 ## User defined variables
 ```{r set_variables}
-out <- "../../results/high_hbb_samples_removed/"
-model <- "DEGs_group_sex_Hbb-bs/"
+out <- "../../results/all_samples_strict/"
+out2 <- "all_samples_strict"
+model <- "DEGs_both_sexes/"
 treatment_order <- c("saline","psilocybin")
 treatment_colors <- c("gray60","springgreen2")
 sex_order <- c("M","F")
@@ -67,15 +69,17 @@ saveToPDF <- function(...) {
 
 ## Load data
 ```{r}
-dge.filtered.norm <- readRDS(paste0("../../rObjects/DGEList_cell_markers.rds"))
+dge.filtered.norm <- readRDS(paste0("../../rObjects/",
+                                    out2,
+                                    "_DGEList_filtered_normalized.rds"))
 ```
 
-# Voom before covariates
+# Voom
 ## Design matrix
 ```{r design_matrix}
 group <- interaction(dge.filtered.norm$samples$group)
-sex <- dge.filtered.norm$samples$sex
-hbb <- dge.filtered.norm$samples$`Hbb-bs`
+sex <- factor(dge.filtered.norm$samples$sex)
+hbb <- dge.filtered.norm$samples$hbb
 
 design <- model.matrix(~ 0 + group + sex + hbb)
 design.names <- gsub("group","", colnames(design))
@@ -86,13 +90,39 @@ head(design)
 
 ## Contrasts
 ```{r}
-levels(dge.filtered.norm$samples$group)
 myContrasts <- c("psilo.low.8h - sal.8h",
-                 "psilo.high.8h - sal.8h",
                  "psilo.low.24h - sal.24h",
-                 "psilo.high.24h - sal.24h",
                  "psilo.low.7d - sal.7d",
-                 "psilo.high.7d - sal.7d")
+                 "psilo.high.8h - sal.8h",
+                 "psilo.high.24h - sal.24h",
+                 "psilo.high.7d - sal.7d",
+                 "sal.24h - sal.8h",
+                 "sal.7d - sal.24h",
+                 "sal.7d - sal.8h",
+                 "psilo.low.24h - psilo.low.8h",
+                 "psilo.low.7d - psilo.low.24h",
+                 "psilo.low.7d - psilo.low.8h",
+                 "psilo.high.24h - psilo.high.8h",
+                 "psilo.high.7d - psilo.high.24h",
+                 "psilo.high.7d - psilo.low.8h")
+myContrasts2 <- c("psilo.low.8h.F - sal.8h.F",
+                 "psilo.low.24h.F - sal.24h.F",
+                 "psilo.low.7d.F - sal.7d.F",
+                 "psilo.high.8h.F - sal.8h.F",
+                 "psilo.high.24h.F - sal.24h.F",
+                 "psilo.high.7d.F - sal.7d.F",
+                 "sal.24h.F - sal.8h.F",
+                 "sal.7d.F - sal.24h.F",
+                 "sal.7d.F - sal.8h.F",
+                 "psilo.low.8h.M - sal.8h.M",
+                 "psilo.low.24h.M - sal.24h.M",
+                 "psilo.low.7d.M - sal.7d.M",
+                 "psilo.high.8h.M - sal.8h.M",
+                 "psilo.high.24h.M - sal.24h.M",
+                 "psilo.high.7d.M - sal.7d.M",
+                 "sal.24h.M - sal.8h.M",
+                 "sal.7d.M - sal.24h.M",
+                 "sal.7d.M - sal.8h.M")
 ```
 
 ## Quality weights
@@ -288,77 +318,81 @@ for (dim in dims) {
 }
 ```
 
-### Lane
-```{r mds_postfiltering_lane}
-# loop through dimensions and top genes
-names <- v$targets$lane
-dims <- list(c(1,2),c(2,3),c(3,4))
-topGenes <- c(100,500)
-
-for (dim in dims) {
-  
-  for (numGenes in topGenes) {
-      
-    mds <- plotMDS(v, 
-                   labels = names, 
-                   top = numGenes,
-                   plot = FALSE,
-                   dim.plot = dim)
-
-    toplot <- data.frame(DimX = mds$x, 
-                         DimY = mds$y,
-                         Sample = rownames(mds$distance.matrix.squared),
-                         lane = factor(v$targets$lane))
-    
-    x.lab <- paste0(mds$axislabel," ",mds$dim.plot[1]," (",
-                    round(mds$var.explained[mds$dim.plot[1]] * 100, digits = 2),
-                    "%)")
-    y.lab <- paste0(mds$axislabel," ",mds$dim.plot[2]," (",
-                    round(mds$var.explained[mds$dim.plot[2]] * 100, digits = 2),
-                    "%)")
-    
-    p <- ggplot(toplot, aes(x = DimX, y = DimY, color = lane, label = Sample)) + 
-      geom_point(size = 3) +
-      theme_bw() +
-      geom_text(aes(label = Sample), size=4, vjust = -1) +
-      xlab(x.lab) + ylab(y.lab) + 
-      ggtitle(paste0("MDS Filtered: Top ", numGenes, ", Log2(CPM)"))
-    print(p)
-    
-    # save
-    dimTitle <- as.character(dim)
-    path <- paste0(out, "postfiltering_QC/MDS_top_",
-                   numGenes,"_genes/MDS_filtered_top_", numGenes, "_",
-                   "dim", as.character(dim)[1], "&", as.character(dim[2]), 
-                   "_colored_by_lane")
-    saveToPDF(paste0(path, ".pdf"), width = 8, height = 8)
-  }
-}
-```
-
 # Differential Expressioin
 ## Number of DEGs
 Identify number of differentially expressed genes.
 ```{r decide_tests}
 pval <- 0.1
+my.lfc <- 0.2
 
 sumTable <- 
   summary(decideTests(
     veBayesFit,  # object
     adjust.method = "BH", # by default the method = "separate"
     p.value = pval,
-    lfc = 0  # numeric, minimum absolute log2-fold change required
+    lfc = my.lfc  # numeric, minimum absolute log2-fold change required
   ))
 
-print(paste0(" FDRq < ", pval))
+print(paste0(" FDRq < ", pval, ", LFC = ", my.lfc))
 sumTable
 
 write.table(sumTable, 
             paste0(out, model, "DEG_tables/DEG_comparison_FDRq_", 
-                   format(pval, nsmall = 2),".tsv"), 
+                   format(pval, nsmall = 2), "_LFC_",
+                   format(my.lfc, nsmall = 2),
+                   ".tsv"), 
             quote = FALSE, 
             sep = "\t")
+
 ```
+
+## DEG heatmap
+```{r}
+# reformat before plotting
+df <- as.data.frame(sumTable)
+colnames(df) <- c("direction", "comparison", "count")
+df <- df[!df$direction == "NotSig",]
+df$comparison <- gsub(" - ", " vs ", df$comparison)
+df <- df %>% pivot_wider(names_from = comparison, values_from = count)
+df <- data.frame(df)
+rownames(df) <- df$direction
+df$direction <- NULL
+df <- t(df)
+
+# set heatmap colors and names
+meta <- data.frame(category = c(rep("low dose vs saline", 3),
+                                rep("high dose vs saline", 3),
+                                rep("saline vs saline", 3),
+                                rep("low dose vs low dose", 3),
+                                rep("high dose vs high dose", 3)))
+rownames(meta) <- rownames(df)
+paletteLength <- 100
+myColor <- colorRampPalette(c("white","#f0eb9e","darkgreen"))(paletteLength)
+ann_colors = list(category = c(`low dose vs saline` = "firebrick2", 
+                                 `high dose vs saline` = "gold",
+                                 `saline vs saline` = "green3",
+                                 `low dose vs low dose` = "cornflowerblue",
+                                 `high dose vs high dose` = "gray"))
+
+# save
+path <- paste0(out, model, "/DEG_tables/DEG_comparison_FDRq_",format(pval, nsmall = 2),
+               "_LFC_", format(my.lfc, nsmall = 2),".pdf")
+pdf(path, width = 8, height = 9)
+
+# plot
+pheatmap::pheatmap(round(df, digits = 0),
+                   main = paste0("FDRq < ", pval, ", LFC = ", my.lfc),
+                   treeheight_row = 0,
+                   treeheight_col = 0,
+                   color = myColor,
+                   cluster_rows = FALSE,
+                   annotation_row = meta,
+                   annotation_colors = ann_colors,
+                   display_numbers = TRUE,
+                   fontsize_number = 12,
+                   number_color = "black")
+```
+
 
 ## Output DEG tables
 ```{r output_DEG_tables}
@@ -433,7 +467,8 @@ for (i in allComparisons) {
 ## Volcano
 ```{r volcano_plot, message=FALSE, eval=FALSE}
 # set variables
-thresh <- 0.1
+thresh <- 0.05
+my.lfc <- 0.2
 
 # get file list
 files <- list.files(paste0(out, model,"DEG_tables/"))
@@ -451,14 +486,14 @@ for (i in files) {
   max <- nrow(data)
   for(row in 1:max){
     if (data$adj.P.Val[row] < thresh){
-      if (data$logFC [row] > 0){
-        color_values <- c(color_values, 1) # 1 when logFC > 0 and FDRq < thresh
+      if (data$logFC [row] > my.lfc){
+        color_values <- c(color_values, 1) # 1 when logFC > my.lfc and FDRq < thresh
+      } else if (data$logFC[row] < -my.lfc){
+        color_values <- c(color_values, 2) # 2 when logFC < -my.lfc and FDRq < thresh
+      } else {
+        color_values <- c(color_values, 3) # 3 when logFC between -my.lfc and +my.lfc and FDRq < thresh
       }
-      else if (data$logFC[row] < 0){
-        color_values <- c(color_values, 2) # 2 when logFC < 0 and FDRq < thresh
-      }
-    }
-    else{
+    } else {
       color_values <- c(color_values, 3) # 3 when FDRq >= thresh
     }
   }
@@ -516,7 +551,13 @@ for (i in files) {
       geom_hline(yintercept = hadjpval,  #  horizontal line
                          colour = "#000000",
                          linetype = "dashed") +
-      ggtitle(paste0(comparison, ", adj.P.Val < ", thresh)) +
+      geom_vline(xintercept = -my.lfc,  #  vertical line
+                         colour = "#000000",
+                         linetype = "dashed") +
+      geom_vline(xintercept = my.lfc,  #  vertical line
+                         colour = "#000000",
+                         linetype = "dashed") +
+      ggtitle(paste0(comparison, ", adj.P.Val < ", thresh, ", LFC = ", my.lfc)) +
       geom_text_repel(data = up15,
                       aes(x = logFC, y= -log10(P.Value), label = gene_name), 
                       size = 5,
@@ -535,7 +576,8 @@ for (i in files) {
       
     # save
     path <- paste0(out, model, "volcano/volcano_", comparison, "_FDRq_", 
-                   format(thresh, nsmall = 2), ".pdf")
+                   format(thresh, nsmall = 2), "_LFC_",
+                   format(my.lfc, nsmall = 2), ".pdf")
     pdf(path, height = 8, width = 8)
     print(p)
     dev.off()
@@ -547,6 +589,7 @@ for (i in files) {
 ```{r}
 # set variables
 thresh <- 0.05
+my.lfc <- 0.2
 
 # get file list
 files <- list.files(paste0(out, model,"DEG_tables/"))
@@ -559,9 +602,9 @@ for (i in 1:length(files)) {
   # read table
   data <- read.table(files[i], header = TRUE, sep = "\t")
   data <- data[data$adj.P.Val < 0.05,]
-  up <- data[data$logFC > 0,]
-  up <- up$gene_name
-  down <- data[data$logFC < 0,]
+  up <- data[data$logFC > my.lfc,]
+  up <- up$gene_name  
+  down <- data[data$logFC < -my.lfc,]
   down <- down$gene_name
   
  # comparison name
@@ -571,13 +614,15 @@ for (i in 1:length(files)) {
   # save
   write.table(x = up,
             file = paste0(out, model, "metascape_input/", comparison,
-                          "_upregulated_", format(thresh, nsmall = 2), ".tsv"),
+                          "_upregulated_", format(thresh, nsmall = 2), 
+                          "_LFC_", format(my.lfc, nsmall = 2), ".tsv"),
             quote = FALSE,
             row.names = FALSE,
             col.names = FALSE)
     write.table(x = down,
             file = paste0(out, model, "metascape_input/", comparison,
-                          "_downregulated_", format(thresh, nsmall = 2), ".tsv"),
+                          "_downregulated_", format(thresh, nsmall = 2),
+                          "_LFC_", format(my.lfc, nsmall = 2), ".tsv"),
             quote = FALSE,
             row.names = FALSE,
             col.names = FALSE)
@@ -587,7 +632,7 @@ for (i in 1:length(files)) {
 ## Upset
 ```{r, eval=FALSE, echo=FALSE}
 # set var
-thresh <- 0.05
+thresh <- 0.1
 
 # paths
 prefix <- paste0(out, model, "DEG_tables/")
@@ -661,7 +706,7 @@ upset_gene <- ComplexUpset::upset(data,
 				  set_sizes=(
 					upset_set_size()
 					+ geom_text(aes(label=..count..), hjust=1.1, stat='count')
-					+ expand_limits(y=1500)),
+					+ expand_limits(y=2000)),
 				  queries = list(upset_query("8 hr Low Dose Psilocybin vs Saline Up-regulated", fill = "red"),
 								 upset_query("8 hr High Dose Psilocybin vs Saline Up-regulated", fill = "red"),
 								 upset_query("24 hr Low Dose Psilocybin vs Saline Up-regulated", fill = "red"),
@@ -676,7 +721,7 @@ upset_gene <- ComplexUpset::upset(data,
 								 upset_query("7 day High Dose Psilocybin vs Saline Down-regulated", fill = "blue")),
 				  base_annotations = list('Intersection size' = (
 					intersection_size(bar_number_threshold=1, width=0.5)
-					+ scale_y_continuous(expand=expansion(mult=c(0, 0.05)),limits = c(0,1250)) # space on top
+					+ scale_y_continuous(expand=expansion(mult=c(0, 0.05)),limits = c(0,2000)) # space on top
 					+ theme(
 						  # hide grid lines
 						  panel.grid.major=element_blank(),
@@ -704,6 +749,83 @@ pdf(paste0(out, model, "upset/upset_plot_FDRq_", format(thresh, nsmall = 2), ".p
     height = 6, width = 20)
 upset_gene
 ```
+
+# Power analysis
+## Check power
+```{r}
+# design
+group <- interaction(dge.filtered.norm$samples$group)
+sex <- factor(dge.filtered.norm$samples$sex)
+hbb <- dge.filtered.norm$samples$hbb
+design <- model.matrix(~ 0 + group + sex + hbb)
+design.names <- gsub("group","", colnames(design))
+design.names <- gsub("sex", "", design.names)
+colnames(design) <- design.names
+head(design)
+
+# find dispersion
+dge.filtered.norm <- estimateDisp(dge.filtered.norm, design)
+myDisp <- dge.filtered.norm$common.dispersion
+myDisp
+
+# get dataframes
+counts <- as.data.frame(dge.filtered.norm$counts)
+meta <- dge.filtered.norm$samples[,c("sample_id","group")]
+
+# find avg count per group
+mean.group <- counts |>
+  mutate(gene = row.names(counts)) |>
+  pivot_longer(-gene, names_to = "sample_id") |>
+  left_join(meta, by = "sample_id") |>
+  summarize(mean = mean(value), .by = c(gene, group)) |>
+  pivot_wider(names_from = group, values_from = mean)
+mean.group <- as.data.frame(mean.group)
+rownames(mean.group) <- mean.group$gene
+mean.group$gene <- NULL
+mean.group <- round(mean.group, digits = 4)
+
+# check mean read count for control group of interest
+summary(mean.group)
+
+# set var
+maxGenes <- dim(dge.filtered.norm)[1]
+
+# check power
+check.power(nGenes = maxGenes, # total num genes
+            pi0 = 1-((1771+1938)/maxGenes), # proportion of nonsig genes
+            m = 10, # sample size
+            mu = 7334, # mean read counts in a control group
+            disp = myDisp, # dispersion for all genes
+            fc = 0.2,
+            up = 1938/(1771+1938), # proportion of DE genes that are upreg
+            fdr = 0.05)
+```
+$pow_bh_ave
+[1] 1
+
+$fdr_bh_ave
+[1] 0.03608035
+
+$pow_qvalue_ave
+[1] 1
+
+$fdr_qvalue_ave
+[1] 0.04992364
+
+## Sample size calculator
+```{r}
+ssizeRNA_single(nGenes = 13000,                # total genes
+                pi0 = 0.9,                     # proportion nonsig genes
+                m = 4,                         # pseudo sample size
+                mu = 7000,                     # pseudo mean counts in control group
+                disp = 0.1,                    # pseudo dispersion
+                fc = .2,                       # fold change
+                up = 0.5,                      # percent up-reg of DE genes
+                fdr = 0.05,                    # adjusted p value
+                power = 0.8)                   # prob you accept alternative hypothesis
+```
+
+
 
 ```{r}
 sessionInfo()

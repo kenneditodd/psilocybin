@@ -1,1 +1,1 @@
-# psilocybin
+# psi1

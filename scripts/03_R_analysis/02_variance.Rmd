@@ -2,7 +2,7 @@
 title: "Psilocybin Project 1"
 subtitle: "Variance"
 author: "Kennedi Todd"
-date: "12/20/2023"
+date: "04/02/2023"
 output:
   html_document:
     theme: cerulean
@@ -32,7 +32,8 @@ library(variancePartition) # fitExtractVarPartModel()
 
 ## User defined variables
 ```{r set_variables}
-out <- "../../results/high_hbb_samples_removed/"
+out <- "../../results/all_samples_strict/"
+out2 <- "all_samples_strict"
 treatment_order <- c("saline","psilocybin")
 treatment_colors <- c("gray60","springgreen2")
 sex_order <- c("M","F")
@@ -46,7 +47,9 @@ group_colors <- c("gray90","gray60","gray30","lightblue","cornflowerblue","blue"
 
 ## Load data
 ```{r load_data}
-dge.filtered.norm <- readRDS(paste0("../../rObjects/DGEList_filtered_normalized.rds"))
+dge.filtered.norm <- readRDS(paste0("../../rObjects/",
+                                    out2, 
+                                    "_DGEList_filtered_normalized.rds"))
 ```
 
 # Cell Markers
@@ -57,6 +60,7 @@ meta <- as.data.frame(dge.filtered.norm$samples)
 
 # select variables of interest
 variables <- c("group",
+               "group2",
                "treatment",
                "dose",
                "timepoint",
@@ -117,7 +121,7 @@ meta <- cbind(meta, cpm)
 ## Significance
 ```{r stats}
 # initialize data frame
-variable_numbers <- c(6,7,9:19)
+variable_numbers <- c(7,8,10:19)
 variable_names <- colnames(meta)[variable_numbers]
 tests <- c("saline_mean","psilocybin_mean","saline_stdv","psilocybin_stdv",
            "saline_shapiro_pval","psilocybin_shapiro_pval","levene_na_omit",
@@ -179,15 +183,18 @@ for (i in 1:length(variable_names)) {
   stats[i, "levene_na_omit"] <- round(lev_naomit, 4)
 }
 
+write.table(x = stats,
+            file = paste0(out, "variance/stats.tsv"),
+            quote = FALSE,
+            sep = "\t")
+
 remove(saline_shapiro,psilocybin_shapiro,
        t_test, wil, levTest,cpm)
 ```
 
 # Correlation
 ## Spearman correlation
-- Spearman's correlation can be used to analyzed categorical data, as well as continuous data, because it uses ranks instead of assumptions of normality ().
-plotCorrMatrix(cor(info))
-MRC1, MKI67, C1QB
+- Spearman's correlation can be used to analyze categorical data, as well as continuous data, because it uses ranks instead of assumptions of normality plotCorrMatrix(cor(info)) \
 ```{r spearman_heatmap}
 # save
 path <- paste0(out, "variance/spearman_correlation_heatmap.pdf")
@@ -195,7 +202,7 @@ pdf(path, width = 8, height = 8)
 
 # formula
 form <- ~0 + group + treatment + dose + timepoint +  sex + log2.lib +
-  weight_at_treatment + RIN + lane
+  weight_at_treatment + RIN
 
 # correlation plot
 model.matrix(form, data = meta) %>% 
@@ -210,7 +217,7 @@ path <- paste0(out, "variance/canonical_correlation_analysis_heatmap.pdf")
 pdf(path, width = 8, height = 8)
 
 # formula
-form <- ~0 + group + sex + log2.lib + RIN + lane
+form <- ~0 + group + sex + log2.lib + RIN
 
 c <- canCorPairs(form, meta)
 
@@ -240,14 +247,14 @@ form <- ~ (1|group) + (1|sex) + log2.lib + RIN
 
 varPart <- fitExtractVarPartModel(geneExpr, form, meta)
 vp <- sortCols(varPart)
-saveRDS(vp, paste0("../../rObjects/var_par.rds"))
+saveRDS(vp, paste0("../../rObjects/", out2, "_var_par.rds"))
 ```
 
 ## Violins
 ```{r variance_violins, eval=FALSE}
 # save
 path <- paste0(out, "variance/variance_violins.pdf")
-pdf(paste0(path, ".pdf"), width = 12, height = 6)
+pdf(path, width = 12, height = 6)
 
 # plot
 plotVarPart(vp)
@@ -321,12 +328,6 @@ bestModel <- mvForwardStepwise(exprObj = counts,
                                baseFormula = base,
                                data = meta,
                                variables = variables)
-```
-
-```{r save_object, eval=FALSE, echo=FALSE}
-all.equal(rownames(meta), rownames(dge.filtered.norm$samples))
-dge.filtered.norm$samples <- cbind(dge.filtered.norm$samples, meta[,c(9:19)])
-saveRDS(dge.filtered.norm, paste0("../../rObjects/DGEList_cell_markers.rds"))
 ```
 
 ```{r session_info}
