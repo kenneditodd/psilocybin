@@ -40,7 +40,7 @@ df <- dplyr::left_join(meta, seq.info, by = "filename")
 df <- df[!df$timepoint == "28 day",]
 
 # check
-table(paste0(df$group, df$lane))
+table(paste0(df$group, ".lane", df$lane))
 table(paste0(df$group,".",df$sex,".lane",df$lane))
 
 # save meta

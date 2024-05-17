@@ -1,8 +1,11 @@
+# R Project
 .Rproj.user
 .Rhistory
 .RData
 .Ruserdata
-psilocybin.Rproj
+psi1.Rproj
+
+# my files
 scripts/*/logs/*
 rawReads/*
 refs/transcript_quant/*
@@ -20,7 +23,8 @@ scripts/04_shiny/DEGs
 scripts/04_shiny/input_options.tsv
 scripts/04_shiny/prep
 scripts/04_shiny/rsconnect
-scripts/test_shiny
 scripts/04_shiny/gprofilerInput/
 scripts/04_shiny/gprofilerInputFiles.rds
 scripts/04_shiny/genes.rds
+scripts/test_shiny
+IGV/

@@ -7,12 +7,12 @@ names <- c("animal_id", "filename", "RLIMS_number", "RLIMS_name", "sacrifice_bat
            "weight_at_treatment","RIN","genotype","notes")
 colnames(mouse.meta) <- names
 
-# remove unecessary columns
+# remove unnecessary columns
 mouse.meta$RLIMS_name <- NULL
 mouse.meta$RLIMS_number <- NULL
 
 # add project_id
-mouse.meta$project_id <- "Psil1"
+mouse.meta$project_id <- "Psi1"
 
 # fix column units
 mouse.meta$age_at_treatment <- paste0(mouse.meta$age_at_treatment, " weeks")
