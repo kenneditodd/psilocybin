@@ -1,91 +1,91 @@
 sample_name	organism	strain	age	collection_date	geo_loc_name	tissue	group	treatment	dose	timepoint	sex	animal_id	age_at_treatment	weight_at_treatment	RIN	sacrifice_batch	RNA_extraction_batch
-psilo.high.8h.M.1	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.high.8h	psilocybin	1 mg / kg	8 hour	M	1	8 weeks	26 grams	8.5	1	8
-psilo.high.8h.M.2	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.high.8h	psilocybin	1 mg / kg	8 hour	M	2	8 weeks	26 grams	9.2	1	8
-psilo.high.8h.M.3	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.high.8h	psilocybin	1 mg / kg	8 hour	M	3	8 weeks	26 grams	9.3	1	8
-psilo.high.8h.M.4	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.high.8h	psilocybin	1 mg / kg	8 hour	M	4	8 weeks	26 grams	9.3	1	8
-psilo.high.8h.M.5	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.high.8h	psilocybin	1 mg / kg	8 hour	M	5	8 weeks	26 grams	9.2	1	8
-psilo.high.8h.F.6	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.high.8h	psilocybin	1 mg / kg	8 hour	F	6	8 weeks	18 grams	9.6	1	8
-psilo.high.8h.F.7	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.high.8h	psilocybin	1 mg / kg	8 hour	F	7	8 weeks	18 grams	9.3	1	8
-psilo.high.8h.F.8	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.high.8h	psilocybin	1 mg / kg	8 hour	F	8	8 weeks	18 grams	9.4	1	8
-psilo.high.8h.F.9	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.high.8h	psilocybin	1 mg / kg	8 hour	F	9	8 weeks	18 grams	9.3	1	7
-psilo.high.8h.F.10	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.high.8h	psilocybin	1 mg / kg	8 hour	F	10	8 weeks	18 grams	9.3	1	7
-psilo.low.8h.M.11	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.low.8h	psilocybin	0.25 mg / kg	8 hour	M	11	8 weeks	26 grams	9.2	1	7
-psilo.low.8h.M.12	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.low.8h	psilocybin	0.25 mg / kg	8 hour	M	12	8 weeks	26 grams	9.2	1	7
-psilo.low.8h.M.13	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.low.8h	psilocybin	0.25 mg / kg	8 hour	M	13	8 weeks	26 grams	9.3	1	7
-psilo.low.8h.M.14	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.low.8h	psilocybin	0.25 mg / kg	8 hour	M	14	8 weeks	26 grams	9.2	1	7
-psilo.low.8h.M.15	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.low.8h	psilocybin	0.25 mg / kg	8 hour	M	15	8 weeks	26 grams	9.4	1	7
-psilo.low.8h.F.16	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.low.8h	psilocybin	0.25 mg / kg	8 hour	F	16	8 weeks	18 grams	9.3	1	7
-psilo.low.8h.F.17	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.low.8h	psilocybin	0.25 mg / kg	8 hour	F	17	8 weeks	18 grams	9.3	1	7
-psilo.low.8h.F.18	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.low.8h	psilocybin	0.25 mg / kg	8 hour	F	18	8 weeks	18 grams	9.2	1	7
-psilo.low.8h.F.19	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.low.8h	psilocybin	0.25 mg / kg	8 hour	F	19	8 weeks	18 grams	9.6	1	7
-psilo.low.8h.F.20	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.low.8h	psilocybin	0.25 mg / kg	8 hour	F	20	8 weeks	18 grams	9.5	1	7
-sal.8h.M.21	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	sal.8h	saline	0.9%	8 hour	M	21	8 weeks	26 grams	9.6	1	7
-sal.8h.M.22	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	sal.8h	saline	0.9%	8 hour	M	22	8 weeks	26 grams	9.2	1	7
-sal.8h.M.23	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	sal.8h	saline	0.9%	8 hour	M	23	8 weeks	26 grams	9.2	1	6
-sal.8h.M.24	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	sal.8h	saline	0.9%	8 hour	M	24	8 weeks	26 grams	9.2	1	6
-sal.8h.M.25	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	sal.8h	saline	0.9%	8 hour	M	25	8 weeks	26 grams	9.1	1	6
-sal.8h.F.26	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	sal.8h	saline	0.9%	8 hour	F	26	8 weeks	18 grams	9	1	6
-sal.8h.F.27	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	sal.8h	saline	0.9%	8 hour	F	27	8 weeks	18 grams	9.3	1	6
-sal.8h.F.28	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	sal.8h	saline	0.9%	8 hour	F	28	8 weeks	18 grams	9.6	1	6
-sal.8h.F.29	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	sal.8h	saline	0.9%	8 hour	F	29	8 weeks	18 grams	9.6	1	6
-sal.8h.F.30	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	sal.8h	saline	0.9%	8 hour	F	30	8 weeks	18 grams	9.5	1	6
-psilo.high.24h.M.31	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.high.24h	psilocybin	1 mg / kg	24 hour	M	31	8 weeks	26 grams	9.6	2	6
-psilo.high.24h.M.32	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.high.24h	psilocybin	1 mg / kg	24 hour	M	32	8 weeks	26 grams	9.5	2	6
-psilo.high.24h.M.33	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.high.24h	psilocybin	1 mg / kg	24 hour	M	33	8 weeks	26 grams	7.5	2	6
-psilo.high.24h.M.34	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.high.24h	psilocybin	1 mg / kg	24 hour	M	34	8 weeks	26 grams	9.5	2	6
-psilo.high.24h.M.35	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.high.24h	psilocybin	1 mg / kg	24 hour	M	35	8 weeks	26 grams	9.2	2	6
-psilo.high.24h.F.36	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.high.24h	psilocybin	1 mg / kg	24 hour	F	36	8 weeks	18 grams	9.4	2	6
-psilo.high.24h.F.37	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.high.24h	psilocybin	1 mg / kg	24 hour	F	37	8 weeks	18 grams	9.3	2	5
-psilo.high.24h.F.38	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.high.24h	psilocybin	1 mg / kg	24 hour	F	38	8 weeks	18 grams	9.2	2	5
-psilo.high.24h.F.39	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.high.24h	psilocybin	1 mg / kg	24 hour	F	39	8 weeks	18 grams	9.4	2	5
-psilo.high.24h.F.40	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.high.24h	psilocybin	1 mg / kg	24 hour	F	40	8 weeks	18 grams	9.6	2	5
-psilo.low.24h.M.41	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.low.24h	psilocybin	0.25 mg / kg	24 hour	M	41	8 weeks	26 grams	9.5	2	5
-psilo.low.24h.M.42	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.low.24h	psilocybin	0.25 mg / kg	24 hour	M	42	8 weeks	26 grams	9.5	2	5
-psilo.low.24h.M.43	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.low.24h	psilocybin	0.25 mg / kg	24 hour	M	43	8 weeks	26 grams	9.5	2	5
-psilo.low.24h.M.44	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.low.24h	psilocybin	0.25 mg / kg	24 hour	M	44	8 weeks	26 grams	9.8	2	5
-psilo.low.24h.M.45	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.low.24h	psilocybin	0.25 mg / kg	24 hour	M	45	8 weeks	26 grams	9.9	2	5
-psilo.low.24h.F.46	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.low.24h	psilocybin	0.25 mg / kg	24 hour	F	46	8 weeks	18 grams	8.1	2	5
-psilo.low.24h.F.47	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.low.24h	psilocybin	0.25 mg / kg	24 hour	F	47	8 weeks	18 grams	9.5	2	5
-psilo.low.24h.F.48	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.low.24h	psilocybin	0.25 mg / kg	24 hour	F	48	8 weeks	18 grams	9.4	2	5
-psilo.low.24h.F.49	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.low.24h	psilocybin	0.25 mg / kg	24 hour	F	49	8 weeks	18 grams	9.3	2	5
-psilo.low.24h.F.50	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.low.24h	psilocybin	0.25 mg / kg	24 hour	F	50	8 weeks	18 grams	9.2	2	5
-sal.24h.M.51	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	sal.24h	saline	0.9%	24 hour	M	51	8 weeks	26 grams	9.4	2	4
-sal.24h.M.52	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	sal.24h	saline	0.9%	24 hour	M	52	8 weeks	26 grams	9.3	2	4
-sal.24h.M.53	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	sal.24h	saline	0.9%	24 hour	M	53	8 weeks	26 grams	9.5	2	4
-sal.24h.M.54	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	sal.24h	saline	0.9%	24 hour	M	54	8 weeks	26 grams	9.5	2	4
-sal.24h.M.55	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	sal.24h	saline	0.9%	24 hour	M	55	8 weeks	26 grams	9.4	2	4
-sal.24h.F.56	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	sal.24h	saline	0.9%	24 hour	F	56	8 weeks	18 grams	9.4	2	4
-sal.24h.F.57	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	sal.24h	saline	0.9%	24 hour	F	57	8 weeks	18 grams	9.4	2	4
-sal.24h.F.58	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	sal.24h	saline	0.9%	24 hour	F	58	8 weeks	18 grams	9.3	2	4
-sal.24h.F.59	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	sal.24h	saline	0.9%	24 hour	F	59	8 weeks	18 grams	9.5	2	4
-sal.24h.F.60	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	sal.24h	saline	0.9%	24 hour	F	60	8 weeks	18 grams	9.3	2	4
-psilo.high.7d.M.61	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.high.7d	psilocybin	1 mg / kg	7 day	M	61	8 weeks	26 grams	9.3	3	4
-psilo.high.7d.M.62	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.high.7d	psilocybin	1 mg / kg	7 day	M	62	8 weeks	26 grams	9.5	3	4
-psilo.high.7d.M.63	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.high.7d	psilocybin	1 mg / kg	7 day	M	63	8 weeks	26 grams	9.2	3	4
-psilo.high.7d.M.64	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.high.7d	psilocybin	1 mg / kg	7 day	M	64	8 weeks	26 grams	9.4	3	4
-psilo.high.7d.M.65	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.high.7d	psilocybin	1 mg / kg	7 day	M	65	8 weeks	26 grams	9.3	3	4
-psilo.high.7d.F.66	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.high.7d	psilocybin	1 mg / kg	7 day	F	66	8 weeks	18 grams	9.4	3	3
-psilo.high.7d.F.67	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.high.7d	psilocybin	1 mg / kg	7 day	F	67	8 weeks	18 grams	9.5	3	3
-psilo.high.7d.F.68	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.high.7d	psilocybin	1 mg / kg	7 day	F	68	8 weeks	18 grams	9.4	3	3
-psilo.high.7d.F.69	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.high.7d	psilocybin	1 mg / kg	7 day	F	69	8 weeks	18 grams	9.5	3	3
-psilo.high.7d.F.70	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.high.7d	psilocybin	1 mg / kg	7 day	F	70	8 weeks	18 grams	9.4	3	3
-psilo.low.7d.M.71	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.low.7d	psilocybin	0.25 mg / kg	7 day	M	71	8 weeks	26 grams	9.1	3	3
-psilo.low.7d.M.72	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.low.7d	psilocybin	0.25 mg / kg	7 day	M	72	8 weeks	26 grams	9.5	3	3
-psilo.low.7d.M.73	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.low.7d	psilocybin	0.25 mg / kg	7 day	M	73	8 weeks	26 grams	9.1	3	3
-psilo.low.7d.M.74	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.low.7d	psilocybin	0.25 mg / kg	7 day	M	74	8 weeks	26 grams	9.4	3	3
-psilo.low.7d.M.75	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.low.7d	psilocybin	0.25 mg / kg	7 day	M	75	8 weeks	26 grams	9.4	3	3
-psilo.low.7d.F.76	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.low.7d	psilocybin	0.25 mg / kg	7 day	F	76	8 weeks	18 grams	9.3	3	3
-psilo.low.7d.F.77	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.low.7d	psilocybin	0.25 mg / kg	7 day	F	77	8 weeks	18 grams	9.4	3	2
-psilo.low.7d.F.78	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.low.7d	psilocybin	0.25 mg / kg	7 day	F	78	8 weeks	18 grams	7	3	2
-psilo.low.7d.F.79	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.low.7d	psilocybin	0.25 mg / kg	7 day	F	79	8 weeks	18 grams	9.3	3	2
-psilo.low.7d.F.80	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	psilo.low.7d	psilocybin	0.25 mg / kg	7 day	F	80	8 weeks	18 grams	9.6	3	2
-sal.7d.M.81	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	sal.7d	saline	0.9%	7 day	M	81	8 weeks	26 grams	9.4	3	1
-sal.7d.M.82	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	sal.7d	saline	0.9%	7 day	M	82	8 weeks	26 grams	9.3	3	2
-sal.7d.M.83	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	sal.7d	saline	0.9%	7 day	M	83	8 weeks	26 grams	9.1	3	2
-sal.7d.M.84	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	sal.7d	saline	0.9%	7 day	M	84	8 weeks	26 grams	9.4	3	2
-sal.7d.M.85	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	sal.7d	saline	0.9%	7 day	M	85	8 weeks	26 grams	9.4	3	2
-sal.7d.F.86	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	sal.7d	saline	0.9%	7 day	F	86	8 weeks	18 grams	9.4	3	1
-sal.7d.F.87	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	sal.7d	saline	0.9%	7 day	F	87	8 weeks	18 grams	9.3	3	3
-sal.7d.F.88	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	sal.7d	saline	0.9%	7 day	F	88	8 weeks	18 grams	9.3	3	3
-sal.7d.F.89	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	sal.7d	saline	0.9%	7 day	F	89	8 weeks	18 grams	9.2	3	3
-sal.7d.F.90	Mus musculus	B57BL/6	8 weeks + timepoint duration	01-Oct-2023	USA	prefrontal cortex	sal.7d	saline	0.9%	7 day	F	90	8 weeks	18 grams	9.1	3	3
+psilo.high.8h.M.1	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.high.8h	psilocybin	1 mg / kg	8 hour	M	1	8 weeks	26 grams	8.5	1	8
+psilo.high.8h.M.2	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.high.8h	psilocybin	1 mg / kg	8 hour	M	2	8 weeks	26 grams	9.2	1	8
+psilo.high.8h.M.3	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.high.8h	psilocybin	1 mg / kg	8 hour	M	3	8 weeks	26 grams	9.3	1	8
+psilo.high.8h.M.4	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.high.8h	psilocybin	1 mg / kg	8 hour	M	4	8 weeks	26 grams	9.3	1	8
+psilo.high.8h.M.5	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.high.8h	psilocybin	1 mg / kg	8 hour	M	5	8 weeks	26 grams	9.2	1	8
+psilo.high.8h.F.6	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.high.8h	psilocybin	1 mg / kg	8 hour	F	6	8 weeks	18 grams	9.6	1	8
+psilo.high.8h.F.7	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.high.8h	psilocybin	1 mg / kg	8 hour	F	7	8 weeks	18 grams	9.3	1	8
+psilo.high.8h.F.8	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.high.8h	psilocybin	1 mg / kg	8 hour	F	8	8 weeks	18 grams	9.4	1	8
+psilo.high.8h.F.9	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.high.8h	psilocybin	1 mg / kg	8 hour	F	9	8 weeks	18 grams	9.3	1	7
+psilo.high.8h.F.10	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.high.8h	psilocybin	1 mg / kg	8 hour	F	10	8 weeks	18 grams	9.3	1	7
+psilo.low.8h.M.11	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.low.8h	psilocybin	0.25 mg / kg	8 hour	M	11	8 weeks	26 grams	9.2	1	7
+psilo.low.8h.M.12	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.low.8h	psilocybin	0.25 mg / kg	8 hour	M	12	8 weeks	26 grams	9.2	1	7
+psilo.low.8h.M.13	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.low.8h	psilocybin	0.25 mg / kg	8 hour	M	13	8 weeks	26 grams	9.3	1	7
+psilo.low.8h.M.14	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.low.8h	psilocybin	0.25 mg / kg	8 hour	M	14	8 weeks	26 grams	9.2	1	7
+psilo.low.8h.M.15	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.low.8h	psilocybin	0.25 mg / kg	8 hour	M	15	8 weeks	26 grams	9.4	1	7
+psilo.low.8h.F.16	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.low.8h	psilocybin	0.25 mg / kg	8 hour	F	16	8 weeks	18 grams	9.3	1	7
+psilo.low.8h.F.17	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.low.8h	psilocybin	0.25 mg / kg	8 hour	F	17	8 weeks	18 grams	9.3	1	7
+psilo.low.8h.F.18	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.low.8h	psilocybin	0.25 mg / kg	8 hour	F	18	8 weeks	18 grams	9.2	1	7
+psilo.low.8h.F.19	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.low.8h	psilocybin	0.25 mg / kg	8 hour	F	19	8 weeks	18 grams	9.6	1	7
+psilo.low.8h.F.20	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.low.8h	psilocybin	0.25 mg / kg	8 hour	F	20	8 weeks	18 grams	9.5	1	7
+sal.8h.M.21	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	sal.8h	saline	0.9%	8 hour	M	21	8 weeks	26 grams	9.6	1	7
+sal.8h.M.22	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	sal.8h	saline	0.9%	8 hour	M	22	8 weeks	26 grams	9.2	1	7
+sal.8h.M.23	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	sal.8h	saline	0.9%	8 hour	M	23	8 weeks	26 grams	9.2	1	6
+sal.8h.M.24	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	sal.8h	saline	0.9%	8 hour	M	24	8 weeks	26 grams	9.2	1	6
+sal.8h.M.25	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	sal.8h	saline	0.9%	8 hour	M	25	8 weeks	26 grams	9.1	1	6
+sal.8h.F.26	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	sal.8h	saline	0.9%	8 hour	F	26	8 weeks	18 grams	9	1	6
+sal.8h.F.27	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	sal.8h	saline	0.9%	8 hour	F	27	8 weeks	18 grams	9.3	1	6
+sal.8h.F.28	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	sal.8h	saline	0.9%	8 hour	F	28	8 weeks	18 grams	9.6	1	6
+sal.8h.F.29	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	sal.8h	saline	0.9%	8 hour	F	29	8 weeks	18 grams	9.6	1	6
+sal.8h.F.30	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	sal.8h	saline	0.9%	8 hour	F	30	8 weeks	18 grams	9.5	1	6
+psilo.high.24h.M.31	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.high.24h	psilocybin	1 mg / kg	24 hour	M	31	8 weeks	26 grams	9.6	2	6
+psilo.high.24h.M.32	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.high.24h	psilocybin	1 mg / kg	24 hour	M	32	8 weeks	26 grams	9.5	2	6
+psilo.high.24h.M.33	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.high.24h	psilocybin	1 mg / kg	24 hour	M	33	8 weeks	26 grams	7.5	2	6
+psilo.high.24h.M.34	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.high.24h	psilocybin	1 mg / kg	24 hour	M	34	8 weeks	26 grams	9.5	2	6
+psilo.high.24h.M.35	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.high.24h	psilocybin	1 mg / kg	24 hour	M	35	8 weeks	26 grams	9.2	2	6
+psilo.high.24h.F.36	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.high.24h	psilocybin	1 mg / kg	24 hour	F	36	8 weeks	18 grams	9.4	2	6
+psilo.high.24h.F.37	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.high.24h	psilocybin	1 mg / kg	24 hour	F	37	8 weeks	18 grams	9.3	2	5
+psilo.high.24h.F.38	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.high.24h	psilocybin	1 mg / kg	24 hour	F	38	8 weeks	18 grams	9.2	2	5
+psilo.high.24h.F.39	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.high.24h	psilocybin	1 mg / kg	24 hour	F	39	8 weeks	18 grams	9.4	2	5
+psilo.high.24h.F.40	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.high.24h	psilocybin	1 mg / kg	24 hour	F	40	8 weeks	18 grams	9.6	2	5
+psilo.low.24h.M.41	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.low.24h	psilocybin	0.25 mg / kg	24 hour	M	41	8 weeks	26 grams	9.5	2	5
+psilo.low.24h.M.42	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.low.24h	psilocybin	0.25 mg / kg	24 hour	M	42	8 weeks	26 grams	9.5	2	5
+psilo.low.24h.M.43	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.low.24h	psilocybin	0.25 mg / kg	24 hour	M	43	8 weeks	26 grams	9.5	2	5
+psilo.low.24h.M.44	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.low.24h	psilocybin	0.25 mg / kg	24 hour	M	44	8 weeks	26 grams	9.8	2	5
+psilo.low.24h.M.45	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.low.24h	psilocybin	0.25 mg / kg	24 hour	M	45	8 weeks	26 grams	9.9	2	5
+psilo.low.24h.F.46	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.low.24h	psilocybin	0.25 mg / kg	24 hour	F	46	8 weeks	18 grams	8.1	2	5
+psilo.low.24h.F.47	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.low.24h	psilocybin	0.25 mg / kg	24 hour	F	47	8 weeks	18 grams	9.5	2	5
+psilo.low.24h.F.48	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.low.24h	psilocybin	0.25 mg / kg	24 hour	F	48	8 weeks	18 grams	9.4	2	5
+psilo.low.24h.F.49	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.low.24h	psilocybin	0.25 mg / kg	24 hour	F	49	8 weeks	18 grams	9.3	2	5
+psilo.low.24h.F.50	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.low.24h	psilocybin	0.25 mg / kg	24 hour	F	50	8 weeks	18 grams	9.2	2	5
+sal.24h.M.51	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	sal.24h	saline	0.9%	24 hour	M	51	8 weeks	26 grams	9.4	2	4
+sal.24h.M.52	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	sal.24h	saline	0.9%	24 hour	M	52	8 weeks	26 grams	9.3	2	4
+sal.24h.M.53	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	sal.24h	saline	0.9%	24 hour	M	53	8 weeks	26 grams	9.5	2	4
+sal.24h.M.54	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	sal.24h	saline	0.9%	24 hour	M	54	8 weeks	26 grams	9.5	2	4
+sal.24h.M.55	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	sal.24h	saline	0.9%	24 hour	M	55	8 weeks	26 grams	9.4	2	4
+sal.24h.F.56	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	sal.24h	saline	0.9%	24 hour	F	56	8 weeks	18 grams	9.4	2	4
+sal.24h.F.57	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	sal.24h	saline	0.9%	24 hour	F	57	8 weeks	18 grams	9.4	2	4
+sal.24h.F.58	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	sal.24h	saline	0.9%	24 hour	F	58	8 weeks	18 grams	9.3	2	4
+sal.24h.F.59	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	sal.24h	saline	0.9%	24 hour	F	59	8 weeks	18 grams	9.5	2	4
+sal.24h.F.60	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	sal.24h	saline	0.9%	24 hour	F	60	8 weeks	18 grams	9.3	2	4
+psilo.high.7d.M.61	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.high.7d	psilocybin	1 mg / kg	7 day	M	61	8 weeks	26 grams	9.3	3	4
+psilo.high.7d.M.62	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.high.7d	psilocybin	1 mg / kg	7 day	M	62	8 weeks	26 grams	9.5	3	4
+psilo.high.7d.M.63	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.high.7d	psilocybin	1 mg / kg	7 day	M	63	8 weeks	26 grams	9.2	3	4
+psilo.high.7d.M.64	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.high.7d	psilocybin	1 mg / kg	7 day	M	64	8 weeks	26 grams	9.4	3	4
+psilo.high.7d.M.65	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.high.7d	psilocybin	1 mg / kg	7 day	M	65	8 weeks	26 grams	9.3	3	4
+psilo.high.7d.F.66	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.high.7d	psilocybin	1 mg / kg	7 day	F	66	8 weeks	18 grams	9.4	3	3
+psilo.high.7d.F.67	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.high.7d	psilocybin	1 mg / kg	7 day	F	67	8 weeks	18 grams	9.5	3	3
+psilo.high.7d.F.68	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.high.7d	psilocybin	1 mg / kg	7 day	F	68	8 weeks	18 grams	9.4	3	3
+psilo.high.7d.F.69	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.high.7d	psilocybin	1 mg / kg	7 day	F	69	8 weeks	18 grams	9.5	3	3
+psilo.high.7d.F.70	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.high.7d	psilocybin	1 mg / kg	7 day	F	70	8 weeks	18 grams	9.4	3	3
+psilo.low.7d.M.71	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.low.7d	psilocybin	0.25 mg / kg	7 day	M	71	8 weeks	26 grams	9.1	3	3
+psilo.low.7d.M.72	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.low.7d	psilocybin	0.25 mg / kg	7 day	M	72	8 weeks	26 grams	9.5	3	3
+psilo.low.7d.M.73	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.low.7d	psilocybin	0.25 mg / kg	7 day	M	73	8 weeks	26 grams	9.1	3	3
+psilo.low.7d.M.74	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.low.7d	psilocybin	0.25 mg / kg	7 day	M	74	8 weeks	26 grams	9.4	3	3
+psilo.low.7d.M.75	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.low.7d	psilocybin	0.25 mg / kg	7 day	M	75	8 weeks	26 grams	9.4	3	3
+psilo.low.7d.F.76	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.low.7d	psilocybin	0.25 mg / kg	7 day	F	76	8 weeks	18 grams	9.3	3	3
+psilo.low.7d.F.77	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.low.7d	psilocybin	0.25 mg / kg	7 day	F	77	8 weeks	18 grams	9.4	3	2
+psilo.low.7d.F.78	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.low.7d	psilocybin	0.25 mg / kg	7 day	F	78	8 weeks	18 grams	7	3	2
+psilo.low.7d.F.79	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.low.7d	psilocybin	0.25 mg / kg	7 day	F	79	8 weeks	18 grams	9.3	3	2
+psilo.low.7d.F.80	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	psilo.low.7d	psilocybin	0.25 mg / kg	7 day	F	80	8 weeks	18 grams	9.6	3	2
+sal.7d.M.81	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	sal.7d	saline	0.9%	7 day	M	81	8 weeks	26 grams	9.4	3	1
+sal.7d.M.82	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	sal.7d	saline	0.9%	7 day	M	82	8 weeks	26 grams	9.3	3	2
+sal.7d.M.83	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	sal.7d	saline	0.9%	7 day	M	83	8 weeks	26 grams	9.1	3	2
+sal.7d.M.84	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	sal.7d	saline	0.9%	7 day	M	84	8 weeks	26 grams	9.4	3	2
+sal.7d.M.85	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	sal.7d	saline	0.9%	7 day	M	85	8 weeks	26 grams	9.4	3	2
+sal.7d.F.86	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	sal.7d	saline	0.9%	7 day	F	86	8 weeks	18 grams	9.4	3	1
+sal.7d.F.87	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	sal.7d	saline	0.9%	7 day	F	87	8 weeks	18 grams	9.3	3	3
+sal.7d.F.88	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	sal.7d	saline	0.9%	7 day	F	88	8 weeks	18 grams	9.3	3	3
+sal.7d.F.89	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	sal.7d	saline	0.9%	7 day	F	89	8 weeks	18 grams	9.2	3	3
+sal.7d.F.90	Mus musculus	C57BL/6	8-12 weeks at injection	01-Oct-2023	USA	prefrontal cortex	sal.7d	saline	0.9%	7 day	F	90	8 weeks	18 grams	9.1	3	3

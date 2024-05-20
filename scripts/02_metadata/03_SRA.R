@@ -3,8 +3,8 @@ df <- read.delim2("../../refs/metadata.tsv")
 
 biosample <- data.frame(sample_name = df$sample_id,
                         organism = "Mus musculus",
-                        strain = "B57BL/6",
-                        age = "8 weeks + timepoint duration",
+                        strain = "C57BL/6",
+                        age = "8-12 weeks at injection",
                         collection_date = "01-Oct-2023",
                         geo_loc_name = "USA",
                         tissue = "prefrontal cortex")
