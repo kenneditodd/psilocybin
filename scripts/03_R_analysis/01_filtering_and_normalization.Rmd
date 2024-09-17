@@ -2,7 +2,7 @@
 title: "Psilocybin Project 1"
 subtitle: "Filtering and Normalization"
 author: "Kennedi Todd"
-date: "04/04/2024"
+date: "05/20/2024"
 output:
   html_document:
     theme: cerulean
@@ -13,8 +13,9 @@ editor_options:
 ---
 
 # Background
-- 90 samples for bulk RNA sequencing \
+- bulk RNA sequencing of prefrontal cortex of 90 mice \
 - 10 samples per group (treatment, dose, time point) \
+- high dose = 1 mg/kg, low dose = 0.25 mg/kg
 - within each group there are 5 females and 5 males \
 
 # Setup
@@ -43,18 +44,19 @@ library(tidyverse)          # pivot_wider()
 
 ## User defined variables
 ```{r set_variables}
-out <- "../../results/all_samples_strict/"
-out2 <- "all_samples_strict"
+out <- "../../results/all_samples/"
+out2 <- "all_samples"
 treatment_order <- c("saline","psilocybin")
 treatment_colors <- c("gray60","springgreen2")
 sex_order <- c("M","F")
 sex_colors <- c("gold2","purple")
-group_order <- c("sal.8h","sal.24h","sal.7d",
-                 "psilo.low.8h","psilo.low.24h","psilo.low.7d",
-                 "psilo.high.8h","psilo.high.24h","psilo.high.7d")
+group_order <- c("S.8h","S.24h","S.7d",
+                 "L.8h","L.24h","L.7d",
+                 "H.8h","H.24h","H.7d")
 group_colors <- c("gray90","gray60","gray30","lightblue","cornflowerblue","blue",
                           "sienna1","red2","red4")
-ann <- "/research/labs/neurology/fryer/projects/references/mouse/refdata-gex-mm10-2020-A/genes/genes.gtf"
+ann <- paste0("/research/labs/neurology/fryer/projects/references/",
+              "mouse/refdata-gex-mm10-2020-A/genes/genes.gtf")
 ```
 
 ## Save functions
@@ -81,9 +83,8 @@ meta <- read.delim("../../refs/metadata.tsv",
                    header = TRUE,
                    sep = "\t")
 meta$group <- factor(meta$group, levels = group_order)
-meta <- meta %>% arrange(group)
+meta <- meta %>% ungroup() %>% arrange(group)
 rownames(meta) <- meta$filename
-meta$group2 <- factor(paste0(meta$group, ".", meta$sex))
 
 # rename counts columns
 counts.names <- gsub("_L4", "", colnames(counts))
@@ -160,17 +161,19 @@ dim(dge)
 ## Remove high Hbb-bs samples
 ```{r remove_high_hemoglobin}
 # Add Hbb-bs to metadata
-hbb <- as.data.frame(cpm(dge, log = TRUE))["Hbb-bs",]
-dge$samples$hbb <- as.numeric(hbb)
+hbb_log2cpm <- as.data.frame(cpm(dge, log = TRUE))["Hbb-bs",]
+dge$samples$hbb_log2cpm <- as.numeric(hbb_log2cpm)
+remove(hbb_log2cpm)
+  
+if (out2 == "high_hbb_removed") {
+  hbb.cpm <- cpm(dge$counts)["Hbb-bs",]
+  keep <- !hbb.cpm > 10
+  dge <- dge[,keep]
+  dim(dge)
+}
 
-#hbb.cpm <- cpm(dge$counts)["Hbb-bs",]
-#keep <- !hbb.cpm > 10
-#dge <- dge[,keep]
-#dim(dge)
-
-remove(hbb)
+dim(dge)
 ```
-
 
 # QC: Raw
 ## Bargraph
@@ -222,12 +225,17 @@ path <- paste0(out,"prefiltering_QC/JSD_heatmap.pdf")
 pdf(path, width = 15, height = 15)
 
 # set heatmap colors and names
-meta <- dge$samples[,c("treatment","sex")]
+meta <- dge$samples[,c("treatment","sex","timepoint")]
 rownames(meta) <- names
 paletteLength <- 100
 myColor <- colorRampPalette(c("blue", "skyblue", "white"))(paletteLength)
-ann_colors = list(treatment = c(saline="lightgray", psilocybin="springgreen2"),
-                  sex = c(M="gold", F="purple"))
+ann_colors = list(treatment = c(saline="lightgray", 
+                                psilocybin="springgreen2"),
+                  sex = c(M="gold", 
+                          F="purple"),
+                  timepoint = c(`8 hour`="tomato",
+                                `24 hour`="cornflowerblue",
+                                `7 day`="tan"))
 
 pheatmap::pheatmap(round.data,
                    treeheight_row = 0,
@@ -411,6 +419,171 @@ for (dim in dims) {
 remove(data)
 ```
 
+### Time point
+```{r MDS_colored_by_sex}
+# set colors and get data
+data <- cpm(dge$counts, log = TRUE)
+names <- dge$samples$sample_id
+
+# loop through dimensions and top genes
+dims <- list(c(1,2),c(2,3),c(3,4))
+topGenes <- c(100,500)
+
+for (dim in dims) {
+  
+  for (numGenes in topGenes) {
+      
+    mds <- plotMDS(data, 
+                   labels = names, 
+                   top = numGenes,
+                   plot = FALSE,
+                   dim.plot = dim)
+
+    toplot <- data.frame(DimX = mds$x, 
+                         DimY = mds$y,
+                         Sample = rownames(mds$distance.matrix.squared),
+                         timepoint = dge$samples$timepoint)
+    
+    x.lab <- paste0(mds$axislabel," ",mds$dim.plot[1]," (",
+                    round(mds$var.explained[mds$dim.plot[1]] * 100, digits = 2),
+                    "%)")
+    y.lab <- paste0(mds$axislabel," ",mds$dim.plot[2]," (",
+                    round(mds$var.explained[mds$dim.plot[2]] * 100, digits = 2),
+                    "%)")
+    
+    p <- ggplot(toplot, aes(x = DimX, y = DimY, color = timepoint, label = Sample)) + 
+      geom_point(size = 3) +
+      theme_bw() +
+      geom_text(aes(label = Sample), size=4, vjust = -1) +
+      xlab(x.lab) + ylab(y.lab) + 
+      ggtitle(paste0("MDS Raw: Top ", numGenes, ", Log2(CPM)"))
+    print(p)
+    
+    # save
+    dimTitle <- as.character(dim)
+    path <- paste0(out,"prefiltering_QC/MDS_top_",
+                   numGenes,"_genes/MDS_raw_top_", numGenes, "_",
+                   "dim", as.character(dim)[1], "&", as.character(dim[2]), 
+                   "_colored_by_timepoint")
+    saveToPDF(paste0(path, ".pdf"), width = 8, height = 8)
+  }
+}
+
+remove(data)
+```
+
+### RNA extraction
+```{r MDS_colored_by_sex}
+# set colors and get data
+dge$samples$RNA_extraction_batch <- factor(dge$samples$RNA_extraction_batch)
+data <- cpm(dge$counts, log = TRUE)
+names <- dge$samples$sample_id
+
+# loop through dimensions and top genes
+dims <- list(c(1,2),c(2,3),c(3,4))
+topGenes <- c(100,500)
+
+for (dim in dims) {
+  
+  for (numGenes in topGenes) {
+      
+    mds <- plotMDS(data, 
+                   labels = names, 
+                   top = numGenes,
+                   plot = FALSE,
+                   dim.plot = dim)
+
+    toplot <- data.frame(DimX = mds$x, 
+                         DimY = mds$y,
+                         Sample = rownames(mds$distance.matrix.squared),
+                         extraction = dge$samples$RNA_extraction_batch)
+    
+    x.lab <- paste0(mds$axislabel," ",mds$dim.plot[1]," (",
+                    round(mds$var.explained[mds$dim.plot[1]] * 100, digits = 2),
+                    "%)")
+    y.lab <- paste0(mds$axislabel," ",mds$dim.plot[2]," (",
+                    round(mds$var.explained[mds$dim.plot[2]] * 100, digits = 2),
+                    "%)")
+    
+    p <- ggplot(toplot, aes(x = DimX, y = DimY, color = extraction, label = Sample)) + 
+      geom_point(size = 3) +
+      scale_color_manual(values = c("black","gray",
+                                    "red","orange",
+                                    "yellow","green3",
+                                    "blue2","purple")) +
+      theme_bw() +
+      geom_text(aes(label = Sample), size=4, vjust = -1) +
+      xlab(x.lab) + ylab(y.lab) + 
+      ggtitle(paste0("MDS Raw: Top ", numGenes, ", Log2(CPM)"))
+    print(p)
+    
+    # save
+    dimTitle <- as.character(dim)
+    path <- paste0(out,"prefiltering_QC/MDS_top_",
+                   numGenes,"_genes/MDS_raw_top_", numGenes, "_",
+                   "dim", as.character(dim)[1], "&", as.character(dim[2]), 
+                   "_colored_by_extraction")
+    saveToPDF(paste0(path, ".pdf"), width = 8, height = 8)
+  }
+}
+
+remove(data,dims)
+```
+### RIN
+```{r MDS_colored_by_sex}
+# set colors and get data
+dge$samples$RNA_extraction_batch <- factor(dge$samples$RNA_extraction_batch)
+data <- cpm(dge$counts, log = TRUE)
+names <- dge$samples$sample_id
+
+# loop through dimensions and top genes
+dims <- list(c(1,2),c(2,3),c(3,4))
+topGenes <- c(100,500)
+
+for (dim in dims) {
+  
+  for (numGenes in topGenes) {
+      
+    mds <- plotMDS(data, 
+                   labels = names, 
+                   top = numGenes,
+                   plot = FALSE,
+                   dim.plot = dim)
+
+    toplot <- data.frame(DimX = mds$x, 
+                         DimY = mds$y,
+                         Sample = rownames(mds$distance.matrix.squared),
+                         RIN = dge$samples$RIN)
+    
+    x.lab <- paste0(mds$axislabel," ",mds$dim.plot[1]," (",
+                    round(mds$var.explained[mds$dim.plot[1]] * 100, digits = 2),
+                    "%)")
+    y.lab <- paste0(mds$axislabel," ",mds$dim.plot[2]," (",
+                    round(mds$var.explained[mds$dim.plot[2]] * 100, digits = 2),
+                    "%)")
+    
+    p <- ggplot(toplot, aes(x = DimX, y = DimY, color = RIN, label = Sample)) + 
+      geom_point(size = 3) +
+      theme_bw() +
+      geom_text(aes(label = Sample), size=4, vjust = -1) +
+      xlab(x.lab) + ylab(y.lab) + 
+      scale_color_gradientn(colors = c("red","yellow","lightblue","blue")) +
+      ggtitle(paste0("MDS Raw: Top ", numGenes, ", Log2(CPM)"))
+    print(p)
+    
+    # save
+    dimTitle <- as.character(dim)
+    path <- paste0(out,"prefiltering_QC/MDS_top_",
+                   numGenes,"_genes/MDS_raw_top_", numGenes, "_",
+                   "dim", as.character(dim)[1], "&", as.character(dim[2]), 
+                   "_colored_by_RIN")
+    saveToPDF(paste0(path, ".pdf"), width = 8, height = 8)
+  }
+}
+
+remove(data,dims)
+```
+
 ## CPM, FPKM, TPM
 ```{r cpm_fpkm_tpm}
 # CPM, Counts Per Million
@@ -449,6 +622,7 @@ start <- dim(dge)[1]
 # get dataframes
 cpm <- as.data.frame(cpm(dge))
 meta <- dge$samples[,c("sample_id","group")]
+meta <- meta |> group_by(group) |> mutate(group_size = n())
 
 # find CPM avg per group
 mean.group <- cpm |>
@@ -461,45 +635,32 @@ mean.group <- as.data.frame(mean.group)
 rownames(mean.group) <- mean.group$gene
 mean.group$gene <- NULL
 mean.group <- round(mean.group, digits = 4)
-
 # save
 write.table(x = mean.group, 
-            file = paste0(out, "counts/avgCPM_per_group_before_filtering.tsv"),
+            file = paste0(out,"counts/avgCPM_per_group_before_filtering.tsv"),
             quote = FALSE,
             sep = "\t")
 
-# Option 1 filtering method
-# one group must have CPM > 1
-#mean.group <- as.data.frame(mean.group > 1) # true when CPM > 1
-#mean.group$rsums <- Matrix::rowSums(mean.group) # num groups with CPM > 1
-#keep <- mean.group$rsums >= 1 # genes with at least 1 CPM in 1 group
-#dge.filtered <- dge[keep,,keep.lib.sizes = FALSE]
+# all samples in a group (i.e. sal.8h) must have CPM >= 1
+# create df with summary of if group has all samples >= 1
+strict <- as.data.frame(cpm >= 1) |> 
+  mutate(gene = rownames(cpm)) |>
+  pivot_longer(-gene, names_to = "sample_id") |>
+  left_join(meta, by = "sample_id") |>
+  summarize(thresh = all(value), .by = c(gene, group)) |>
+  pivot_wider(names_from = group, values_from = thresh)
+# summarize df - if any group meets the thresh then TRUE
+strict <- as.data.frame(strict)
+rownames(strict) <- strict$gene
+strict$gene <- NULL
+strict$pass <- apply(X = strict, MARGIN = 1, FUN = any)
+all.equal(rownames(strict),rownames(dge))
 
-# Option 2 filtering method
-# all samples in a group (sal/psi) must have CPM > 1
-# create separate df
-sal.samples <- dge$samples$sample_id[dge$samples$treatment %in% "saline"]
-num.sal <- length(sal.samples)
-psi.samples <- dge$samples$sample_id[dge$samples$treatment %in% "psilocybin"]
-num.psi <- length(psi.samples)
-# true when CPM >= 1
-sal.df <- cpm[,colnames(cpm) %in% sal.samples] >= 1
-psi.df <- cpm[,colnames(cpm) %in% psi.samples] >= 1
-# find row sum
-sal.df <- as.data.frame(sal.df)
-psi.df <- as.data.frame(psi.df)
-sal.df$rsum <- as.numeric(Matrix::rowSums(sal.df))
-psi.df$rsum <- as.numeric(Matrix::rowSums(psi.df))
-# keep if all samples in group had CPM >= 1
-sal.df$keep <- sal.df$rsum == num.sal
-psi.df$keep <- psi.df$rsum == num.psi
-# keep gene if TRUE in sal or psi df
-keep <- sal.df$keep | psi.df$keep
-dge.filtered <- dge[keep,,keep.lib.sizes = FALSE]
-
+# filter
+dge.filtered <- dge[strict$pass,,keep.lib.sizes = FALSE]
 
 # save
-mean.group.final <- mean.group[keep,]
+mean.group.final <- mean.group[strict$pass,]
 write.table(x = mean.group.final, 
             file = paste0(out, "counts/avgCPM_per_group_after_filtering.tsv"),
             quote = FALSE,
@@ -507,7 +668,7 @@ write.table(x = mean.group.final,
 
 end <- dim(dge.filtered)[1]
 print(paste(start - end, "genes removed and", end, "genes leftover."))
-remove(meta,mean.group,cpm,keep,start,end,mean.group.final,psi.df,sal.df)
+remove(meta,mean.group,cpm,start,end,mean.group.final,strict)
 ```
 
 ## TMM
@@ -535,11 +696,11 @@ par(mfrow = c(1,3))
 
 # Normalize data for library size and expression intesntiy
 log2cpm.raw <- cpm(dge, log = TRUE)
-colnames(log2cpm.raw) <- dge$samples$sample
+colnames(log2cpm.raw) <- dge$samples$sample_id
 log2cpm.filtered <- cpm(dge.filtered, log = TRUE)
-colnames(log2cpm.filtered) <- dge.filtered$samples$sample
+colnames(log2cpm.filtered) <- dge.filtered$samples$sample_id
 log2cpm.norm <- cpm(dge.filtered.norm, log = TRUE)
-colnames(log2cpm.norm) <- dge.filtered.norm$samples$sample
+colnames(log2cpm.norm) <- dge.filtered.norm$samples$sample_id
 
 # set colors
 colors <- treatment_colors[dge$samples$treatment]
@@ -556,7 +717,7 @@ for (i in 2:nsamples){
 }
 
 # Second, plot log2cpm.filtered
-plot(density(log2cpm.filtered[,1]), col = colors[1], lwd = 2, ylim = c(0,0.2), 
+plot(density(log2cpm.filtered[,1]), col = colors[1], lwd = 2, ylim = c(0,0.25), 
      las = 2, main = "B. Filtered", xlab = expression('Log'[2]~CPM))
 abline(v = cpm(3, log = TRUE), lty = 3)
 for (i in 2:nsamples) {
@@ -565,7 +726,7 @@ for (i in 2:nsamples) {
 }
 
 # Third, plot log2cpm.norm
-plot(density(log2cpm.norm[,1]), col = colors[1], lwd = 2, ylim = c(0,0.2), 
+plot(density(log2cpm.norm[,1]), col = colors[1], lwd = 2, ylim = c(0,0.25), 
      las = 2, main = "C. Normalized", xlab = expression('Log'[2]~CPM))
 abline(v = cpm(3, log = TRUE), lty = 3)
 for (i in 2:nsamples) {
@@ -623,7 +784,7 @@ axis(1,at=1:nsamples,labels=colnames(log2cpm.norm),las=2,cex.axis=0.8)
 
 # save
 path <- paste0(out, "postfiltering_QC/counts_per_gene_boxplot")
-saveToPDF(paste0(path, ".pdf"), width = 20, height = 10)
+saveToPDF(paste0(path, ".pdf"), width = 20, height = 6)
 #remove(log2cpm.raw, log2cpm.norm, log2cpm.filtered)
 ```
 
@@ -668,13 +829,6 @@ head(df, 20)
 
 path <- paste0(out, "counts/top_transcripts_counts_postfiltering.tsv")
 write.table(df, path, quote = FALSE, sep = "\t")
-```
-
-# Power analysis
-- power - usually set to 0.8 which means 80% probability
--
-```{r}
-
 ```
 
 # Save

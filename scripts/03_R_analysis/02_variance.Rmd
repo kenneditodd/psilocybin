@@ -2,7 +2,7 @@
 title: "Psilocybin Project 1"
 subtitle: "Variance"
 author: "Kennedi Todd"
-date: "04/02/2023"
+date: "05/20/2023"
 output:
   html_document:
     theme: cerulean
@@ -32,15 +32,15 @@ library(variancePartition) # fitExtractVarPartModel()
 
 ## User defined variables
 ```{r set_variables}
-out <- "../../results/all_samples_strict/"
-out2 <- "all_samples_strict"
+out <- "../../results/high_hbb_removed/"
+out2 <- "high_hbb_removed"
 treatment_order <- c("saline","psilocybin")
 treatment_colors <- c("gray60","springgreen2")
 sex_order <- c("M","F")
 sex_colors <- c("gold2","purple")
-group_order <- c("sal.8h","sal.24h","sal.7d",
-                 "psilo.low.8h","psilo.low.24h","psilo.low.7d",
-                 "psilo.high.8h","psilo.high.24h","psilo.high.7d")
+group_order <- c("S.8h","S.24h","S.7d",
+                 "L.8h","L.24h","L.7d",
+                 "H.8h","H.24h","H.7d")
 group_colors <- c("gray90","gray60","gray30","lightblue","cornflowerblue","blue",
                           "sienna1","red2","red4")
 ```
@@ -68,7 +68,8 @@ variables <- c("group",
                "sex",
                "weight_at_treatment",
                "RIN",
-               "lane")
+               "lane",
+               "RNA_extraction_batch")
 meta <- meta %>% select(all_of(variables))
 
 # log2 transform lib.size
@@ -76,6 +77,7 @@ meta$log2.lib <- log2(meta$lib.size)
 meta$lib.size <- NULL
 
 # change class
+meta$dose <- factor(meta$dose)
 meta$weight_at_treatment <- as.numeric(gsub(" grams","",meta$weight_at_treatment))
 meta$timepoint <- factor(meta$timepoint)
 meta$lane <- factor(meta$lane)
@@ -121,7 +123,7 @@ meta <- cbind(meta, cpm)
 ## Significance
 ```{r stats}
 # initialize data frame
-variable_numbers <- c(7,8,10:19)
+variable_numbers <- c(7,8,11:20)
 variable_names <- colnames(meta)[variable_numbers]
 tests <- c("saline_mean","psilocybin_mean","saline_stdv","psilocybin_stdv",
            "saline_shapiro_pval","psilocybin_shapiro_pval","levene_na_omit",
@@ -201,8 +203,8 @@ path <- paste0(out, "variance/spearman_correlation_heatmap.pdf")
 pdf(path, width = 8, height = 8)
 
 # formula
-form <- ~0 + group + treatment + dose + timepoint +  sex + log2.lib +
-  weight_at_treatment + RIN
+form <- ~0 + dose + timepoint + sex + log2.lib + weight_at_treatment + RIN +
+  RNA_extraction_batch
 
 # correlation plot
 model.matrix(form, data = meta) %>% 
@@ -217,7 +219,8 @@ path <- paste0(out, "variance/canonical_correlation_analysis_heatmap.pdf")
 pdf(path, width = 8, height = 8)
 
 # formula
-form <- ~0 + group + sex + log2.lib + RIN
+form <- ~0 + dose + timepoint + sex + log2.lib + weight_at_treatment + RIN +
+  RNA_extraction_batch
 
 c <- canCorPairs(form, meta)
 
@@ -243,7 +246,7 @@ colnames(meta)
 
 # age is usually a continuous so model it as a fixed effect "age"
 # group is categorical, so model them as random effects "(1|group)"
-form <- ~ (1|group) + (1|sex) + log2.lib + RIN
+form <- ~ (1|dose) + (1|timepoint) + (1|sex) + RIN
 
 varPart <- fitExtractVarPartModel(geneExpr, form, meta)
 vp <- sortCols(varPart)
@@ -314,7 +317,7 @@ variables <- c("log2.lib",
                "RIN",
                "C1qb",
                "Flt1",
-               "Hbb.bs",
+               #"Hbb.bs",
                "Syt1",
                "Col1a1",
                "Gfap",

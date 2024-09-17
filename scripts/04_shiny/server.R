@@ -1,6 +1,6 @@
 # load input options
 comparisons <- readr::read_tsv("input_options.tsv")
-cpm <- read.delim2(file = "counts/CPM_prefiltering.tsv")
+cpm <- read.delim2(file = "counts/CPM_postfiltering.tsv")
 group1_options <- comparisons$group1
 group_order <- c("sal.8h","sal.24h","sal.7d",
                  "psilo.low.8h","psilo.low.24h","psilo.low.7d",

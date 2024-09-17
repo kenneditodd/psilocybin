@@ -16,7 +16,7 @@ gprofilerInputFiles <- readRDS("gprofilerInputFiles.rds")
 ui <- fluidPage(
   
   # application title
-  titlePanel("Psilocybin Mice Bulk RNA-Sequencing"),
+  titlePanel("Psilocybin Project 1 Bulk RNA-Sequencing"),
   
   tabsetPanel(
     
@@ -48,8 +48,8 @@ ui <- fluidPage(
         
         # plot
         mainPanel(
-          h5("Samples: removed if Hbb-bs > 10 CPM"),
-          h5("Filtering: keep genes with a group average CPM of 1 in at least 1 group"),
+          h5("Samples: all samples"),
+          h5("Filtering: strict, all samples in one treatment (sal or psi) must have CPM >= 1"),
           h5("Model: group + sex + Hbb-bs"),
           plotlyOutput("volcano")
         )
@@ -73,7 +73,7 @@ ui <- fluidPage(
         
         # Show a plot of the generated distribution
         mainPanel(
-          h3("The prefiltering CPM table is used for these graphs."),
+          h3("The postfiltering CPM table is used for these graphs."),
           plotOutput("boxplot"),
           br(),
           plotOutput("bar")
@@ -109,6 +109,8 @@ ui <- fluidPage(
             parenthesis if you hover over a point. The x-axis has various 
             databases. The y-axis shows the adjusted p-value from the functional 
             enrichment analysis query."),
+          br(),
+          p("Using FDRq < 0.1 and |LFC| > 0.2"),
           plotlyOutput("manhattan")
         )
       ) # sidebarPanel
