@@ -1,7 +1,7 @@
 configfile: "refs/config.json"
 
 
-# DIRECTORY VARIABLES
+# CONFIG VARIABLES
 #--------------------------------------------------------------------------------
 rawReadsDir = config["DIRECTORIES"]["rawReads"]
 trimmedReadsDir = config["DIRECTORIES"]["trimmedReads"]
@@ -12,7 +12,7 @@ countsDir = config["DIRECTORIES"]["featureCounts"]
 
 
 # ENVIRONMENT VARIABLES
-#-----------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 import os
 from dotenv import load_dotenv
 
@@ -25,7 +25,7 @@ fa_file = os.getenv("MMUSCULUS_FA")
 
 
 # RULE ALL
-#-----------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 rule all:
     input:
         config["DIRECTORIES"]["genomeDir"] + "SA",
@@ -33,6 +33,8 @@ rule all:
         expand(trimmedReadsDir + "{sample}_trim_R2.fastq.gz", sample=config["SAMPLE_INFORMATION"]["allSamples"]),
         expand(rawQCDir + "{sample}_R1_fastqc.zip", sample=config["SAMPLE_INFORMATION"]["allSamples"]),
         expand(trimmedQCDir + "{sample}_trim_R1_fastqc.zip", sample=config["SAMPLE_INFORMATION"]["allSamples"]),
+        rawQCDir + "multiqc_report.html",
+        trimmedQCDir + "multiqc_report.html",
         expand(starDir + "{sample}.Aligned.sortedByCoord.out.bam", sample=config["SAMPLE_INFORMATION"]["allSamples"]),
         expand(countsDir + "{sample}_{feature_type}.counts", sample=config["SAMPLE_INFORMATION"]["allSamples"], feature_type=["gene", "exon"]),
 
@@ -72,7 +74,7 @@ rule raw_fastqc:
 
 
 # TRIM BBDUK
-#-----------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 rule trim_bbduk:
     input:
         R1 = lambda wildcards: rawReadsDir + config["SAMPLES"][wildcards.sample]["read1"] + ".fastq.gz",
@@ -89,7 +91,7 @@ rule trim_bbduk:
 
 
 # TRIMMED FASTQC
-#-----------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 rule trimmed_fastqc:
     input:
         R1 = trimmedReadsDir + "{sample}_trim_R1.fastq.gz",
@@ -124,7 +126,7 @@ rule align_reads:
 
 
 # FEATURE COUNTS
-#-----------------------------------------------------------------------------------------    
+#-------------------------------------------------------------------------------   
 rule feature_count:
     input:
         bam = starDir + "{sample}.Aligned.sortedByCoord.out.bam",
@@ -138,3 +140,36 @@ rule feature_count:
         """
         featureCounts -p --primary -t {params.feature_type} -T {params.threads} -s 2 -a {input.gtf} -o {output.counts} {input.bam}
         """
+
+
+# MULTIQC FOR RAW FASTQC
+#-------------------------------------------------------------------------------
+rule multiqc_raw:
+    input:
+        expand(rawQCDir + "{sample}_R1_fastqc.zip", sample=config["SAMPLE_INFORMATION"]["allSamples"]),
+        expand(rawQCDir + "{sample}_R2_fastqc.zip", sample=config["SAMPLE_INFORMATION"]["allSamples"])
+    output:
+        html = rawQCDir + "multiqc_report.html"
+    params:
+        outdir = rawQCDir
+    shell:
+        """
+        multiqc {rawQCDir} -o {params.outdir}
+        """
+
+
+# MULTIQC FOR TRIMMED FASTQC
+#-------------------------------------------------------------------------------
+rule multiqc_trimmed:
+    input:
+        expand(trimmedQCDir + "{sample}_trim_R1_fastqc.zip", sample=config["SAMPLE_INFORMATION"]["allSamples"]),
+        expand(trimmedQCDir + "{sample}_trim_R2_fastqc.zip", sample=config["SAMPLE_INFORMATION"]["allSamples"])
+    output:
+        html = trimmedQCDir + "multiqc_report.html"
+    params:
+        outdir = trimmedQCDir
+    shell:
+        """
+        multiqc {trimmedQCDir} -o {params.outdir}
+        """
+
