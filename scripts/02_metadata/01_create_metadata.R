@@ -20,20 +20,19 @@ mouse.meta$weight_at_treatment <- paste0(mouse.meta$weight_at_treatment, " grams
 mouse.meta$treatment <- tolower(mouse.meta$treatment)
 
 # make the group col more informative
-short.treatment <- gsub("psilocybin","psilo",mouse.meta$treatment)
-short.treatment <- gsub("saline","sal",short.treatment)
-dose.group <- gsub("1 mg / kg", "high", mouse.meta$dose)
-dose.group <- gsub("0.25 mg / kg", "low", dose.group)
-time <- gsub(" hour", "h", mouse.meta$timepoint)
-time <- gsub(" day", "d", time)
-group <- paste0(short.treatment, ".", dose.group, ".", time)
-group <- gsub(".0.9%","",group)
+group <- paste0(gsub(" ", "", mouse.meta$dose),
+                ".",
+                gsub(" hour", "h", mouse.meta$timepoint))
+group <- gsub(" day", 'd', group)
+group <- gsub("0.9%", 'S', group)
+group <- gsub("0.25mg/kg", 'L', group)
+group <- gsub("1mg/kg", 'H', group)
 mouse.meta$group <- group
+group2 <- paste0(group, ".", mouse.meta$sex)
+mouse.meta$group2 <- group2
 
 # sample_id
-sample.id <- paste0(short.treatment, ".", dose.group, ".", time,".",
-                    mouse.meta$sex,".",mouse.meta$animal_id)
-sample.id <- gsub(".0.9%","",sample.id)
+sample.id <- paste0(group2, ".", mouse.meta$animal_id)
 mouse.meta$sample_id <- sample.id
 
 # RNA extraction batch (not library prep)
@@ -57,8 +56,8 @@ mouse.meta[c(9:22),"RNA_extraction_batch"] <- 7
 mouse.meta[c(1:8),"RNA_extraction_batch"] <- 8
 
 # rearrange columns
-colnames(mouse.meta)[c(15,4:8,1,9:14,3,16,2)]
-meta <- mouse.meta[,c(15,4:8,1,9:14,3,16,2)]
+colnames(mouse.meta)[c(16,4,5:8,1,15,3,9:14,17,2)]
+meta <- mouse.meta[,c(16,4,5:8,1,15,3,9:14,17,2)]
 
 # remove time point 28 (wasn't sent for sequencing)
 meta <- meta[!meta$timepoint == "28 day",]
