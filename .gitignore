@@ -4,11 +4,18 @@
 .RData
 .Ruserdata
 psi1.Rproj
+.gitignore
+
+# refs folder
+refs/.env
+refs/transcript_quant/*
+
+# scripts folder
+scripts/01_preprocessing/00*
+scripts/*/logs/*
 
 # my files
-scripts/*/logs/*
 rawReads/*
-refs/transcript_quant/*
 rawQC/*
 trimmedQC/*
 trimmedReads/*
