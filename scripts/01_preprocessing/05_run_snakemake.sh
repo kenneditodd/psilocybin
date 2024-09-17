@@ -19,15 +19,11 @@ cd ../..
 #snakemake --dry-run --printshellcmds
 
 # Run Snakemake
-snakemake --snakefile Snakefile \
-          --cores 20 \
-          --rerun-incomplete \
-          --latency-wait 60 \
-          --cluster "sbatch --mem=60G --output=scripts/01_preprocessing/logs/snakemake_job_logs/%x.%N.%j.stdout --error=scripts/01_preprocessing/logs/snakemake_job_logs/%x.%N.%j.stderr --partition=cpu-short --tasks=10 --time=05:00:00 --propagate=NONE"
+snakemake --snakefile Snakefile --jobs 20 --rerun-incomplete --latency-wait 60 --cluster "sbatch --mem=60G --output=scripts/01_preprocessing/logs/snakemake_job_logs/%x.%N.%j.stdout --error=scripts/01_preprocessing/logs/snakemake_job_logs/%x.%N.%j.stderr --partition=cpu-short --tasks=20 --time=05:00:00 --propagate=NONE"
 
 # Key for the Snakemake command:
 # --snakefile Snakefile: Specifies the Snakefile to use.
-# --cores 20           : Runs up to 20 parallel jobs.
+# --jobs 20            : Runs up to 20 parallel jobs.
 # --rerun-incomplete   : Reruns jobs that were incomplete.
 # --latency-wait 60    : Waits 60 seconds for files to appear before failing.
 # --cluster            : Submits jobs using the sbatch command with the following arguments:
@@ -37,6 +33,6 @@ snakemake --snakefile Snakefile \
 # --output              : Specifies the path for standard output logs.
 # --error               : Specifies the path for standard error logs.
 # --partition=cpu-short : Specifies the partition (queue) for each job.
-# --tasks=10            : Runs 10 tasks for each job.
+# --tasks=20            : Runs 20 tasks for each job.
 # --time=05:00:00       : Sets a time limit of 5 hours for each job.
 # --propagate=NONE      : Prevents signal propagation to job steps.
