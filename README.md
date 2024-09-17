@@ -1,1 +1,1 @@
-# psi1
+# Psilocybin Project 1
