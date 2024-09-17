@@ -30,21 +30,18 @@ table(seq.info$instrument)
 table(seq.info$run)
 table(seq.info$flow_cell)
 
-# check how the lane varies with group
+# get the base of the filename
 seq.info$filename <- 
   stringr::str_match(seq.info$filename, 
                      "(Psi1_A[0-9]+_[HighLowNS]+_[FemMale]+)_L[34]_R1.fastq.gz")[,2]
 
 # merge
 df <- dplyr::left_join(meta, seq.info, by = "filename")
-df <- df[!df$timepoint == "28 day",]
 
-# check
-table(paste0(df$group, ".lane", df$lane))
-table(paste0(df$group,".",df$sex,".lane",df$lane))
+# check lane distribution with group
+table(paste0("Lane", df$lane, "-Group", df$group))
+table(paste0("Lane", df$lane, "-Group", df$group2))
 
-# save meta
+# save joined meta
 write.table(x = df, file = "../../refs/metadata.tsv", sep = "\t",
             quote = FALSE)
-
-

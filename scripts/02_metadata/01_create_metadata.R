@@ -1,11 +1,28 @@
-# read table
+# Load libraries
+library(dplyr)
+
+# Read table
 mouse.meta <- read.delim2("../../refs/joes_meta.tsv", sep = "\t", header = TRUE)
 
-# rename columns
-names <- c("animal_id", "filename", "RLIMS_number", "RLIMS_name", "sacrifice_batch", 
-           "group", "treatment", "dose", "timepoint", "sex", "age_at_treatment",
-           "weight_at_treatment","RIN","genotype","notes")
-colnames(mouse.meta) <- names
+# Rename columns explicitly
+mouse.meta <- mouse.meta %>%
+  rename(
+    animal_id = Animal_Num,
+    filename = Unique_ID,
+    RLIMS_number = RLIMS_Num,
+    RLIMS_name = RLIMS_Name,
+    sacrifice_batch = Sacrifice_Group_Num,
+    group = Group_Num,
+    treatment = Treatment,
+    dose = Dose,
+    timepoint = Timepoint,
+    sex = Sex,
+    age_at_treatment = Age_Weeks,
+    weight_at_treatment = Weight_grams_day_of_treatment,
+    RIN = RIN,
+    genotype = Genotype,
+    notes = Notes
+  )
 
 # remove unnecessary columns
 mouse.meta$RLIMS_name <- NULL
@@ -56,15 +73,31 @@ mouse.meta[c(9:22),"RNA_extraction_batch"] <- 7
 mouse.meta[c(1:8),"RNA_extraction_batch"] <- 8
 
 # rearrange columns
-colnames(mouse.meta)[c(16,4,5:8,1,15,3,9:14,17,2)]
-meta <- mouse.meta[,c(16,4,5:8,1,15,3,9:14,17,2)]
+meta <- mouse.meta[, c(
+  "sample_id",
+  "group",
+  "group2",
+  "treatment",
+  "dose",
+  "timepoint",
+  "sex",
+  "animal_id",
+  "RNA_extraction_batch",
+  "sacrifice_batch",
+  "age_at_treatment",
+  "weight_at_treatment",
+  "RIN",
+  "genotype",
+  "notes",
+  "project_id",
+  "filename"
+)]
 
-# remove time point 28 (wasn't sent for sequencing)
+# remove 28 day time point (wasn't sent for sequencing)
 meta <- meta[!meta$timepoint == "28 day",]
 
 # save meta
-write.table(x = meta, file = "../../refs/metadata.tsv", sep = "\t",
+write.table(x = meta, 
+            file = "../../refs/metadata.tsv", 
+            sep = "\t",
             quote = FALSE)
-
-
-
