@@ -1,68 +1,55 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
-# create a new output file
-outfile = open('../../refs/config.json', 'w')
+import os
+import json
 
-# get all file names
-allSamples = list()
-read = ["R1", "R2"]
-numSamples = 0
+# Set file paths
+sample_list_path = '../../refs/sample_file_list.txt'
+output_file_path = '../../refs/config.json'
 
-with open('../../refs/sample_file_list.txt', 'r') as infile:
+# Initialize directories and sample data
+directories = {
+    "rawReads": "rawReads/",
+    "rawQC": "rawQC/",
+    "trimmedReads": "trimmedReads/",
+    "trimmedQC": "trimmedQC/",
+    "starAligned": "starAligned/",
+    "featureCounts": "featureCounts/",
+    "genomeDir": "refs/starGenomeDir/"
+}
+
+cluster_info = {
+    "threads": "20"
+}
+
+# Load sample names and strip _R1 suffix
+with open(sample_list_path, 'r') as infile:
+    all_samples = [line.strip().replace("_R1.fastq.gz", "") for line in infile]
+
+# Create the config structure
+config = {
+    "DIRECTORIES": directories,
+    "SAMPLE_INFORMATION": {
+        "allSamples": all_samples
+    },
+    "CLUSTER_INFORMATION": cluster_info,
+    "SAMPLES": {}
+}
+
+# Populate sample information for read1 and read2
+with open(sample_list_path, 'r') as infile:
     for line in infile:
-        numSamples += 1
         sample = line.strip()
-        allSamples.append(sample.replace("_R1.fastq.gz", ""))
-
-# create header and write to outfile
-header = '''{{
-    "DIRECTORIES",
-    "rawReads" : "rawReads/",
-    "rawQC" : "rawQC/",
-    "trimmedReads" : "trimmedReads/",
-    "trimmedQC" : "trimmedQC/",
-    "starAligned" : "starAligned/",
-    "featureCounts" : "featureCounts/",
-    "genomeDir" : "refs/starGenomeDir/",
-
-    "FILES",
-    "Mmusculus.gtf" : "/research/labs/neurology/fryer/projects/references/mouse/refdata-gex-mm10-2020-A/genes/genes.gtf",
-    "Mmusculus.fa" : "/research/labs/neurology/fryer/projects/references/mouse/refdata-gex-mm10-2020-A/fasta/genome.fa",
-
-    "SAMPLE INFORMATION",
-    "allSamples": {0},
-
-    "CLUSTER INFORMATION",
-    "threads" : "20",
-'''
-outfile.write(header.format(allSamples))
-
-
-# config formatting
-counter = 0
-with open('../../refs/sample_file_list.txt', 'r') as infile:
-    for line in infile:
-        counter += 1
-
-        # store filename
-        sample = line.strip()
+        base_name = sample.replace("_R1.fastq.gz", "")
         read1 = sample.replace(".fastq.gz", "")
         read2 = sample.replace("_R1.fastq.gz", "_R2")
-        baseName = sample.replace("_R1.fastq.gz", "")
+        config["SAMPLES"][base_name] = {
+            "read1": read1,
+            "read2": read2
+        }
 
-        # break down fastq file info
-        # @A00127:312:HVNLJDSXY:2:1101:2211:1000
-        # @<instrument>:<run number>:<flowcell ID>:<lane>:<tile>:<x-pos>:<y-pos>
+# Write config to JSON file
+with open(output_file_path, 'w') as outfile:
+    json.dump(config, outfile, indent=4)
 
-        out = '''
-    "{0}":{{
-        "read1": "{1}",
-        "read2": "{2}",
-        '''
-        outfile.write(out.format(baseName, read1, read2))
-        if (counter == numSamples):
-            outfile.write("}\n}")
-        else:
-            outfile.write("},\n")
-outfile.close()
-
+print(f"Config file saved to {output_file_path}")
