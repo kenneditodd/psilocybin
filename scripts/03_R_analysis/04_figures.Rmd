@@ -30,7 +30,7 @@ library(UpSetR)
 ```{r set_variables}
 out <- "../../results/all_samples/"
 out2 <- "all_samples"
-model <- "DEGs_with_hbb/"
+model <- "DEGs/both_sexes/"
 treatment_order <- c("saline","psilocybin")
 treatment_colors <- c("gray60","springgreen2")
 sex_order <- c("M","F")
@@ -388,57 +388,6 @@ pdf(paste0(out, model, "/upset/24_hour_comparison_FDRq_", format(thresh, nsmall 
     height = 6, width = 16)
 upset_gene
 ```
-
-```{r}
-up <- h.24h.up[h.24h.up %in% kl.24h.up]
-up <- up[up %in% kh.24h.up]
-up <- up[!up %in% l.24h.up]
-write.table(x = as.data.frame(up),
-            file = paste0(out,model,"upset/24_hour_comparison_24_genes_shared_up.tsv"),
-            quote = FALSE,
-            col.names = FALSE,
-            row.names = FALSE)
-
-up <- l.24h.up[l.24h.up %in% kl.24h.up]
-up <- up[up %in% kh.24h.up]
-up <- up[!up %in% h.24h.up]
-up <- up[!up %in% k.24h.up]
-write.table(x = as.data.frame(up),
-            file = paste0(out,model,"upset/24_hour_comparison_11_genes_shared_up.tsv"),
-            quote = FALSE,
-            col.names = FALSE,
-            row.names = FALSE)
-
-up <- l.24h.up[l.24h.up %in% h.24h.up]
-up <- up[up %in% kl.24h.up]
-up <- up[up %in% kh.24h.up]
-up <- up[!up %in% k.24h.up]
-write.table(x = as.data.frame(up),
-            file = paste0(out,model,"upset/24_hour_comparison_1_gene_shared_up.tsv"),
-            quote = FALSE,
-            col.names = FALSE,
-            row.names = FALSE)
-
-down <- l.24h.down[l.24h.down %in% kl.24h.down]
-down <- down[down %in% kh.24h.down]
-down <- down[!down %in% h.24h.down]
-write.table(x = as.data.frame(up),
-            file = paste0(out,model,"upset/24_hour_comparison_23_genes_shared_down.tsv"),
-            quote = FALSE,
-            col.names = FALSE,
-            row.names = FALSE)
-
-down <- l.24h.down[l.24h.down %in% h.24h.down]
-down <- down[down %in% kl.24h.down]
-down <- down[down %in% kh.24h.down]
-down <- down[!down %in% k.24h.down]
-write.table(x = as.data.frame(up),
-            file = paste0(out,model,"upset/24_hour_comparison_10_genes_shared_down.tsv"),
-            quote = FALSE,
-            col.names = FALSE,
-            row.names = FALSE)
-```
-
 
 ## 7 days
 ```{r}
