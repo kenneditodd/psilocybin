@@ -32,10 +32,10 @@ library(tidyr)             # pivot_wider()
 ## User defined variables
 ```{r set_variables}
 # Output directories and file paths
-out <- "../../results/all_samples/"
-out2 <- "all_samples"
-sex <- "sex_specific" # sex_specific or both_sexes
-model <- "DEGs_with_hbb" # DEGs_with_hbb or DEGs
+out <- "../../results/all_samples_combat/"
+out2 <- "all_samples_combat"
+sex <- "both_sexes" # sex_specific or both_sexes
+model <- "DEGs" # DEGs_with_hbb or DEGs
 
 model <- paste0(model, "/", sex, "/")
 
@@ -72,16 +72,39 @@ dge.filtered.norm <- readRDS(paste0("../../rObjects/",
 # Voom
 ## Design matrix
 ```{r design_matrix}
-group <- interaction(dge.filtered.norm$samples$group2)
-sex <- factor(dge.filtered.norm$samples$sex)
-hbb <- dge.filtered.norm$samples$hbb_log2cpm
+design <- ""
 
-design <- model.matrix(~ 0 + group + hbb)
-design.names <- gsub("group2","", colnames(design))
-design.names <- gsub("group","", colnames(design))
-design.names <- gsub("sex", "", design.names)
-colnames(design) <- design.names
-head(design)
+if (model == "DEGs_with_hbb/sex_specific/") {
+  group <- interaction(dge.filtered.norm$samples$group2)
+  hbb <- dge.filtered.norm$samples$hbb_log2cpm
+  design <- model.matrix(~ 0 + group + hbb)
+  design.names <- gsub("group","", colnames(design))
+  colnames(design) <- design.names
+  head(design)
+} else if (model == "DEGs_with_hbb/both_sexes/") {
+  group <- interaction(dge.filtered.norm$samples$group)
+  sex <- factor(dge.filtered.norm$samples$sex)
+  hbb <- dge.filtered.norm$samples$hbb_log2cpm
+  design <- model.matrix(~ 0 + group + sex + hbb)
+  design.names <- gsub("group","", colnames(design))
+  design.names <- gsub("sex","", design.names)
+  colnames(design) <- design.names
+  head(design)  
+} else if (model == "DEGs/sex_specific/") {
+  group <- factor(dge.filtered.norm$samples$group2)
+  design <- model.matrix(~ 0 + group)
+  design.names <- gsub("group","", colnames(design))
+  colnames(design) <- design.names
+  head(design)
+} else if (model == "DEGs/both_sexes/") {
+  group <- interaction(dge.filtered.norm$samples$group)
+  sex <- factor(dge.filtered.norm$samples$sex)
+  design <- model.matrix(~ 0 + group + sex)
+  design.names <- gsub("group","", colnames(design))
+  design.names <- gsub("sex","", design.names)
+  colnames(design) <- design.names
+  head(design)
+}
 ```
 
 ## Contrasts
@@ -144,7 +167,7 @@ fit <- lmFit(v, design)
 
 # contrast design for differential expression
 contrasts <- makeContrasts(
-  contrasts = myContrasts2,
+  contrasts = myContrasts,
   levels = design.names)
 head(contrasts)
 

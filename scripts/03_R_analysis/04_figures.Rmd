@@ -28,9 +28,9 @@ library(UpSetR)
 
 ## User defined variables
 ```{r set_variables}
-out <- "../../results/all_samples/"
-out2 <- "all_samples"
-model <- "DEGs/both_sexes/"
+out <- "../../results/all_samples_combat/"
+out2 <- "all_samples_combat"
+model <- "DEGs_with_hbb/both_sexes/"
 treatment_order <- c("saline","psilocybin")
 treatment_colors <- c("gray60","springgreen2")
 sex_order <- c("M","F")

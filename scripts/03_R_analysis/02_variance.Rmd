@@ -32,8 +32,8 @@ library(variancePartition) # fitExtractVarPartModel()
 ## User defined variables
 ```{r set_variables}
 # Output directories and file paths
-out <- "../../results/all_samples/"
-out2 <- "all_samples"
+out <- "../../results/all_samples_combat/"
+out2 <- "all_samples_combat"
 
 # Colors and levels
 treatment_order <- c("saline", "psilocybin")

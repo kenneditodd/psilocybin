@@ -42,6 +42,7 @@ library(philentropy)        # JSD()
 library(reshape2)           # melt()
 library(rtracklayer)        # import()
 library(stringr)            # str_match()
+library(sva)                # Combat_seq()
 library(tidyverse)          # pivot_wider()
 ```
 
@@ -51,8 +52,8 @@ library(tidyverse)          # pivot_wider()
 load_dot_env(file = "../../refs/.env")  # Adjust the path to your .env file
 
 # Output directories and file paths
-out <- "../../results/all_samples/"
-out2 <- "all_samples"
+out <- "../../results/all_samples_combat/"
+out2 <- "all_samples_combat"
 ann <- Sys.getenv("MMUSCULUS_GTF")
 
 
@@ -123,6 +124,15 @@ exonic_length <- read.delim("../../featureCounts/summed_exons.tsv", header = TRU
 genes <- left_join(genes, exonic_length, by = "gene_id")
 rownames(counts) <- make.unique(genes$gene_name)
 genes$gene_name_unique <- rownames(counts)
+```
+
+## ComBat
+```{r combat}
+if (out == "../../results/all_samples_combat/") {
+  counts <- ComBat_seq(counts = counts, 
+                       batch = meta$lane, 
+                       group = meta$dose)
+}
 ```
 
 ## Create object
