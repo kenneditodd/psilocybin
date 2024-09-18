@@ -2,7 +2,7 @@
 title: "Psilocybin Project 1"
 subtitle: "Variance"
 author: "Kennedi Todd"
-date: "05/20/2023"
+date: "09/17/2024"
 output:
   html_document:
     theme: cerulean
@@ -26,23 +26,28 @@ library(edgeR)             # load DGEList object
 library(ggcorrplot)        # ggcorrplot()
 library(gplots)            # heatmap.2()
 library(limma)             # voomWithQualityWeights()
-library(mvIC)              # mvForwardStepwise()
 library(variancePartition) # fitExtractVarPartModel()
 ```
 
 ## User defined variables
 ```{r set_variables}
-out <- "../../results/high_hbb_removed/"
-out2 <- "high_hbb_removed"
-treatment_order <- c("saline","psilocybin")
-treatment_colors <- c("gray60","springgreen2")
-sex_order <- c("M","F")
-sex_colors <- c("gold2","purple")
-group_order <- c("S.8h","S.24h","S.7d",
-                 "L.8h","L.24h","L.7d",
-                 "H.8h","H.24h","H.7d")
-group_colors <- c("gray90","gray60","gray30","lightblue","cornflowerblue","blue",
-                          "sienna1","red2","red4")
+# Output directories and file paths
+out <- "../../results/all_samples/"
+out2 <- "all_samples"
+
+# Colors and levels
+treatment_order <- c("saline", "psilocybin")
+treatment_colors <- c("gray60", "springgreen2")
+
+sex_order <- c("M", "F")
+sex_colors <- c("gold2", "purple")
+
+group_order <- c("S.8h", "S.24h", "S.7d", 
+                 "L.8h", "L.24h", "L.7d", 
+                 "H.8h", "H.24h", "H.7d")
+group_colors <- c("gray90", "gray60", "gray30", 
+                  "lightblue", "cornflowerblue", "blue", 
+                  "sienna1", "red2", "red4")
 ```
 
 ## Load data
@@ -52,8 +57,7 @@ dge.filtered.norm <- readRDS(paste0("../../rObjects/",
                                     "_DGEList_filtered_normalized.rds"))
 ```
 
-# Cell Markers
-## Extract metadata
+# Extract metadata
 ```{r extract_meta}
 # get meta
 meta <- as.data.frame(dge.filtered.norm$samples)
@@ -68,8 +72,7 @@ variables <- c("group",
                "sex",
                "weight_at_treatment",
                "RIN",
-               "lane",
-               "RNA_extraction_batch")
+               "lane")
 meta <- meta %>% select(all_of(variables))
 
 # log2 transform lib.size
@@ -77,6 +80,8 @@ meta$log2.lib <- log2(meta$lib.size)
 meta$lib.size <- NULL
 
 # change class
+meta$group <- factor(meta$group, levels = group_order)
+meta$group2 <- factor(meta$group2)
 meta$dose <- factor(meta$dose)
 meta$weight_at_treatment <- as.numeric(gsub(" grams","",meta$weight_at_treatment))
 meta$timepoint <- factor(meta$timepoint)
@@ -86,144 +91,54 @@ meta$lane <- factor(meta$lane)
 sapply(meta, class)
 ```
 
-## Markers
-- Astrocytes: GFAP, GJA1, CLU, AQP4 \
-- Choroid: TTR \
-- Endothelial: FLT1, PECAM1, VWF \
-- Fibroblasts: COL1A1, COL1A2, LUM, DCN \
-- Macrophages/Microglia: MRC1, MKI67, C1QB \
-- Neurons: GAD1, GAD2, SNAP25, SYT1, MEG3 \
-- Oligodendrocytes: MBP \
-- OPCs: OLIG1, TNR \
-- Pericytes & SMCs: MYH11, ACTA2, VTN \
-- RBCs - HBB, HBA1, HBA2 \
-```{r markers}
-# choose cell type markers
-markers <- c("Gfap","Ttr","Flt1","Col1a1","C1qb","Syt1","Mbp","Olig1",
-             "Acta2","Hbb-bs")
-length(markers)
-
-# print markers not in annotation (could have alternative name)
-markers[!markers %in% rownames(dge.filtered.norm)]
-
-# get counts
-cpm <- round(as.data.frame(cpm(dge.filtered.norm$counts, log = TRUE)), digits = 2)
-
-# filter counts by marker
-cpm <- cpm[rownames(cpm) %in% markers,]
-
-# switch cols and rows
-cpm <- t(cpm)
-
-# add to meta
-all.equal(rownames(meta), rownames(cpm))
-meta <- cbind(meta, cpm)
-```
-
-## Significance
-```{r stats}
-# initialize data frame
-variable_numbers <- c(7,8,11:20)
-variable_names <- colnames(meta)[variable_numbers]
-tests <- c("saline_mean","psilocybin_mean","saline_stdv","psilocybin_stdv",
-           "saline_shapiro_pval","psilocybin_shapiro_pval","levene_na_omit",
-           "t_test_t","t_test_pval","wilcoxon_pval")
-stats <- matrix(0,
-                nrow = length(variable_numbers),
-                ncol = length(tests),
-                dimnames = list(variable_names, tests))
-stats <- as.data.frame(stats)
-
-# Loop through variables
-for (i in 1:length(variable_names)) {
-  
-  # Subset values by treatment
-  values <- as.numeric(meta[, variable_names[i]])
-  treatment <- factor(meta$treatment)
-  saline_values <- meta[meta$treatment == "saline", variable_names[i]]
-  psilocybin_values <- meta[meta$treatment == "psilocybin", variable_names[i]]
-  
-  # Welch two sample t-test
-  t_test <- t.test(saline_values, psilocybin_values)
-  t_test_t <- t_test$statistic
-  t_test_pval <- t_test$p.value
-  
-  # Add to table
-  stats[i, "saline_mean"] <- round(as.numeric(t_test$estimate[1]),4)
-  stats[i, "psilocybin_mean"] <- round(as.numeric(t_test$estimate[2]),4)
-  stats[i, "t_test_t"] <- round(t_test_t,4)
-  stats[i, "t_test_pval"] <- round(t_test_pval,4)
-  
-  # Shapiro-Wilk test, normality test
-  saline_shapiro <- shapiro.test(saline_values)
-  psilocybin_shapiro <- shapiro.test(psilocybin_values)
-  
-  # Add to table
-  stats[i, "saline_shapiro_pval"] <- round(saline_shapiro$p.value,4)
-  stats[i, "psilocybin_shapiro_pval"] <- round(psilocybin_shapiro$p.value,4)
-  
-  # Variance and standard deviation
-  saline_var <- var(saline_values)
-  psilocybin_var <- var(psilocybin_values)
-  
-  # Add to table 
-  stats[i, "saline_stdv"] <- round(sqrt(saline_var),4)
-  stats[i, "psilocybin_stdv"] <- round(sqrt(psilocybin_var),4)
-  
-  # Two-sample Wilcoxon / Mann-Whitney
-  wil <- wilcox.test(saline_values, psilocybin_values)
-  
-  # Add to table
-  stats[i, "wilcoxon_pval"] <- round(wil$p.value, 4)
-  
-  # Levene's test
-  levTest <- car::leveneTest(values ~ treatment)
-  lev <- levTest$`Pr(>F)`
-  lev_naomit <- as.numeric(na.omit(lev))
-  
-  # Add to table
-  stats[i, "levene_na_omit"] <- round(lev_naomit, 4)
-}
-
-write.table(x = stats,
-            file = paste0(out, "variance/stats.tsv"),
-            quote = FALSE,
-            sep = "\t")
-
-remove(saline_shapiro,psilocybin_shapiro,
-       t_test, wil, levTest,cpm)
-```
-
 # Correlation
 ## Spearman correlation
-- Spearman's correlation can be used to analyze categorical data, as well as continuous data, because it uses ranks instead of assumptions of normality plotCorrMatrix(cor(info)) \
+- Spearman correlation is generally used to measure the strength and direction of the association between two continuous or ordinal variables
 ```{r spearman_heatmap}
 # save
-path <- paste0(out, "variance/spearman_correlation_heatmap.pdf")
+path <- paste0(out, "variance/spearman_correlation_heatmap1.pdf")
 pdf(path, width = 8, height = 8)
-
 # formula
-form <- ~0 + dose + timepoint + sex + log2.lib + weight_at_treatment + RIN +
-  RNA_extraction_batch
-
+form <- ~0 + dose + timepoint + sex + log2.lib + RIN + lane
 # correlation plot
 model.matrix(form, data = meta) %>% 
   cor(method = "spearman") %>% 
   ggcorrplot(show.diag = FALSE, type = "lower", lab = TRUE, lab_size = 2)
+dev.off()
+
+# save
+path <- paste0(out, "variance/spearman_correlation_heatmap2.pdf")
+pdf(path, width = 8, height = 8)
+# formula
+form <- ~0 + group + sex + log2.lib + RIN + lane
+# correlation plot
+model.matrix(form, data = meta) %>% 
+  cor(method = "spearman") %>% 
+  ggcorrplot(show.diag = FALSE, type = "lower", lab = TRUE, lab_size = 2)
+dev.off()
+
+# save
+path <- paste0(out, "variance/spearman_correlation_heatmap3.pdf")
+pdf(path, width = 8, height = 8)
+# formula
+form <- ~0 + group2 + log2.lib + RIN + lane
+# correlation plot
+model.matrix(form, data = meta) %>% 
+  cor(method = "spearman") %>% 
+  ggcorrplot(show.diag = FALSE, type = "lower", lab = TRUE, lab_size = 2)
+dev.off()
 ```
 
 ## CCA heatmap
 ```{r CCA_heatmap}
 # save
-path <- paste0(out, "variance/canonical_correlation_analysis_heatmap.pdf")
+path <- paste0(out, "variance/canonical_correlation_analysis_heatmap1.pdf")
 pdf(path, width = 8, height = 8)
-
 # formula
-form <- ~0 + dose + timepoint + sex + log2.lib + weight_at_treatment + RIN +
-  RNA_extraction_batch
-
+form <- ~0 + dose + timepoint + sex + log2.lib + RIN + lane
+# CCA
 c <- canCorPairs(form, meta)
-
+# plot
 corrplot(c,
          type = "lower",
          is.corr = FALSE,
@@ -235,6 +150,49 @@ corrplot(c,
          tl.cex = 0.8,
          number.cex = 0.7,
          diag = TRUE)
+dev.off()
+
+# save
+path <- paste0(out, "variance/canonical_correlation_analysis_heatmap2.pdf")
+pdf(path, width = 8, height = 8)
+# formula
+form <- ~0 + group + sex + log2.lib + RIN + lane
+# CCA
+c <- canCorPairs(form, meta)
+# plot
+corrplot(c,
+         type = "lower",
+         is.corr = FALSE,
+         order = "hclust",
+         col = colorRampPalette(c("blue4", "deepskyblue", "white"))(100),
+         addCoef.col = TRUE,
+         method = "shade",
+         tl.col = "black",
+         tl.cex = 0.8,
+         number.cex = 0.7,
+         diag = TRUE)
+dev.off()
+
+# save
+path <- paste0(out, "variance/canonical_correlation_analysis_heatmap3.pdf")
+pdf(path, width = 8, height = 8)
+# formula
+form <- ~0 + group2 + log2.lib + RIN + lane
+# CCA
+c <- canCorPairs(form, meta)
+# plot
+corrplot(c,
+         type = "lower",
+         is.corr = FALSE,
+         order = "hclust",
+         col = colorRampPalette(c("blue4", "deepskyblue", "white"))(100),
+         addCoef.col = TRUE,
+         method = "shade",
+         tl.col = "black",
+         tl.cex = 0.8,
+         number.cex = 0.7,
+         diag = TRUE)
+dev.off()
 ```
 
 # Variance partition
@@ -273,64 +231,11 @@ pdf(paste0(path, ".pdf"), width = 12, height = 6)
 plotPercentBars(vp[1:10,])
 ```
 
-## Group var
-```{r variance_group}
-# sort genes based on variance explained by group
-varPart.df <- as.data.frame(vp)
-order.varPart.df <- varPart.df[order(varPart.df$group, decreasing = TRUE),]
-head(order.varPart.df["group"], 10)
-```
-
 ## Sex var
-```{r variance_group}
+```{r variance_sex}
 # sort genes based on variance explained by group
 order.varPart.df <- varPart.df[order(varPart.df$sex, decreasing = TRUE),]
 head(order.varPart.df["sex"], 10)
-```
-
-## Lib size var
-```{r variance_group}
-# sort genes based on variance explained by group
-order.varPart.df <- varPart.df[order(varPart.df$log2.lib, decreasing = TRUE),]
-head(order.varPart.df["log2.lib"], 10)
-```
-
-# Finding best model
-variancePartition::voomWithDreamWeights() is the same as limma::voom(), except that it allows random effects in the formula. limma::voomWithQualityWeights() includes observational and sample specific quality weights whereas voomWithDreamWeights only includes observational quality weights.
-
-## Forward stepwise regression
-```{r find_best_model}
-# get matrix of expression data
-v <- voomWithDreamWeights(counts = dge.filtered.norm$counts,
-                          formula = (~ 0 + group + sex),
-                          data = dge.filtered.norm$samples,
-                          BPPARAM = BiocParallel::SnowParam(cores),
-                          plot = FALSE)
-counts <- v$E
-colnames(meta) <- make.names(colnames(meta))
-
-# set base formula
-base <- ~ (1 | group) + (1 | sex)
-
-# variable we wish to test
-variables <- c("log2.lib",
-               "RIN",
-               "C1qb",
-               "Flt1",
-               #"Hbb.bs",
-               "Syt1",
-               "Col1a1",
-               "Gfap",
-               "Olig1",
-               "Ttr",
-               "Mbp",
-               "Acta2")
-
-# multivariate forward stepwise regression evaluated by multivariate BIC
-bestModel <- mvForwardStepwise(exprObj = counts,
-                               baseFormula = base,
-                               data = meta,
-                               variables = variables)
 ```
 
 ```{r session_info}

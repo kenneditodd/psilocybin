@@ -105,13 +105,14 @@ rownames(meta) <- meta$sample_id
 colnames(counts) <- meta$sample_id
 
 # Read or create annotation file
-if (file.exists("../../rObjects/annotation.rds")) {
-  genes <- readRDS(annotation_file)
+annotation_rds <- "../../rObjects/annotation.rds"
+if (file.exists(annotation_rds)) {
+  genes <- readRDS(annotation_rds)
 } else {
   genes <- rtracklayer::import(ann) %>%
     as.data.frame() %>%
     filter(type == "gene")
-  saveRDS(genes, "../../rObjects/annotation.rds")
+  saveRDS(genes, annotation_rds)
 }
 
 # Check rownames match
@@ -129,15 +130,14 @@ genes$gene_name_unique <- rownames(counts)
 # Create DGE object
 dge <- DGEList(counts = counts, genes = genes, samples = meta)
 
-# Cleanup
-rm(counts, meta, genes, exonic_length)
-
 # Set levels for factors
 dge$samples <- dge$samples %>%
   mutate(treatment = factor(treatment, levels = treatment_order),
          sex = factor(sex, levels = sex_order),
          lane = factor(lane))
 
+# Cleanup
+rm(counts, meta, genes, exonic_length)
 ```
 
 ## Remove genes
@@ -229,6 +229,7 @@ pheatmap::pheatmap(round.data,
                    #display_numbers = TRUE,
                    #fontsize_number = 6,
                    number_color = "black")
+remove(round.data)
 ```
 
 ## MDS plots
@@ -564,7 +565,7 @@ for (dim in dims) {
   }
 }
 
-remove(data,dims)
+remove(data,dims,p,toplot)
 ```
 
 ## MDS variance
@@ -683,8 +684,9 @@ start <- dim(dge)[1]
 
 # get dataframes
 cpm <- as.data.frame(cpm(dge))
-meta <- dge$samples[,c("sample_id","group")]
-meta <- meta |> group_by(group) |> mutate(group_size = n())
+meta <- dge$samples[,c("sample_id","group")] |> 
+  group_by(group) |> 
+  mutate(group_size = n())
 
 # find CPM avg per group
 mean.group <- cpm |>
@@ -697,7 +699,8 @@ mean.group <- as.data.frame(mean.group)
 rownames(mean.group) <- mean.group$gene
 mean.group$gene <- NULL
 mean.group <- round(mean.group, digits = 4)
-# save
+
+# save CPM avg per group
 write.table(x = mean.group, 
             file = paste0(out,"counts/avgCPM_per_group_before_filtering.tsv"),
             quote = FALSE,
@@ -765,7 +768,7 @@ log2cpm.norm <- cpm(dge.filtered.norm, log = TRUE)
 colnames(log2cpm.norm) <- dge.filtered.norm$samples$sample_id
 
 # set colors
-colors <- treatment_colors[dge$samples$treatment]
+colors <- group_colors[dge$samples$group]
 nsamples <- ncol(dge)
 
 # First, plot the first column of the log2cpm.raw density
@@ -902,4 +905,3 @@ saveRDS(dge.filtered.norm,
 ```{r session_info}
 sessionInfo()
 ```
-
