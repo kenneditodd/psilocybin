@@ -2,7 +2,7 @@
 # This script prints each fastq file name along with its header and saves to fastq_headers.tsv.
 
 # Go to fastq directory
-cd ../../rawReads || exit 1  # Exit if directory change fails
+cd ../rawReads || exit 1  # Exit if directory change fails
 
 # Set variables
 fastq_files="../refs/fastq_file_list.txt"

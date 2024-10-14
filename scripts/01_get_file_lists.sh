@@ -2,7 +2,7 @@
 
 # Get fastq file list
 # There are 2 fastq files per sample
-cd ../../rawReads
+cd ../rawReads
 out=../refs/fastq_file_list.txt
 ls -1 | grep .fastq.gz > $out
 

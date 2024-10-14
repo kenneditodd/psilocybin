@@ -4,8 +4,8 @@ import os
 import json
 
 # Set file paths
-sample_list_path = '../../refs/sample_file_list.txt'
-output_file_path = '../../refs/config.json'
+sample_list_path = '../refs/sample_file_list.txt'
+output_file_path = '../refs/config.json'
 
 # Initialize directories and sample data
 directories = {
@@ -22,15 +22,31 @@ cluster_info = {
     "threads": "20"
 }
 
-# Load sample names and strip _R1 suffix
+# Open the sample list file and process each line
 with open(sample_list_path, 'r') as infile:
-    all_samples = [line.strip().replace("_R1.fastq.gz", "") for line in infile]
+    
+    # Read each line, strip whitespace, and remove the _R1 suffix
+    sample_base_names = [
+        line.strip().replace("_R1.fastq.gz", "") 
+        for line in infile
+    ]
+    
+    # Loop through each sample name in sample_base_names
+    male_samples = []
+    female_samples = []
+    for sample in sample_base_names:
+        if "_Male_" in sample:
+            male_samples.append(sample)
+        if "_Female_" in sample:
+            female_samples.append(sample)
 
 # Create the config structure
 config = {
     "DIRECTORIES": directories,
     "SAMPLE_INFORMATION": {
-        "allSamples": all_samples
+        "allSamples": sample_base_names,
+        "femaleSamples": female_samples,
+        "maleSamples": male_samples
     },
     "CLUSTER_INFORMATION": cluster_info,
     "SAMPLES": {}

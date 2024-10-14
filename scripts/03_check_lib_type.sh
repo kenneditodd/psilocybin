@@ -15,7 +15,7 @@ conda activate salmon
 salmon -v
 
 # Change to the raw reads directory
-cd ../../rawReads
+cd ../rawReads
 
 # Source environment variables
 source "../refs/.env"
@@ -38,6 +38,7 @@ salmon quant --libType A \
 # --validateMappings : Perform mapping validation
 
 # Results:
+# salmon (selective-alignment-based) v1.10.1
 # Salmon will autodetect the library type, such as ISR (inward stranded reverse).
 # ISR corresponds to '-s2' argument for featureCounts (reversely stranded).
 
