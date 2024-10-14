@@ -468,6 +468,160 @@ pdf(paste0(out, model, "/upset/7_day_comparison_FDRq_", format(thresh, nsmall = 
 upset_gene
 ```
 
+# Upset: all_samples vs all_samples_combat
+## 7 days low
+```{r}
+# set var
+thresh <- 0.1
+myLfc <- 0.2
+
+# read tables
+nc.l.7d <- read.delim(paste0("../../results/all_samples/DEGs_with_hbb/",
+                            "both_sexes/DEG_tables/L.7d_vs_S.7d_FDRq_1.00_LFC_0.00.tsv"))
+c.l.7d <- read.delim(paste0("../../results/all_samples_combat/DEGs_with_hbb/",
+                            "both_sexes/DEG_tables/L.7d_vs_S.7d_FDRq_1.00_LFC_0.00.tsv"))
+rownames(nc.l.7d) <- nc.l.7d$gene_name_unique
+rownames(c.l.7d) <- c.l.7d$gene_name_unique
+
+# filter on pval
+nc.l.7d <- nc.l.7d[nc.l.7d$adj.P.Val < thresh,]
+c.l.7d <- c.l.7d[c.l.7d$adj.P.Val < thresh,]
+
+# Subset lists
+nc.l.7d.up <- subset(nc.l.7d$gene_name_unique, nc.l.7d$logFC > myLfc)
+nc.l.7d.down <- subset(nc.l.7d$gene_name_unique, nc.l.7d$logFC < -myLfc)
+c.l.7d.up <- subset(c.l.7d$gene_name_unique, c.l.7d$logFC > myLfc)
+c.l.7d.down <- subset(c.l.7d$gene_name_unique, c.l.7d$logFC < -myLfc)
+list_input <- list("ComBat, 7 Days, Low Psilocybin vs Saline, Up-regulated" = c.l.7d.up,
+                   "Non-ComBat, 7 Days, Low Psilocybin vs Saline, Up-regulated" = nc.l.7d.up,
+                   "ComBat, 7 Days, Low Psilocybin vs Saline, Down-regulated" = c.l.7d.down,
+                   "Non-ComBat, 7 Days, Low Psilocybin vs Saline, Down-regulated" = nc.l.7d.down)
+data <- fromList(list_input)
+  
+# store names
+names <- colnames(data)
+  
+# plot
+upset_gene <- ComplexUpset::upset(data, 
+				  names,
+				  set_sizes=(
+					upset_set_size()
+					+ geom_text(aes(label=..count..), hjust=1.1, stat='count')
+					+ expand_limits(y=150)),
+				  queries = list(
+				    upset_query("ComBat, 7 Days, Low Psilocybin vs Saline, Up-regulated", fill = "red"),
+				    upset_query("Non-ComBat, 7 Days, Low Psilocybin vs Saline, Up-regulated", fill = "red"),
+						upset_query("ComBat, 7 Days, Low Psilocybin vs Saline, Down-regulated", fill = "blue"),
+				    upset_query("Non-ComBat, 7 Days, Low Psilocybin vs Saline, Down-regulated", fill = "blue")),
+				  base_annotations = list('Intersection size' = (
+					intersection_size(bar_number_threshold=1, width=0.5)
+					+ scale_y_continuous(expand=expansion(mult=c(0, 0.05)),limits = c(0,100)) # space on top
+					+ theme(
+						  # hide grid lines
+						  panel.grid.major=element_blank(),
+						  panel.grid.minor=element_blank(),
+						  # show axis lines
+						  axis.line=element_line(colour='black')))),
+				  stripes = upset_stripes(
+					geom=geom_segment(size=12),  # make the stripes larger
+					colors=c('grey95', 'white')),
+				  # to prevent connectors from getting the colorured
+				  # use `fill` instead of `color`, together with `shape='circle filled'`
+				  matrix = intersection_matrix(
+					geom=geom_point(
+					  shape='circle filled',
+					  size=3,
+					  stroke=0.45)),
+				  sort_sets=FALSE,
+				  sort_intersections='descending'
+				)
+
+upset_gene <- upset_gene + ggtitle(paste0("FDRq < ", format(thresh, nsmall = 2),
+                                          ", |LFC| > ", format(myLfc, nsmall = 2)))
+
+# save
+pdf(paste0("../../results/compare_analyses/7_day_low_dose_comparison_FDRq_", format(thresh, nsmall = 2), 
+           "_LFC_", format(myLfc, nsmall = 2), ".pdf"), 
+    height = 6, width = 16)
+upset_gene
+```
+
+## 24 hours high dose
+```{r}
+# set var
+thresh <- 0.05
+myLfc <- 0
+
+# read tables
+nc.h.24h <- read.delim(paste0("../../results/all_samples/DEGs_with_hbb/",
+                            "both_sexes/DEG_tables/H.24h_vs_S.24h_FDRq_1.00_LFC_0.00.tsv"))
+c.h.24h <- read.delim(paste0("../../results/all_samples_combat/DEGs_with_hbb/",
+                            "both_sexes/DEG_tables/H.24h_vs_S.24h_FDRq_1.00_LFC_0.00.tsv"))
+rownames(nc.h.24h) <- nc.h.24h$gene_name_unique
+rownames(c.h.24h) <- c.h.24h$gene_name_unique
+
+# filter on pval
+nc.h.24h <- nc.h.24h[nc.h.24h$adj.P.Val < thresh,]
+c.h.24h <- c.h.24h[c.h.24h$adj.P.Val < thresh,]
+
+# Subset lists
+nc.h.24h.up <- subset(nc.h.24h$gene_name_unique, nc.h.24h$logFC > myLfc)
+nc.h.24h.down <- subset(nc.h.24h$gene_name_unique, nc.h.24h$logFC < -myLfc)
+c.h.24h.up <- subset(c.h.24h$gene_name_unique, c.h.24h$logFC > myLfc)
+c.h.24h.down <- subset(c.h.24h$gene_name_unique, c.h.24h$logFC < -myLfc)
+list_input <- list("ComBat, 24 Hours, High Psilocybin vs Saline, Up-regulated" = c.h.24h.up,
+                   "Non-ComBat, 24 Hours, High Psilocybin vs Saline, Up-regulated" = nc.h.24h.up,
+                   "ComBat, 24 Hours, High Psilocybin vs Saline, Down-regulated" = c.h.24h.down,
+                   "Non-ComBat, 24 Hours, High Psilocybin vs Saline, Down-regulated" = nc.h.24h.down)
+data <- fromList(list_input)
+  
+# store names
+names <- colnames(data)
+  
+# plot
+upset_gene <- ComplexUpset::upset(data, 
+				  names,
+				  set_sizes=(
+					upset_set_size()
+					+ geom_text(aes(label=..count..), hjust=1.1, stat='count')
+					+ expand_limits(y=2000)),
+				  queries = list(
+				    upset_query("ComBat, 24 Hours, High Psilocybin vs Saline, Up-regulated", fill = "red"),
+				    upset_query("Non-ComBat, 24 Hours, High Psilocybin vs Saline, Up-regulated", fill = "red"),
+						upset_query("ComBat, 24 Hours, High Psilocybin vs Saline, Down-regulated", fill = "blue"),
+				    upset_query("Non-ComBat, 24 Hours, High Psilocybin vs Saline, Down-regulated", fill = "blue")),
+				  base_annotations = list('Intersection size' = (
+					intersection_size(bar_number_threshold=1, width=0.5)
+					+ scale_y_continuous(expand=expansion(mult=c(0, 0.05)),limits = c(0,2000)) # space on top
+					+ theme(
+						  # hide grid lines
+						  panel.grid.major=element_blank(),
+						  panel.grid.minor=element_blank(),
+						  # show axis lines
+						  axis.line=element_line(colour='black')))),
+				  stripes = upset_stripes(
+					geom=geom_segment(size=12),  # make the stripes larger
+					colors=c('grey95', 'white')),
+				  # to prevent connectors from getting the colorured
+				  # use `fill` instead of `color`, together with `shape='circle filled'`
+				  matrix = intersection_matrix(
+					geom=geom_point(
+					  shape='circle filled',
+					  size=3,
+					  stroke=0.45)),
+				  sort_sets=FALSE,
+				  sort_intersections='descending'
+				)
+
+upset_gene <- upset_gene + ggtitle(paste0("FDRq < ", format(thresh, nsmall = 2),
+                                          ", |LFC| > ", format(myLfc, nsmall = 2)))
+
+# save
+pdf(paste0("../../results/compare_analyses/24_hours_high_dose_comparison_FDRq_", format(thresh, nsmall = 2), 
+           "_LFC_", format(myLfc, nsmall = 2), ".pdf"), 
+    height = 6, width = 16)
+upset_gene
+```
 # 3D LogFC Correaltion
 ## Low dose
 ```{r low_dose_3D}
