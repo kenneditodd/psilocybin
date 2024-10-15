@@ -1,6 +1,6 @@
 # read files
-meta <- read.delim2("../../refs/metadata.tsv")
-seq.info <- read.delim2("../../refs/fastq_headers.tsv", header = FALSE)
+meta <- read.delim2("../refs/metadata.tsv")
+seq.info <- read.delim2("../refs/fastq_headers.tsv", header = FALSE)
 
 # reformat seq.info
 colnames(seq.info) <- c("filename","fastq_header")

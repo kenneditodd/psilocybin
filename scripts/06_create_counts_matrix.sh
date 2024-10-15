@@ -2,7 +2,7 @@
 # September 17, 2024
 
 # go to counts folder
-cd ../../featureCounts
+cd ../featureCounts
 
 # GENE COUNT MATRIX
 #-------------------------------------------------------------------------------

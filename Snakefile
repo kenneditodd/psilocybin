@@ -36,7 +36,7 @@ rule all:
         rawQCDir + "multiqc_report.html",
         trimmedQCDir + "multiqc_report.html",
         expand(starDir + "{sample}.Aligned.sortedByCoord.out.bam", sample=config["SAMPLE_INFORMATION"]["allSamples"]),
-        expand(countsDir + "{sample}_{feature_type}.counts", sample=config["SAMPLE_INFORMATION"]["allSamples"], feature_type=["gene", "exon"]),
+        expand(countsDir + "{sample}_{feature_type}.counts", sample=config["SAMPLE_INFORMATION"]["allSamples"], feature_type=["gene", "exon"])
 
 
 # INDEX GENOME
