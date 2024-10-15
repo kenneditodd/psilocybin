@@ -2,7 +2,7 @@
 title: "Psilocybin Project 1"
 subtitle: "Filtering and Normalization"
 author: "Kennedi Todd"
-date: "09/17/2024"
+date: "10/14/2024"
 output:
   html_document:
     theme: cerulean
@@ -49,11 +49,11 @@ library(tidyverse)          # pivot_wider()
 ## User defined variables
 ```{r set_variables}
 # Load environment variables
-load_dot_env(file = "../../refs/.env")  # Adjust the path to your .env file
+load_dot_env(file = "../refs/.env")  # Adjust the path to your .env file
 
 # Output directories and file paths
-out <- "../../results/all_samples_combat/"
-out2 <- "all_samples_combat"
+out <- "../results/both_sexes_analysis/"
+out2 <- "both_sexes_analysis"
 ann <- Sys.getenv("MMUSCULUS_GTF")
 
 
@@ -86,11 +86,11 @@ saveToPDF <- function(...) {
 ## Read data
 ```{r read_data}
 # Read counts data
-counts <- read.delim("../../featureCounts/gene_counts_matrix.tsv",
+counts <- read.delim("../featureCounts/gene_counts_matrix.tsv",
                      header = TRUE, row.names = 1, sep = "\t")
 
 # Read metadata
-meta <- read.delim("../../refs/metadata.tsv", header = TRUE, sep = "\t") %>%
+meta <- read.delim("../refs/metadata.tsv", header = TRUE, sep = "\t") %>%
   arrange(factor(group, levels = group_order))
 rownames(meta) <- meta$filename
 
@@ -106,7 +106,7 @@ rownames(meta) <- meta$sample_id
 colnames(counts) <- meta$sample_id
 
 # Read or create annotation file
-annotation_rds <- "../../rObjects/annotation.rds"
+annotation_rds <- "../rObjects/annotation.rds"
 if (file.exists(annotation_rds)) {
   genes <- readRDS(annotation_rds)
 } else {
@@ -120,19 +120,10 @@ if (file.exists(annotation_rds)) {
 stopifnot(all.equal(rownames(counts), genes$gene_id))
 
 # Read exonic length information and add to genes
-exonic_length <- read.delim("../../featureCounts/summed_exons.tsv", header = TRUE, sep = "\t")
+exonic_length <- read.delim("../featureCounts/summed_exons.tsv", header = TRUE, sep = "\t")
 genes <- left_join(genes, exonic_length, by = "gene_id")
 rownames(counts) <- make.unique(genes$gene_name)
 genes$gene_name_unique <- rownames(counts)
-```
-
-## ComBat
-```{r combat}
-if (out == "../../results/all_samples_combat/") {
-  counts <- ComBat_seq(counts = counts, 
-                       batch = meta$lane, 
-                       group = meta$dose)
-}
 ```
 
 ## Create object
@@ -160,12 +151,6 @@ dge <- dge[dge$genes$gene_type == "protein_coding", , keep.lib.sizes = FALSE]
 
 # Calculate Hbb-bs log2 CPM and add to metadata
 dge$samples$hbb_log2cpm <- as.numeric(cpm(dge, log = TRUE)["Hbb-bs", ])
-
-# Remove high Hbb-bs samples if necessary
-if (out2 == "high_hbb_removed") {
-  keep <- cpm(dge$counts)["Hbb-bs", ] <= 10
-  dge <- dge[, keep]
-}
 ```
 
 # QC: Raw
@@ -194,7 +179,7 @@ for (i in 1:length(goi)) {
   print(p)
   
   # save
-  path <- paste0(out,"prefiltering_QC/", goi[i], "_bar_graph_raw")
+  path <- paste0(out, "prefiltering_QC/", goi[i], "_bar_graph_raw")
   saveToPDF(paste0(path, ".pdf"), width = 12, height = 4)
   dev.off()
 }
@@ -239,7 +224,7 @@ pheatmap::pheatmap(round.data,
                    #display_numbers = TRUE,
                    #fontsize_number = 6,
                    number_color = "black")
-remove(round.data)
+remove(round.data,ann_colors)
 ```
 
 ## MDS plots
@@ -656,6 +641,9 @@ write.table(x = r_squared_matrix,
             file = paste0(out, "prefiltering_QC/variance_explained_by_MDS_dims.tsv"),
             sep = "\t",
             quote = FALSE)
+
+# cleanup
+remove(r_squared_matrix)
 ```
 
 ## CPM, FPKM, TPM
@@ -690,60 +678,136 @@ remove(counts,cpm,fpk,fpkm,tpm)
 # Filtering and normalization
 ## Lowly expressed genes
 ```{r filter_genes_by_expr}
-start <- dim(dge)[1]
-
-# get dataframes
-cpm <- as.data.frame(cpm(dge))
-meta <- dge$samples[,c("sample_id","group")] |> 
-  group_by(group) |> 
-  mutate(group_size = n())
-
-# find CPM avg per group
-mean.group <- cpm |>
-  mutate(gene = row.names(cpm)) |>
-  pivot_longer(-gene, names_to = "sample_id") |>
-  left_join(meta, by = "sample_id") |>
-  summarize(mean = mean(value), .by = c(gene, group)) |>
-  pivot_wider(names_from = group, values_from = mean)
-mean.group <- as.data.frame(mean.group)
-rownames(mean.group) <- mean.group$gene
-mean.group$gene <- NULL
-mean.group <- round(mean.group, digits = 4)
-
-# save CPM avg per group
-write.table(x = mean.group, 
-            file = paste0(out,"counts/avgCPM_per_group_before_filtering.tsv"),
-            quote = FALSE,
-            sep = "\t")
-
-# all samples in a group (i.e. sal.8h) must have CPM >= 1
-# create df with summary of if group has all samples >= 1
-strict <- as.data.frame(cpm >= 1) |> 
-  mutate(gene = rownames(cpm)) |>
-  pivot_longer(-gene, names_to = "sample_id") |>
-  left_join(meta, by = "sample_id") |>
-  summarize(thresh = all(value), .by = c(gene, group)) |>
-  pivot_wider(names_from = group, values_from = thresh)
-# summarize df - if any group meets the thresh then TRUE
-strict <- as.data.frame(strict)
-rownames(strict) <- strict$gene
-strict$gene <- NULL
-strict$pass <- apply(X = strict, MARGIN = 1, FUN = any)
-all.equal(rownames(strict),rownames(dge))
-
-# filter
-dge.filtered <- dge[strict$pass,,keep.lib.sizes = FALSE]
-
-# save
-mean.group.final <- mean.group[strict$pass,]
-write.table(x = mean.group.final, 
-            file = paste0(out, "counts/avgCPM_per_group_after_filtering.tsv"),
-            quote = FALSE,
-            sep = "\t")
-
-end <- dim(dge.filtered)[1]
-print(paste(start - end, "genes removed and", end, "genes leftover."))
-remove(meta,mean.group,cpm,start,end,mean.group.final,strict)
+if (out == "../results/both_sexes_analysis/") {
+  
+  # get the number of genes we are starting with
+  start <- dim(dge)[1]
+  
+  # get cpm dataframe
+  cpm <- as.data.frame(cpm(dge))
+  
+  # get number of samples per group (i.e. S.24h)
+  meta <- dge$samples[,c("sample_id","group")] |> 
+    group_by(group) |> 
+    mutate(group_size = n())
+  
+  # find average CPM per group
+  avgPerGroup <- cpm |>
+    mutate(gene = row.names(cpm)) |>
+    pivot_longer(-gene, names_to = "sample_id") |>
+    left_join(meta, by = "sample_id") |>
+    summarize(mean = mean(value), .by = c(gene, group)) |>
+    pivot_wider(names_from = group, values_from = mean) |>
+    column_to_rownames(var = "gene") |>
+    round(digits = 4)
+  
+  # save avg CPM per group
+  write.table(x = avgPerGroup, 
+              file = paste0(out,"counts/avgCPM_per_group_before_filtering.tsv"),
+              quote = FALSE,
+              sep = "\t")
+  
+  # all samples in a group (i.e. S.8h) must have CPM >= 1
+  # create df with summary of if group has all samples >= 1  
+  filterTable <- cpm |>
+    mutate(across(everything(), ~ . >= 1)) |>
+    mutate(gene = rownames(cpm)) |>
+    pivot_longer(-gene, names_to = "sample_id") |>
+    left_join(meta, by = "sample_id") |>
+    summarize(thresh = all(value), .by = c(gene, group)) |>
+    pivot_wider(names_from = group, values_from = thresh) |>
+    column_to_rownames(var = "gene") 
+  
+  # add a 'pass' column that checks if any group meets the threshold
+  filterTable$pass <- rowSums(filterTable) > 0
+  
+  # compare row names with 'dge'
+  all.equal(rownames(filterTable),rownames(dge))
+  
+  # filter
+  dge.filtered <- dge[filterTable$pass,,keep.lib.sizes = FALSE]
+  
+  # save
+  avgPerGroupFiltered <- avgPerGroup[filterTable$pass,]
+  write.table(x = avgPerGroupFiltered, 
+              file = paste0(out, "counts/avgCPM_per_group_after_filtering.tsv"),
+              quote = FALSE,
+              sep = "\t")
+  
+  # see number of genes leftover
+  end <- dim(dge.filtered)[1]
+  
+  # print message
+  print(paste(start - end, "genes removed and", end, "genes leftover."))
+  
+  # cleanup
+  remove(meta,avgPerGroup,cpm,start,end,filterTable)
+  
+} else if (out == "../results/sex_specific_analysis") {
+    
+  # get the number of genes we are starting with
+  start <- dim(dge)[1]
+  
+  # get cpm dataframe
+  cpm <- as.data.frame(cpm(dge))
+  
+  # get number of samples per group2 (i.e. S.24h)
+  meta <- dge$samples[,c("sample_id","group2")] |> 
+    group_by(group2) |> 
+    mutate(group_size = n())
+  
+  # find average CPM per group2
+  avgPerGroup <- cpm |>
+    mutate(gene = row.names(cpm)) |>
+    pivot_longer(-gene, names_to = "sample_id") |>
+    left_join(meta, by = "sample_id") |>
+    summarize(mean = mean(value), .by = c(gene, group2)) |>
+    pivot_wider(names_from = group2, values_from = mean) |>
+    column_to_rownames(var = "gene") |>
+    round(digits = 4)
+  
+  # save avg CPM per group2
+  write.table(x = avgPerGroup, 
+              file = paste0(out,"counts/avgCPM_per_group_before_filtering.tsv"),
+              quote = FALSE,
+              sep = "\t")
+  
+  # all samples in a group2 (i.e. S.8h) must have CPM >= 1
+  # create df with summary of if group2 has all samples >= 1  
+  filterTable <- cpm |>
+    mutate(across(everything(), ~ . >= 1)) |>
+    mutate(gene = rownames(cpm)) |>
+    pivot_longer(-gene, names_to = "sample_id") |>
+    left_join(meta, by = "sample_id") |>
+    summarize(thresh = all(value), .by = c(gene, group2)) |>
+    pivot_wider(names_from = group2, values_from = thresh) |>
+    column_to_rownames(var = "gene") 
+  
+  # add a 'pass' column that checks if any group2 meets the threshold
+  filterTable$pass <- rowSums(filterTable) > 0
+  
+  # compare row names with 'dge'
+  all.equal(rownames(filterTable),rownames(dge))
+  
+  # filter
+  dge.filtered <- dge[filterTable$pass,,keep.lib.sizes = FALSE]
+  
+  # save
+  avgPerGroupFiltered <- avgPerGroup[filterTable$pass,]
+  write.table(x = avgPerGroupFiltered, 
+              file = paste0(out, "counts/avgCPM_per_group_after_filtering.tsv"),
+              quote = FALSE,
+              sep = "\t")
+  
+  # see number of genes leftover
+  end <- dim(dge.filtered)[1]
+  
+  # print message
+  print(paste(start - end, "genes removed and", end, "genes leftover."))
+  
+  # cleanup
+  remove(meta,avgPerGroup,cpm,start,end,filterTable,avgPerGroupFiltered)
+}
 ```
 
 ## TMM
@@ -909,7 +973,7 @@ write.table(df, path, quote = FALSE, sep = "\t")
 # Save
 ```{r save_final_object, eval=FALSE}
 saveRDS(dge.filtered.norm, 
-        paste0("../../rObjects/", out2, "_DGEList_filtered_normalized.rds"))
+        paste0("../rObjects/", out2, "_DGEList_filtered_normalized.rds"))
 ```
 
 ```{r session_info}
