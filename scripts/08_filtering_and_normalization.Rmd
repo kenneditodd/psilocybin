@@ -52,8 +52,8 @@ library(tidyverse)          # pivot_wider()
 load_dot_env(file = "../refs/.env")  # Adjust the path to your .env file
 
 # Output directories and file paths
-out <- "../results/both_sexes_analysis/"
-out2 <- "both_sexes_analysis"
+out <- "../results/saline_vs_saline_both_sexes_analysis/"
+out2 <- "saline_vs_saline_both_sexes_analysis"
 ann <- Sys.getenv("MMUSCULUS_GTF")
 
 
@@ -134,6 +134,7 @@ dge <- DGEList(counts = counts, genes = genes, samples = meta)
 # Set levels for factors
 dge$samples <- dge$samples %>%
   mutate(treatment = factor(treatment, levels = treatment_order),
+         group = factor(group, levels = group_order),
          sex = factor(sex, levels = sex_order),
          lane = factor(lane))
 
@@ -153,10 +154,35 @@ dge <- dge[dge$genes$gene_type == "protein_coding", , keep.lib.sizes = FALSE]
 dge$samples$hbb_log2cpm <- as.numeric(cpm(dge, log = TRUE)["Hbb-bs", ])
 ```
 
+## Remove samples
+```{r}
+if (grepl("8_hours", out2)) {
+  print("8 hours only")
+  dge <- dge[,dge$samples$timepoint == "8 hour"]
+  group_order <- c("S.8h","L.8h","H.8h")
+  group_colors <- c("gray60", "cornflowerblue", "red2")
+} else if (grepl("24_hours", out2)) {
+  print("24 hours only")
+  dge <- dge[,dge$samples$timepoint == "24 hour"]
+  group_order <- c("S.24h","L.24h","H.24h")
+  group_colors <- c("gray60", "cornflowerblue", "red2")
+} else if (grepl("7_days", out2)) {
+  print("7 days only")
+  dge <- dge[,dge$samples$timepoint == "7 day"]
+  group_order <- c("S.7d","L.7d","H.7d")  
+  group_colors <- c("gray60", "cornflowerblue", "red2")
+}
+
+head(colnames(dge))
+dim(dge)
+```
+
 # QC: Raw
+## Bargraph
 ```{r cpm_bar_graph}
 # user input
-goi <- c("Uty","Ddx3y","Kdm5d","Hbb-bs")
+goi <- c("Eif2s3y","Uty","Kdm5d","Ddx3y","Eif2s3x","Ddx3x","Kdm6a","Kdm5c",
+         "Med12","Hbb-bs")
 
 # plot and save
 for (i in 1:length(goi)) {
@@ -563,6 +589,61 @@ for (dim in dims) {
 remove(data,dims,p,toplot)
 ```
 
+### RNA extraction
+```{r mds_colored_by_dose}
+# set colors and get data
+dge$samples$RNA_extraction_batch <- factor(dge$samples$RNA_extraction_batch)
+data <- cpm(dge$counts, log = TRUE)
+names <- dge$samples$sample_id
+
+# loop through dimensions and top genes
+dims <- list(c(1,2),c(2,3),c(3,4))
+topGenes <- c(100,500)
+
+for (dim in dims) {
+  
+  for (numGenes in topGenes) {
+      
+    mds <- plotMDS(data, 
+                   labels = names, 
+                   top = numGenes,
+                   plot = FALSE,
+                   dim.plot = dim)
+
+    toplot <- data.frame(DimX = mds$x, 
+                         DimY = mds$y,
+                         Sample = rownames(mds$distance.matrix.squared),
+                         RNA_extraction_batch = dge$samples$RNA_extraction_batch)
+    
+    x.lab <- paste0(mds$axislabel," ",mds$dim.plot[1]," (",
+                    round(mds$var.explained[mds$dim.plot[1]] * 100, digits = 2),
+                    "%)")
+    y.lab <- paste0(mds$axislabel," ",mds$dim.plot[2]," (",
+                    round(mds$var.explained[mds$dim.plot[2]] * 100, digits = 2),
+                    "%)")
+    
+    p <- ggplot(toplot, aes(x = DimX, y = DimY, color = RNA_extraction_batch, label = Sample)) + 
+      geom_point(size = 3) +
+      #scale_color_manual(values = c("red","green3","blue","purple")) +
+      theme_bw() +
+      geom_text(aes(label = Sample), size=4, vjust = -1) +
+      xlab(x.lab) + ylab(y.lab) + 
+      ggtitle(paste0("MDS Raw: Top ", numGenes, ", Log2(CPM)"))
+    print(p)
+    
+    # save
+    dimTitle <- as.character(dim)
+    path <- paste0(out,"prefiltering_QC/MDS_top_",
+                   numGenes,"_genes/MDS_raw_top_", numGenes, "_",
+                   "dim", as.character(dim)[1], "&", as.character(dim[2]), 
+                   "_colored_by_RNA_extraction")
+    saveToPDF(paste0(path, ".pdf"), width = 8, height = 8)
+  }
+}
+
+remove(data,dims)
+```
+
 ## MDS variance
 ```{r mds_variance_explained}
 # Set colors and get data
@@ -577,7 +658,8 @@ variables <- list(
   dose = factor(dge$samples$dose),
   RIN = as.numeric(dge$samples$RIN),
   lane = factor(dge$samples$lane),
-  timepoint = factor(dge$samples$timepoint)
+  timepoint = factor(dge$samples$timepoint),
+  RNA_extraction_batch = factor(dge$samples$RNA_extraction_batch)
 )
 
 # List of dimensions to iterate over
@@ -678,7 +760,9 @@ remove(counts,cpm,fpk,fpkm,tpm)
 # Filtering and normalization
 ## Lowly expressed genes
 ```{r filter_genes_by_expr}
-if (out == "../results/both_sexes_analysis/") {
+if (grepl("both_sexes_analysis", out2)) {
+  
+  print("both sexes analysis")
   
   # get the number of genes we are starting with
   start <- dim(dge)[1]
@@ -743,7 +827,9 @@ if (out == "../results/both_sexes_analysis/") {
   # cleanup
   remove(meta,avgPerGroup,cpm,start,end,filterTable)
   
-} else if (out == "../results/sex_specific_analysis") {
+} else if (grepl("sex_specific_analysis", out2)) {
+  
+  print("sex specific filtering")
     
   # get the number of genes we are starting with
   start <- dim(dge)[1]
@@ -924,7 +1010,7 @@ axis(1,at=1:nsamples,labels=colnames(log2cpm.norm),las=2,cex.axis=0.8)
 # save
 path <- paste0(out, "postfiltering_QC/counts_per_gene_boxplot")
 saveToPDF(paste0(path, ".pdf"), width = 20, height = 6)
-#remove(log2cpm.raw, log2cpm.norm, log2cpm.filtered)
+remove(log2cpm.raw, log2cpm.norm, log2cpm.filtered)
 ```
 
 ## CPM, FPKM, TPM

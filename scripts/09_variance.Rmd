@@ -2,7 +2,7 @@
 title: "Psilocybin Project 1"
 subtitle: "Variance"
 author: "Kennedi Todd"
-date: "09/17/2024"
+date: "10/14/2024"
 output:
   html_document:
     theme: cerulean
@@ -32,8 +32,8 @@ library(variancePartition) # fitExtractVarPartModel()
 ## User defined variables
 ```{r set_variables}
 # Output directories and file paths
-out <- "../../results/all_samples_combat/"
-out2 <- "all_samples_combat"
+out <- "../results/all_samples_sex_specific_analysis/"
+out2 <- "all_samples_sex_specific_analysis"
 
 # Colors and levels
 treatment_order <- c("saline", "psilocybin")
@@ -52,9 +52,10 @@ group_colors <- c("gray90", "gray60", "gray30",
 
 ## Load data
 ```{r load_data}
-dge.filtered.norm <- readRDS(paste0("../../rObjects/",
+dge.filtered.norm <- readRDS(paste0("../rObjects/",
                                     out2, 
                                     "_DGEList_filtered_normalized.rds"))
+head(colnames(dge.filtered.norm))
 ```
 
 # Extract metadata
@@ -71,8 +72,11 @@ variables <- c("group",
                "lib.size",
                "sex",
                "weight_at_treatment",
+               "hbb_log2cpm",
                "RIN",
-               "lane")
+               "lane",
+               "RNA_extraction_batch",
+               "hbb_log2cpm")
 meta <- meta %>% select(all_of(variables))
 
 # log2 transform lib.size
@@ -86,6 +90,7 @@ meta$dose <- factor(meta$dose)
 meta$weight_at_treatment <- as.numeric(gsub(" grams","",meta$weight_at_treatment))
 meta$timepoint <- factor(meta$timepoint)
 meta$lane <- factor(meta$lane)
+meta$RNA_extraction_batch <- factor(meta$RNA_extraction_batch)
 
 # check classes
 sapply(meta, class)
@@ -99,7 +104,7 @@ sapply(meta, class)
 path <- paste0(out, "variance/spearman_correlation_heatmap1.pdf")
 pdf(path, width = 8, height = 8)
 # formula
-form <- ~0 + dose + timepoint + sex + log2.lib + RIN + lane
+form <- ~0 + group + sex + log2.lib + RIN + RNA_extraction_batch + hbb_log2cpm + lane
 # correlation plot
 model.matrix(form, data = meta) %>% 
   cor(method = "spearman") %>% 
@@ -110,7 +115,7 @@ dev.off()
 path <- paste0(out, "variance/spearman_correlation_heatmap2.pdf")
 pdf(path, width = 8, height = 8)
 # formula
-form <- ~0 + group + sex + log2.lib + RIN + lane
+form <- ~0 + group2 + log2.lib + RIN + RNA_extraction_batch + hbb_log2cpm + lane
 # correlation plot
 model.matrix(form, data = meta) %>% 
   cor(method = "spearman") %>% 
@@ -121,7 +126,7 @@ dev.off()
 path <- paste0(out, "variance/spearman_correlation_heatmap3.pdf")
 pdf(path, width = 8, height = 8)
 # formula
-form <- ~0 + group2 + log2.lib + RIN + lane
+form <- ~0 + dose + timepoint + sex + log2.lib + RIN + RNA_extraction_batch + hbb_log2cpm + lane
 # correlation plot
 model.matrix(form, data = meta) %>% 
   cor(method = "spearman") %>% 
@@ -135,7 +140,7 @@ dev.off()
 path <- paste0(out, "variance/canonical_correlation_analysis_heatmap1.pdf")
 pdf(path, width = 8, height = 8)
 # formula
-form <- ~0 + dose + timepoint + sex + log2.lib + RIN + lane
+form <- ~0 + group + sex + log2.lib + RIN + RNA_extraction_batch + hbb_log2cpm + lane
 # CCA
 c <- canCorPairs(form, meta)
 # plot
@@ -156,7 +161,7 @@ dev.off()
 path <- paste0(out, "variance/canonical_correlation_analysis_heatmap2.pdf")
 pdf(path, width = 8, height = 8)
 # formula
-form <- ~0 + group + sex + log2.lib + RIN + lane
+form <- ~0 + group2 + log2.lib + RIN + RNA_extraction_batch + hbb_log2cpm + lane
 # CCA
 c <- canCorPairs(form, meta)
 # plot
@@ -177,7 +182,7 @@ dev.off()
 path <- paste0(out, "variance/canonical_correlation_analysis_heatmap3.pdf")
 pdf(path, width = 8, height = 8)
 # formula
-form <- ~0 + group2 + log2.lib + RIN + lane
+form <- ~0 + dose + timepoint + sex + log2.lib + RIN + RNA_extraction_batch + hbb_log2cpm + lane
 # CCA
 c <- canCorPairs(form, meta)
 # plot
@@ -204,11 +209,11 @@ colnames(meta)
 
 # age is usually a continuous so model it as a fixed effect "age"
 # group is categorical, so model them as random effects "(1|group)"
-form <- ~ (1|dose) + (1|timepoint) + (1|sex) + RIN
+form <- ~ (1|dose) + (1|timepoint) + (1|sex) + RIN + hbb_log2cpm
 
 varPart <- fitExtractVarPartModel(geneExpr, form, meta)
 vp <- sortCols(varPart)
-saveRDS(vp, paste0("../../rObjects/", out2, "_var_par.rds"))
+saveRDS(vp, paste0("../rObjects/", out2, "_var_par.rds"))
 ```
 
 ## Violins

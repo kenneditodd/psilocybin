@@ -1,6 +1,6 @@
 # read files
-meta <- read.delim2("../refs/metadata.tsv")
-seq.info <- read.delim2("../refs/fastq_headers.tsv", header = FALSE)
+meta <- read.delim2("refs/metadata.tsv")
+seq.info <- read.delim2("refs/fastq_headers.tsv", header = FALSE)
 
 # reformat seq.info
 colnames(seq.info) <- c("filename","fastq_header")
@@ -43,5 +43,5 @@ table(paste0("Lane", df$lane, "-Group", df$group))
 table(paste0("Lane", df$lane, "-Group", df$group2))
 
 # save joined meta
-write.table(x = df, file = "../../refs/metadata.tsv", sep = "\t",
+write.table(x = df, file = "refs/metadata.tsv", sep = "\t",
             quote = FALSE)
