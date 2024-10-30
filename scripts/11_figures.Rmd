@@ -2,7 +2,7 @@
 title: "Psilocybin Project 1"
 subtitle: "Figures"
 author: "Kennedi Todd"
-date: "`r Sys.Date()`"
+date: "10/14/2024"
 output:
   html_document:
     theme: cerulean
@@ -20,29 +20,13 @@ knitr::opts_knit$set(root.dir = ".")
 
 ## Libraries
 ```{r libraries, message=FALSE, warning=FALSE}
-library(plotly) # plot_ly()
-library(tidyr)  # pivot_longer()
+library(plotly)
+library(tidyr)
 library(ComplexUpset)
 library(UpSetR)
 ```
 
-## User defined variables
-```{r set_variables}
-out <- "../../results/all_samples_combat/"
-out2 <- "all_samples_combat"
-model <- "DEGs_with_hbb/both_sexes/"
-treatment_order <- c("saline","psilocybin")
-treatment_colors <- c("gray60","springgreen2")
-sex_order <- c("M","F")
-sex_colors <- c("gold2","purple")
-group_order <- c("S.8h","S.24h","S.7d",
-                 "L.8h","L.24h","L.7d",
-                 "H.8h","H.24h","H.7d")
-group_colors <- c("gray90","gray60","gray30","lightblue","cornflowerblue","blue",
-                          "sienna1","red2","red4")
-```
-
-## Save functions
+## Functions
 ```{r save_functions}
 saveToPDF <- function(...) {
     d = dev.copy(pdf,...)
@@ -50,12 +34,55 @@ saveToPDF <- function(...) {
 }
 ```
 
-# Upset
-## Low dose
 ```{r}
-# set var
+get_exclusive_intersection_genes <- function(upset_data, list_input) {
+  # Initialize a list to store the results
+  results <- list()
+  
+  # Get the names of the columns (gene sets)
+  set_names <- colnames(upset_data)
+  
+  # For each row of the UpSet matrix, extract the exclusive intersection
+  for (i in 1:nrow(upset_data)) {
+    # Check which sets (columns) are "active" (i.e., 1) for the current row
+    active_sets <- set_names[upset_data[i, ] == 1]
+    
+    if (length(active_sets) > 0) {
+      # Find the intersection of genes in the active sets
+      intersected_genes <- Reduce(intersect, list_input[active_sets])
+      
+      # Find genes that are present in any of the other sets (not part of this combination)
+      other_sets <- set_names[upset_data[i, ] == 0]
+      other_genes <- Reduce(union, list_input[other_sets])
+      
+      # Subtract the genes that are in the other sets to make the intersection exclusive
+      exclusive_genes <- setdiff(intersected_genes, other_genes)
+      
+      # Create a label for the current intersection (e.g., "Set1 & Set2")
+      intersection_label <- paste(active_sets, collapse = " & ")
+      
+      # Store the number of genes and the exclusive gene list
+      results[[intersection_label]] <- list(
+        total_genes = length(exclusive_genes),
+        gene_list = paste(exclusive_genes, collapse = ", ")
+      )
+    }
+  }
+  
+  return(results)
+}
+```
+
+# Upset Both Sexes
+## Low dose
+### Plot
+```{r}
+# set variables
 thresh <- 0.1
 myLfc <- 0.2
+out <- "../results/all_samples_both_sexes_analysis/"
+out2 <- "all_samples_both_sexes_analysis"
+model <- "DEGs_with_hbb/"
 
 # paths
 prefix <- paste0(out, model, "DEG_tables/")
@@ -135,17 +162,49 @@ upset_gene <- upset_gene + ggtitle(paste0("L Comparison, FDRq < ", format(thresh
                                           ", |LFC| > ", format(myLfc, nsmall = 2)))
 
 # save
-pdf(paste0(out, model, "/upset/L_comparison_FDRq_", format(thresh, nsmall = 2), 
+pdf(paste0(out, model, "/upset/low_dose_comparison_FDRq_", format(thresh, nsmall = 2), 
            "_LFC_", format(myLfc, nsmall = 2), ".pdf"), 
     height = 6, width = 10)
 upset_gene
 ```
 
-## High dose
+### Extract
 ```{r}
-# set var
+# convert the gene sets into a binary matrix (like UpSet plot input)
+upset_data <- UpSetR::fromList(list_input)
+
+# call the function to extract the exclusive intersection genes
+exclusive_intersection_results <- get_exclusive_intersection_genes(upset_data, list_input)
+
+# convert the list to a data.frame with two columns: Total genes and gene list
+exclusive_intersection_df <- do.call(rbind, lapply(names(exclusive_intersection_results), function(x) {
+  data.frame(
+    Intersection = x,
+    Total_Genes = exclusive_intersection_results[[x]]$total_genes,
+    Gene_List = exclusive_intersection_results[[x]]$gene_list,
+    stringsAsFactors = FALSE
+  )
+}))
+exclusive_intersection_df <- 
+  exclusive_intersection_df[order(exclusive_intersection_df$Total_Genes, decreasing = TRUE),]
+
+# save
+write.table(x = exclusive_intersection_df,
+            file = paste0(out, model, "/upset/low_dose_comparison_results.tsv"),
+            sep = "\t",
+            quote = FALSE,
+            col.names = TRUE,
+            row.names = FALSE)
+```
+
+## High dose
+### Plot
+```{r}
 thresh <- 0.1
 myLfc <- 0.2
+out <- "../results/all_samples_both_sexes_analysis/"
+out2 <- "all_samples_both_sexes_analysis"
+model <- "DEGs_with_hbb/"
 
 # paths
 prefix <- paste0(out, model, "DEG_tables/")
@@ -225,17 +284,50 @@ upset_gene <- upset_gene + ggtitle(paste0("H Comparison, FDRq < ", format(thresh
                                           ", |LFC| > ", format(myLfc, nsmall = 2)))
 
 # save
-pdf(paste0(out, model, "/upset/H_comparison_FDRq_", format(thresh, nsmall = 2), 
+pdf(paste0(out, model, "/upset/high_dose_comparison_FDRq_", format(thresh, nsmall = 2), 
            "_LFC_", format(myLfc, nsmall = 2), ".pdf"), 
     height = 6, width = 10)
 upset_gene
 ```
 
+### Extract
+```{r}
+# convert the gene sets into a binary matrix (like UpSet plot input)
+upset_data <- UpSetR::fromList(list_input)
+
+# call the function to extract the exclusive intersection genes
+exclusive_intersection_results <- get_exclusive_intersection_genes(upset_data, list_input)
+
+# convert the list to a data.frame with two columns: Total genes and gene list
+exclusive_intersection_df <- do.call(rbind, lapply(names(exclusive_intersection_results), function(x) {
+  data.frame(
+    Intersection = x,
+    Total_Genes = exclusive_intersection_results[[x]]$total_genes,
+    Gene_List = exclusive_intersection_results[[x]]$gene_list,
+    stringsAsFactors = FALSE
+  )
+}))
+exclusive_intersection_df <- 
+  exclusive_intersection_df[order(exclusive_intersection_df$Total_Genes, decreasing = TRUE),]
+
+# save
+write.table(x = exclusive_intersection_df,
+            file = paste0(out, model, "/upset/high_dose_comparison_results.tsv"),
+            sep = "\t",
+            quote = FALSE,
+            col.names = TRUE,
+            row.names = FALSE)
+```
+
 ## 8 hours
+### Plot
 ```{r}
 # set var
 thresh <- 0.1
 myLfc <- 0.2
+out <- "../results/all_samples_both_sexes_analysis/"
+out2 <- "all_samples_both_sexes_analysis"
+model <- "DEGs_with_hbb/"
 
 # paths
 prefix <- paste0(out, model, "DEG_tables/")
@@ -304,17 +396,50 @@ upset_gene <- upset_gene + ggtitle(paste0("8 Hours, FDRq < ", format(thresh, nsm
                                           ", |LFC| > ", format(myLfc, nsmall = 2)))
 
 # save
-pdf(paste0(out, model, "/upset/8_hour_comparison_FDRq_", format(thresh, nsmall = 2), 
+pdf(paste0(out, model, "/upset/8_hours_comparison_FDRq_", format(thresh, nsmall = 2), 
            "_LFC_", format(myLfc, nsmall = 2), ".pdf"), 
     height = 6, width = 15)
 upset_gene
 ```
 
+### Extract
+```{r}
+# convert the gene sets into a binary matrix (like UpSet plot input)
+upset_data <- UpSetR::fromList(list_input)
+
+# call the function to extract the exclusive intersection genes
+exclusive_intersection_results <- get_exclusive_intersection_genes(upset_data, list_input)
+
+# convert the list to a data.frame with two columns: Total genes and gene list
+exclusive_intersection_df <- do.call(rbind, lapply(names(exclusive_intersection_results), function(x) {
+  data.frame(
+    Intersection = x,
+    Total_Genes = exclusive_intersection_results[[x]]$total_genes,
+    Gene_List = exclusive_intersection_results[[x]]$gene_list,
+    stringsAsFactors = FALSE
+  )
+}))
+exclusive_intersection_df <- 
+  exclusive_intersection_df[order(exclusive_intersection_df$Total_Genes, decreasing = TRUE),]
+
+# save
+write.table(x = exclusive_intersection_df,
+            file = paste0(out, model, "/upset/8_hours_comparison_results.tsv"),
+            sep = "\t",
+            quote = FALSE,
+            col.names = TRUE,
+            row.names = FALSE)
+```
+
 ## 24 hours
+### Plot
 ```{r}
 # set var
 thresh <- 0.1
 myLfc <- 0.2
+out <- "../results/all_samples_both_sexes_analysis/"
+out2 <- "all_samples_both_sexes_analysis"
+model <- "DEGs_with_hbb/"
 
 # paths
 prefix <- paste0(out, model, "DEG_tables/")
@@ -383,17 +508,50 @@ upset_gene <- upset_gene + ggtitle(paste0("24 Hours, FDRq < ", format(thresh, ns
                                           ", |LFC| > ", format(myLfc, nsmall = 2)))
 
 # save
-pdf(paste0(out, model, "/upset/24_hour_comparison_FDRq_", format(thresh, nsmall = 2), 
+pdf(paste0(out, model, "/upset/24_hours_comparison_FDRq_", format(thresh, nsmall = 2), 
            "_LFC_", format(myLfc, nsmall = 2), ".pdf"), 
     height = 6, width = 16)
 upset_gene
 ```
 
+### Extract
+```{r}
+# convert the gene sets into a binary matrix (like UpSet plot input)
+upset_data <- UpSetR::fromList(list_input)
+
+# call the function to extract the exclusive intersection genes
+exclusive_intersection_results <- get_exclusive_intersection_genes(upset_data, list_input)
+
+# convert the list to a data.frame with two columns: Total genes and gene list
+exclusive_intersection_df <- do.call(rbind, lapply(names(exclusive_intersection_results), function(x) {
+  data.frame(
+    Intersection = x,
+    Total_Genes = exclusive_intersection_results[[x]]$total_genes,
+    Gene_List = exclusive_intersection_results[[x]]$gene_list,
+    stringsAsFactors = FALSE
+  )
+}))
+exclusive_intersection_df <- 
+  exclusive_intersection_df[order(exclusive_intersection_df$Total_Genes, decreasing = TRUE),]
+
+# save
+write.table(x = exclusive_intersection_df,
+            file = paste0(out, model, "/upset/24_hours_comparison_results.tsv"),
+            sep = "\t",
+            quote = FALSE,
+            col.names = TRUE,
+            row.names = FALSE)
+```
+
 ## 7 days
+### Plot
 ```{r}
 # set var
 thresh <- 0.1
 myLfc <- 0.2
+out <- "../results/all_samples_both_sexes_analysis/"
+out2 <- "all_samples_both_sexes_analysis"
+model <- "DEGs_with_hbb/"
 
 # paths
 prefix <- paste0(out, model, "DEG_tables/")
@@ -458,14 +616,967 @@ upset_gene <- ComplexUpset::upset(data,
 				  sort_intersections='descending'
 				)
 
-upset_gene <- upset_gene + ggtitle(paste0("FDRq < ", format(thresh, nsmall = 2),
+upset_gene <- upset_gene + ggtitle(paste0("7 Days, FDRq < ", format(thresh, nsmall = 2),
                                           ", |LFC| > ", format(myLfc, nsmall = 2)))
 
 # save
-pdf(paste0(out, model, "/upset/7_day_comparison_FDRq_", format(thresh, nsmall = 2), 
+pdf(paste0(out, model, "/upset/7_days_comparison_FDRq_", format(thresh, nsmall = 2), 
            "_LFC_", format(myLfc, nsmall = 2), ".pdf"), 
     height = 6, width = 16)
 upset_gene
+```
+
+### Extract
+```{r}
+# convert the gene sets into a binary matrix (like UpSet plot input)
+upset_data <- UpSetR::fromList(list_input)
+
+# call the function to extract the exclusive intersection genes
+exclusive_intersection_results <- get_exclusive_intersection_genes(upset_data, list_input)
+
+# convert the list to a data.frame with two columns: Total genes and gene list
+exclusive_intersection_df <- do.call(rbind, lapply(names(exclusive_intersection_results), function(x) {
+  data.frame(
+    Intersection = x,
+    Total_Genes = exclusive_intersection_results[[x]]$total_genes,
+    Gene_List = exclusive_intersection_results[[x]]$gene_list,
+    stringsAsFactors = FALSE
+  )
+}))
+exclusive_intersection_df <- 
+  exclusive_intersection_df[order(exclusive_intersection_df$Total_Genes, decreasing = TRUE),]
+
+# save
+write.table(x = exclusive_intersection_df,
+            file = paste0(out, model, "/upset/7_days_comparison_results.tsv"),
+            sep = "\t",
+            quote = FALSE,
+            col.names = TRUE,
+            row.names = FALSE)
+```
+
+# Upset Sex Specific
+## Low dose
+### Plot
+```{r}
+# set variables
+out <- "../results/all_samples_sex_specific_analysis/"
+out2 <- "all_samples_sex_specific_analysis"
+model <- "DEGs_with_hbb/"
+
+# get file list
+files <- list.files(paste0(out, model, "metascape_input"))
+files <- files[grepl(pattern = "^L.+", x = files)]
+
+# loop through files and create variable for each gene list
+for (i in files) {
+  genes <- readLines(paste0(out, model, "metascape_input/", i))
+  genes <- genes[genes != ""]
+  var_name <- gsub(pattern = "regulated_FDRq_0.10_LFC_0.20.txt",
+                   replacement = "",
+                   x = i)
+  assign(x = var_name, value = genes)
+}
+
+# format in a list
+list_input <- list(
+  "L.7d.F vs S.7d.F down-regulated" = L.7d.F_vs_S.7d.F_down,
+  "L.7d.M vs S.7d.M down-regulated" = L.7d.M_vs_S.7d.M_down,
+  "L.24h.F vs S.24h.F down-regulated" = L.24h.F_vs_S.24h.F_down,
+  "L.24h.M vs S.24h.M down-regulated" = L.24h.M_vs_S.24h.M_down,
+  "L.8h.F vs S.8h.F down-regulated" = L.8h.F_vs_S.8h.F_down,
+  "L.8h.M vs S.8h.M down-regulated" = L.8h.M_vs_S.8h.M_down,
+  "L.7d.F vs S.7d.F up-regulated" = L.7d.F_vs_S.7d.F_up,
+  "L.7d.M vs S.7d.M up-regulated" = L.7d.M_vs_S.7d.M_up,
+  "L.24h.F vs S.24h.F up-regulated" = L.24h.F_vs_S.24h.F_up,
+  "L.24h.M vs S.24h.M up-regulated" = L.24h.M_vs_S.24h.M_up,
+  "L.8h.F vs S.8h.F up-regulated" = L.8h.F_vs_S.8h.F_up,
+  "L.8h.M vs S.8h.M up-regulated" = L.8h.M_vs_S.8h.M_up
+)
+data <- UpSetR::fromList(list_input)
+
+# You will specify the male and female groups by their group number
+group_mapping <- data.frame(
+  Group_Number = 1:12,  # Group numbers (1-8)
+  Gene_Set_Name = sort(colnames(data))  # Sorted gene set names
+)
+group_mapping
+
+# Assign shapes based on group numbers
+male_groups <- c("3","4","7","8","11","12")  # Male group numbers
+female_groups <- c("1","2","5","6","9","10")  # Female group numbers
+
+# Assign colors and shapes based on specific group numbers
+upregulated_groups <- c("2","4","6","8","10","12")
+downregulated_groups <- c("1","3","5","7","9","11")
+
+# Create the basic UpSet plot (no dynamic colors or shapes) to extract n_points
+dummy_upset <- ComplexUpset::upset(
+  data, 
+  colnames(data),  # Use column names (gene sets)
+  set_sizes = ComplexUpset::upset_set_size(),  # Display set sizes
+  sort_sets = FALSE,
+  
+  # Plot the intersection matrix with points (default shapes)
+  matrix = ComplexUpset::intersection_matrix(
+    ggplot2::geom_point(size = 3)  # Simple points without dynamic aesthetics
+  )
+)
+
+# Ensure n_points matches the actual data
+n_points <- nrow(dummy_upset$data)
+print(paste("Number of points being plotted:", n_points))  # Should be 300
+
+# Create empty vectors for colors and shapes
+color_vector <- rep(NA, n_points)  # To store colors
+shape_vector <- rep(NA, n_points)  # To store shapes
+
+# Assign shapes and colors based on group numbers
+for (i in 1:n_points) {
+  group_value <- as.character(dummy_upset$data$group[i])
+  
+  # Assign shapes
+  if (group_value %in% male_groups) {
+    shape_vector[i] <- 22  # Filled square for Male comparisons
+  } else if (group_value %in% female_groups) {
+    shape_vector[i] <- 21  # Circle for Female comparisons
+  }
+  
+  # Assign colors based on group numbers, only if the point is involved in an intersection
+  if (dummy_upset$data$value[i]) {  # If the point is part of an intersection
+    if (group_value %in% upregulated_groups) {
+      color_vector[i] <- "red"  # Red for Up-regulated
+    } else if (group_value %in% downregulated_groups) {
+      color_vector[i] <- "blue"  # Blue for Down-regulated
+    }
+  } else {
+    color_vector[i] <- NA  # No fill for points not involved in intersections
+  }
+}
+
+# Ensure both vectors are of correct length
+if (length(shape_vector) != n_points || length(color_vector) != n_points) {
+  stop("Error: shape_vector or color_vector length does not match the number of plotted points.")
+}
+
+# Print the color_vector to ensure correctness before plotting
+print(unique(color_vector))  # Ensure this contains only valid colors or NA
+
+# Reintroduce dynamic fill color for filled shapes
+upset_gene <- ComplexUpset::upset(
+  data, 
+  colnames(data),
+  set_sizes = (
+    ComplexUpset::upset_set_size() +
+    geom_text(aes(label = ..count..), hjust = 1.1, stat = 'count') +
+    expand_limits(y = 800)
+  ),
+  
+  # Prevent automatic sorting of sets
+  sort_sets = FALSE,
+  
+  matrix = ComplexUpset::intersection_matrix(
+    ggplot2::geom_point(
+      ggplot2::aes(shape = factor(shape_vector), fill = color_vector),  # Fill shapes with dynamic colors
+      size = 3,
+      stroke = 0.45  # Keeps the outline black
+    )
+  ) + ggplot2::scale_shape_manual(
+    name = "Sex",
+    labels = c("Male", "Female"),  # Legend labels
+    values = c(21, 22) # Circle=21, Filled square=22
+    ) + ggplot2::scale_fill_identity(na.translate = FALSE),  # Use the exact colors in color_vector and remove NA fill
+  
+    base_annotations = list(
+    'Intersection size' = (
+      intersection_size(bar_number_threshold = 1, width = 0.5) +
+      scale_y_continuous(expand = expansion(mult = c(0, 0.05)), limits = c(0, 600)) +
+      theme(
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.line = element_line(colour = 'black')
+      )
+    )
+  ),
+)
+
+# Add title
+upset_gene <- upset_gene + 
+  ggtitle("Low Dose Comparison, FDRq < 0.10, |LFC| > 0.20")
+
+# Remove legend
+upset_gene <- upset_gene + theme(legend.position = "None")
+
+# Save temp without legend
+pdf(file = paste0(out, model, "/upset/low_dose_comparison_FDRq_0.10_LFC_0.20.pdf"), 
+    height = 7, 
+    width = 12)
+upset_gene
+```
+
+### Extract
+```{r}
+# convert the gene sets into a binary matrix (like UpSet plot input)
+upset_data <- UpSetR::fromList(list_input)
+
+# call the function to extract the exclusive intersection genes
+exclusive_intersection_results <- get_exclusive_intersection_genes(upset_data, list_input)
+
+# convert the list to a data.frame with two columns: Total genes and gene list
+exclusive_intersection_df <- do.call(rbind, lapply(names(exclusive_intersection_results), function(x) {
+  data.frame(
+    Intersection = x,
+    Total_Genes = exclusive_intersection_results[[x]]$total_genes,
+    Gene_List = exclusive_intersection_results[[x]]$gene_list,
+    stringsAsFactors = FALSE
+  )
+}))
+exclusive_intersection_df <- 
+  exclusive_intersection_df[order(exclusive_intersection_df$Total_Genes, decreasing = TRUE),]
+
+# save
+write.table(x = exclusive_intersection_df,
+            file = paste0(out, model, "/upset/low_dose_comparison_results.tsv"),
+            sep = "\t",
+            quote = FALSE,
+            col.names = TRUE,
+            row.names = FALSE)
+```
+
+## High dose
+### Plot
+```{r}
+# set variables
+out <- "../results/all_samples_sex_specific_analysis/"
+out2 <- "all_samples_sex_specific_analysis"
+model <- "DEGs_with_hbb/"
+
+# get file list
+files <- list.files(paste0(out, model, "metascape_input"))
+files <- files[grepl(pattern = "^H.+", x = files)]
+
+# loop through files and create variable for each gene list
+for (i in files) {
+  genes <- readLines(paste0(out, model, "metascape_input/", i))
+  genes <- genes[genes != ""]
+  var_name <- gsub(pattern = "regulated_FDRq_0.10_LFC_0.20.txt",
+                   replacement = "",
+                   x = i)
+  assign(x = var_name, value = genes)
+}
+
+# format in a list
+list_input <- list(
+  "H.7d.F vs S.7d.F down-regulated" = H.7d.F_vs_S.7d.F_down,
+  "H.7d.M vs S.7d.M down-regulated" = H.7d.M_vs_S.7d.M_down,
+  "H.24h.F vs S.24h.F down-regulated" = H.24h.F_vs_S.24h.F_down,
+  "H.24h.M vs S.24h.M down-regulated" = H.24h.M_vs_S.24h.M_down,
+  "H.8h.F vs S.8h.F down-regulated" = H.8h.F_vs_S.8h.F_down,
+  "H.8h.M vs S.8h.M down-regulated" = H.8h.M_vs_S.8h.M_down,
+  "H.7d.F vs S.7d.F up-regulated" = H.7d.F_vs_S.7d.F_up,
+  "H.7d.M vs S.7d.M up-regulated" = H.7d.M_vs_S.7d.M_up,
+  "H.24h.F vs S.24h.F up-regulated" = H.24h.F_vs_S.24h.F_up,
+  "H.24h.M vs S.24h.M up-regulated" = H.24h.M_vs_S.24h.M_up,
+  "H.8h.F vs S.8h.F up-regulated" = H.8h.F_vs_S.8h.F_up,
+  "H.8h.M vs S.8h.M up-regulated" = H.8h.M_vs_S.8h.M_up
+)
+data <- UpSetR::fromList(list_input)
+
+# You will specify the male and female groups by their group number
+group_mapping <- data.frame(
+  Group_Number = 1:12,  # Group numbers (1-8)
+  Gene_Set_Name = sort(colnames(data))  # Sorted gene set names
+)
+group_mapping
+
+# Assign shapes based on group numbers
+male_groups <- c("3","4","7","8","11","12")  # Male group numbers
+female_groups <- c("1","2","5","6","9","10")  # Female group numbers
+
+# Assign colors and shapes based on specific group numbers
+upregulated_groups <- c("2","4","6","8","10","12")
+downregulated_groups <- c("1","3","5","7","9","11")
+
+# Create the basic UpSet plot (no dynamic colors or shapes) to extract n_points
+dummy_upset <- ComplexUpset::upset(
+  data, 
+  colnames(data),  # Use column names (gene sets)
+  set_sizes = ComplexUpset::upset_set_size(),  # Display set sizes
+  sort_sets = FALSE,
+  
+  # Plot the intersection matrix with points (default shapes)
+  matrix = ComplexUpset::intersection_matrix(
+    ggplot2::geom_point(size = 3)  # Simple points without dynamic aesthetics
+  )
+)
+
+# Ensure n_points matches the actual data
+n_points <- nrow(dummy_upset$data)
+print(paste("Number of points being plotted:", n_points))  # Should be 300
+
+# Create empty vectors for colors and shapes
+color_vector <- rep(NA, n_points)  # To store colors
+shape_vector <- rep(NA, n_points)  # To store shapes
+
+# Assign shapes and colors based on group numbers
+for (i in 1:n_points) {
+  group_value <- as.character(dummy_upset$data$group[i])
+  
+  # Assign shapes
+  if (group_value %in% male_groups) {
+    shape_vector[i] <- 22  # Filled square for Male comparisons
+  } else if (group_value %in% female_groups) {
+    shape_vector[i] <- 21  # Circle for Female comparisons
+  }
+  
+  # Assign colors based on group numbers, only if the point is involved in an intersection
+  if (dummy_upset$data$value[i]) {  # If the point is part of an intersection
+    if (group_value %in% upregulated_groups) {
+      color_vector[i] <- "red"  # Red for Up-regulated
+    } else if (group_value %in% downregulated_groups) {
+      color_vector[i] <- "blue"  # Blue for Down-regulated
+    }
+  } else {
+    color_vector[i] <- NA  # No fill for points not involved in intersections
+  }
+}
+
+# Ensure both vectors are of correct length
+if (length(shape_vector) != n_points || length(color_vector) != n_points) {
+  stop("Error: shape_vector or color_vector length does not match the number of plotted points.")
+}
+
+# Print the color_vector to ensure correctness before plotting
+print(unique(color_vector))  # Ensure this contains only valid colors or NA
+
+# Reintroduce dynamic fill color for filled shapes
+upset_gene <- ComplexUpset::upset(
+  data, 
+  colnames(data),
+  set_sizes = (
+    ComplexUpset::upset_set_size() +
+    geom_text(aes(label = ..count..), hjust = 1.1, stat = 'count') +
+    expand_limits(y = 600)
+  ),
+  
+  # Prevent automatic sorting of sets
+  sort_sets = FALSE,
+  
+  matrix = ComplexUpset::intersection_matrix(
+    ggplot2::geom_point(
+      ggplot2::aes(shape = factor(shape_vector), fill = color_vector),  # Fill shapes with dynamic colors
+      size = 3,
+      stroke = 0.45  # Keeps the outline black
+    )
+  ) + ggplot2::scale_shape_manual(
+    name = "Sex",
+    labels = c("Male", "Female"),  # Legend labels
+    values = c(21, 22) # Circle=21, Filled square=22
+    ) + ggplot2::scale_fill_identity(na.translate = FALSE),  # Use the exact colors in color_vector and remove NA fill
+  
+    base_annotations = list(
+    'Intersection size' = (
+      intersection_size(bar_number_threshold = 1, width = 0.5) +
+      scale_y_continuous(expand = expansion(mult = c(0, 0.05)), limits = c(0, 400)) +
+      theme(
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.line = element_line(colour = 'black')
+      )
+    )
+  ),
+)
+
+# Add title
+upset_gene <- upset_gene + 
+  ggtitle("High Dose Comparison, FDRq < 0.10, |LFC| > 0.20")
+
+# Remove legend
+upset_gene <- upset_gene + theme(legend.position = "None")
+
+# Save temp without legend
+pdf(file = paste0(out, model, "/upset/high_dose_comparison_FDRq_0.10_LFC_0.20.pdf"), 
+    height = 7, 
+    width = 14)
+upset_gene
+dev.off()
+```
+
+### Extract
+```{r}
+# convert the gene sets into a binary matrix (like UpSet plot input)
+upset_data <- UpSetR::fromList(list_input)
+
+# call the function to extract the exclusive intersection genes
+exclusive_intersection_results <- get_exclusive_intersection_genes(upset_data, list_input)
+
+# convert the list to a data.frame with two columns: Total genes and gene list
+exclusive_intersection_df <- do.call(rbind, lapply(names(exclusive_intersection_results), function(x) {
+  data.frame(
+    Intersection = x,
+    Total_Genes = exclusive_intersection_results[[x]]$total_genes,
+    Gene_List = exclusive_intersection_results[[x]]$gene_list,
+    stringsAsFactors = FALSE
+  )
+}))
+exclusive_intersection_df <- 
+  exclusive_intersection_df[order(exclusive_intersection_df$Total_Genes, decreasing = TRUE),]
+
+# save
+write.table(x = exclusive_intersection_df,
+            file = paste0(out, model, "/upset/high_dose_comparison_results.tsv"),
+            sep = "\t",
+            quote = FALSE,
+            col.names = TRUE,
+            row.names = FALSE)
+```
+
+## 8 hours
+### Plot
+```{r}
+# set variables
+out <- "../results/all_samples_sex_specific_analysis/"
+out2 <- "all_samples_sex_specific_analysis"
+model <- "DEGs_with_hbb/"
+
+# get file list
+files <- list.files(paste0(out, model, "metascape_input"))
+files <- files[grepl(pattern = "^[LH]\\.8h.+", x = files)]
+
+# loop through files and create variable for each gene list
+for (i in files) {
+  genes <- readLines(paste0(out, model, "metascape_input/", i))
+  genes <- genes[genes != ""]
+  var_name <- gsub(pattern = "regulated_FDRq_0.10_LFC_0.20.txt",
+                   replacement = "",
+                   x = i)
+  assign(x = var_name, value = genes)
+}
+
+# format in a list
+list_input <- list(
+  "H.8h.F vs S.8h.F down-regulated" = H.8h.F_vs_S.8h.F_down,
+  "H.8h.M vs S.8h.M down-regulated" = H.8h.M_vs_S.8h.M_down,
+  "L.8h.F vs S.8h.F down-regulated" = L.8h.F_vs_S.8h.F_down,
+  "L.8h.M vs S.8h.M down-regulated" = L.8h.M_vs_S.8h.M_down,
+  "H.8h.F vs S.8h.F up-regulated" = H.8h.F_vs_S.8h.F_up,
+  "H.8h.M vs S.8h.M up-regulated" = H.8h.M_vs_S.8h.M_up,
+  "L.8h.F vs S.8h.F up-regulated" = L.8h.F_vs_S.8h.F_up,
+  "L.8h.M vs S.8h.M up-regulated" = L.8h.M_vs_S.8h.M_up
+)
+data <- UpSetR::fromList(list_input)
+
+# You will specify the male and female groups by their group number
+group_mapping <- data.frame(
+  Group_Number = 1:8,  # Group numbers (1-8)
+  Gene_Set_Name = sort(colnames(data))  # Sorted gene set names
+)
+group_mapping
+
+# Assign shapes based on group numbers
+male_groups <- c("3","4","7","8")  # Male group numbers
+female_groups <- c("1","2","5","6")  # Female group numbers
+
+# Assign colors and shapes based on specific group numbers
+upregulated_groups <- c("2","4","6","8")
+downregulated_groups <- c("1","3","5","7")
+
+# Create the basic UpSet plot (no dynamic colors or shapes) to extract n_points
+dummy_upset <- ComplexUpset::upset(
+  data, 
+  colnames(data),  # Use column names (gene sets)
+  set_sizes = ComplexUpset::upset_set_size(),  # Display set sizes
+  sort_sets = FALSE,
+  
+  # Plot the intersection matrix with points (default shapes)
+  matrix = ComplexUpset::intersection_matrix(
+    ggplot2::geom_point(size = 3)  # Simple points without dynamic aesthetics
+  )
+)
+
+# Ensure n_points matches the actual data
+n_points <- nrow(dummy_upset$data)
+print(paste("Number of points being plotted:", n_points))  # Should be 300
+
+# Create empty vectors for colors and shapes
+color_vector <- rep(NA, n_points)  # To store colors
+shape_vector <- rep(NA, n_points)  # To store shapes
+
+# Assign shapes and colors based on group numbers
+for (i in 1:n_points) {
+  group_value <- as.character(dummy_upset$data$group[i])
+  
+  # Assign shapes
+  if (group_value %in% male_groups) {
+    shape_vector[i] <- 22  # Filled square for Male comparisons
+  } else if (group_value %in% female_groups) {
+    shape_vector[i] <- 21  # Circle for Female comparisons
+  }
+  
+  # Assign colors based on group numbers, only if the point is involved in an intersection
+  if (dummy_upset$data$value[i]) {  # If the point is part of an intersection
+    if (group_value %in% upregulated_groups) {
+      color_vector[i] <- "red"  # Red for Up-regulated
+    } else if (group_value %in% downregulated_groups) {
+      color_vector[i] <- "blue"  # Blue for Down-regulated
+    }
+  } else {
+    color_vector[i] <- NA  # No fill for points not involved in intersections
+  }
+}
+
+# Ensure both vectors are of correct length
+if (length(shape_vector) != n_points || length(color_vector) != n_points) {
+  stop("Error: shape_vector or color_vector length does not match the number of plotted points.")
+}
+
+# Print the color_vector to ensure correctness before plotting
+print(unique(color_vector))  # Ensure this contains only valid colors or NA
+
+# Reintroduce dynamic fill color for filled shapes
+upset_gene <- ComplexUpset::upset(
+  data, 
+  colnames(data),
+  set_sizes = (
+    ComplexUpset::upset_set_size() +
+    geom_text(aes(label = ..count..), hjust = 1.1, stat = 'count') +
+    expand_limits(y = 800)
+  ),
+  
+  # Prevent automatic sorting of sets
+  sort_sets = FALSE,
+  
+  matrix = ComplexUpset::intersection_matrix(
+    ggplot2::geom_point(
+      ggplot2::aes(shape = factor(shape_vector), fill = color_vector),  # Fill shapes with dynamic colors
+      size = 3,
+      stroke = 0.45  # Keeps the outline black
+    )
+  ) + ggplot2::scale_shape_manual(
+    name = "Sex",
+    labels = c("Male", "Female"),  # Legend labels
+    values = c(21, 22) # Circle=21, Filled square=22
+    ) + ggplot2::scale_fill_identity(na.translate = FALSE),  # Use the exact colors in color_vector and remove NA fill
+  
+    base_annotations = list(
+    'Intersection size' = (
+      intersection_size(bar_number_threshold = 1, width = 0.5) +
+      scale_y_continuous(expand = expansion(mult = c(0, 0.05)), limits = c(0, 600)) +
+      theme(
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.line = element_line(colour = 'black')
+      )
+    )
+  ),
+)
+
+# Add title
+upset_gene <- upset_gene + 
+  ggtitle("8 Hours Comparison, FDRq < 0.10, |LFC| > 0.20")
+
+# Remove legend
+upset_gene <- upset_gene + theme(legend.position = "None")
+
+# Save temp without legend
+pdf(file = paste0(out, model, "/upset/8_hours_comparison_FDRq_0.10_LFC_0.20.pdf"), 
+    height = 7, 
+    width = 10)
+upset_gene
+```
+
+### Extract
+```{r}
+# convert the gene sets into a binary matrix (like UpSet plot input)
+upset_data <- UpSetR::fromList(list_input)
+
+# call the function to extract the exclusive intersection genes
+exclusive_intersection_results <- get_exclusive_intersection_genes(upset_data, list_input)
+
+# convert the list to a data.frame with two columns: Total genes and gene list
+exclusive_intersection_df <- do.call(rbind, lapply(names(exclusive_intersection_results), function(x) {
+  data.frame(
+    Intersection = x,
+    Total_Genes = exclusive_intersection_results[[x]]$total_genes,
+    Gene_List = exclusive_intersection_results[[x]]$gene_list,
+    stringsAsFactors = FALSE
+  )
+}))
+exclusive_intersection_df <- 
+  exclusive_intersection_df[order(exclusive_intersection_df$Total_Genes, decreasing = TRUE),]
+
+# save
+write.table(x = exclusive_intersection_df,
+            file = paste0(out, model, "/upset/8_hours_comparison_results.tsv"),
+            sep = "\t",
+            quote = FALSE,
+            col.names = TRUE,
+            row.names = FALSE)
+```
+
+## 24 hours
+### Plot
+```{r}
+# set variables
+out <- "../results/all_samples_sex_specific_analysis/"
+out2 <- "all_samples_sex_specific_analysis"
+model <- "DEGs_with_hbb/"
+
+# get file list
+files <- list.files(paste0(out, model, "metascape_input"))
+files <- files[grepl(pattern = "^[LH]\\.24h.+", x = files)]
+
+# loop through files and create variable for each gene list
+for (i in files) {
+  genes <- readLines(paste0(out, model, "metascape_input/", i))
+  genes <- genes[genes != ""]
+  var_name <- gsub(pattern = "regulated_FDRq_0.10_LFC_0.20.txt",
+                   replacement = "",
+                   x = i)
+  assign(x = var_name, value = genes)
+}
+
+# format in a list
+list_input <- list(
+  "H.24h.F vs S.24h.F down-regulated" = H.24h.F_vs_S.24h.F_down,
+  "H.24h.M vs S.24h.M down-regulated" = H.24h.M_vs_S.24h.M_down,
+  "L.24h.F vs S.24h.F down-regulated" = L.24h.F_vs_S.24h.F_down,
+  "L.24h.M vs S.24h.M down-regulated" = L.24h.M_vs_S.24h.M_down,
+  "H.24h.F vs S.24h.F up-regulated" = H.24h.F_vs_S.24h.F_up,
+  "H.24h.M vs S.24h.M up-regulated" = H.24h.M_vs_S.24h.M_up,
+  "L.24h.F vs S.24h.F up-regulated" = L.24h.F_vs_S.24h.F_up,
+  "L.24h.M vs S.24h.M up-regulated" = L.24h.M_vs_S.24h.M_up
+)
+data <- UpSetR::fromList(list_input)
+
+# You will specify the male and female groups by their group number
+group_mapping <- data.frame(
+  Group_Number = 1:8,  # Group numbers (1-8)
+  Gene_Set_Name = sort(colnames(data))  # Sorted gene set names
+)
+group_mapping
+
+# Assign shapes based on group numbers
+male_groups <- c("3","4","7","8")  # Male group numbers
+female_groups <- c("1","2","5","6")  # Female group numbers
+
+# Assign colors and shapes based on specific group numbers
+upregulated_groups <- c("2","4","6","8")
+downregulated_groups <- c("1","3","5","7")
+
+# Create the basic UpSet plot (no dynamic colors or shapes) to extract n_points
+dummy_upset <- ComplexUpset::upset(
+  data, 
+  colnames(data),  # Use column names (gene sets)
+  set_sizes = ComplexUpset::upset_set_size(),  # Display set sizes
+  sort_sets = FALSE,
+  
+  # Plot the intersection matrix with points (default shapes)
+  matrix = ComplexUpset::intersection_matrix(
+    ggplot2::geom_point(size = 3)  # Simple points without dynamic aesthetics
+  )
+)
+
+# Ensure n_points matches the actual data
+n_points <- nrow(dummy_upset$data)
+print(paste("Number of points being plotted:", n_points))  # Should be 300
+
+# Create empty vectors for colors and shapes
+color_vector <- rep(NA, n_points)  # To store colors
+shape_vector <- rep(NA, n_points)  # To store shapes
+
+# Assign shapes and colors based on group numbers
+for (i in 1:n_points) {
+  group_value <- as.character(dummy_upset$data$group[i])
+  
+  # Assign shapes
+  if (group_value %in% male_groups) {
+    shape_vector[i] <- 22  # Filled square for Male comparisons
+  } else if (group_value %in% female_groups) {
+    shape_vector[i] <- 21  # Circle for Female comparisons
+  }
+  
+  # Assign colors based on group numbers, only if the point is involved in an intersection
+  if (dummy_upset$data$value[i]) {  # If the point is part of an intersection
+    if (group_value %in% upregulated_groups) {
+      color_vector[i] <- "red"  # Red for Up-regulated
+    } else if (group_value %in% downregulated_groups) {
+      color_vector[i] <- "blue"  # Blue for Down-regulated
+    }
+  } else {
+    color_vector[i] <- NA  # No fill for points not involved in intersections
+  }
+}
+
+# Ensure both vectors are of correct length
+if (length(shape_vector) != n_points || length(color_vector) != n_points) {
+  stop("Error: shape_vector or color_vector length does not match the number of plotted points.")
+}
+
+# Print the color_vector to ensure correctness before plotting
+print(unique(color_vector))  # Ensure this contains only valid colors or NA
+
+# Reintroduce dynamic fill color for filled shapes
+upset_gene <- ComplexUpset::upset(
+  data, 
+  colnames(data),
+  set_sizes = (
+    ComplexUpset::upset_set_size() +
+    geom_text(aes(label = ..count..), hjust = 1.1, stat = 'count') +
+    expand_limits(y = 600)
+  ),
+  
+  # Prevent automatic sorting of sets
+  sort_sets = FALSE,
+  
+  matrix = ComplexUpset::intersection_matrix(
+    ggplot2::geom_point(
+      ggplot2::aes(shape = factor(shape_vector), fill = color_vector),  # Fill shapes with dynamic colors
+      size = 3,
+      stroke = 0.45  # Keeps the outline black
+    )
+  ) + ggplot2::scale_shape_manual(
+    name = "Sex",
+    labels = c("Male", "Female"),  # Legend labels
+    values = c(21, 22) # Circle=21, Filled square=22
+    ) + ggplot2::scale_fill_identity(na.translate = FALSE),  # Use the exact colors in color_vector and remove NA fill
+  
+    base_annotations = list(
+    'Intersection size' = (
+      intersection_size(bar_number_threshold = 1, width = 0.5) +
+      scale_y_continuous(expand = expansion(mult = c(0, 0.05)), limits = c(0, 400)) +
+      theme(
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.line = element_line(colour = 'black')
+      )
+    )
+  ),
+)
+
+# Add title
+upset_gene <- upset_gene + 
+  ggtitle("24 Hours Comparison, FDRq < 0.10, |LFC| > 0.20")
+
+# Remove legend
+upset_gene <- upset_gene + theme(legend.position = "None")
+
+# Save temp without legend
+pdf(file = paste0(out, model, "/upset/24_hours_comparison_FDRq_0.10_LFC_0.20.pdf"), 
+    height = 7, 
+    width = 11)
+upset_gene
+```
+
+### Extract
+```{r}
+# convert the gene sets into a binary matrix (like UpSet plot input)
+upset_data <- UpSetR::fromList(list_input)
+
+# call the function to extract the exclusive intersection genes
+exclusive_intersection_results <- get_exclusive_intersection_genes(upset_data, list_input)
+
+# convert the list to a data.frame with two columns: Total genes and gene list
+exclusive_intersection_df <- do.call(rbind, lapply(names(exclusive_intersection_results), function(x) {
+  data.frame(
+    Intersection = x,
+    Total_Genes = exclusive_intersection_results[[x]]$total_genes,
+    Gene_List = exclusive_intersection_results[[x]]$gene_list,
+    stringsAsFactors = FALSE
+  )
+}))
+exclusive_intersection_df <- 
+  exclusive_intersection_df[order(exclusive_intersection_df$Total_Genes, decreasing = TRUE),]
+
+# save
+write.table(x = exclusive_intersection_df,
+            file = paste0(out, model, "/upset/24_hours_comparison_results.tsv"),
+            sep = "\t",
+            quote = FALSE,
+            col.names = TRUE,
+            row.names = FALSE)
+```
+
+## 7 days
+```{r}
+# set variables
+out <- "../results/all_samples_sex_specific_analysis/"
+out2 <- "all_samples_sex_specific_analysis"
+model <- "DEGs_with_hbb/"
+
+# get file list
+files <- list.files(paste0(out, model, "metascape_input"))
+files <- files[grepl(pattern = "^[LH]\\.7d.+", x = files)]
+
+# loop through files and create variable for each gene list
+for (i in files) {
+  genes <- readLines(paste0(out, model, "metascape_input/", i))
+  genes <- genes[genes != ""]
+  var_name <- gsub(pattern = "regulated_FDRq_0.10_LFC_0.20.txt",
+                   replacement = "",
+                   x = i)
+  assign(x = var_name, value = genes)
+}
+
+# format in a list
+list_input <- list(
+  "H.7d.F vs S.7d.F down-regulated" = H.7d.F_vs_S.7d.F_down,
+  "H.7d.M vs S.7d.M down-regulated" = H.7d.M_vs_S.7d.M_down,
+  "L.7d.F vs S.7d.F down-regulated" = L.7d.F_vs_S.7d.F_down,
+  "L.7d.M vs S.7d.M down-regulated" = L.7d.M_vs_S.7d.M_down,
+  "H.7d.F vs S.7d.F up-regulated" = H.7d.F_vs_S.7d.F_up,
+  "H.7d.M vs S.7d.M up-regulated" = H.7d.M_vs_S.7d.M_up,
+  "L.7d.F vs S.7d.F up-regulated" = L.7d.F_vs_S.7d.F_up,
+  "L.7d.M vs S.7d.M up-regulated" = L.7d.M_vs_S.7d.M_up
+)
+data <- UpSetR::fromList(list_input)
+
+# You will specify the male and female groups by their group number
+group_mapping <- data.frame(
+  Group_Number = 1:8,  # Group numbers (1-8)
+  Gene_Set_Name = sort(colnames(data))  # Sorted gene set names
+)
+group_mapping
+
+# Assign shapes based on group numbers
+male_groups <- c("3","4","7","8")  # Male group numbers
+female_groups <- c("1","2","5","6")  # Female group numbers
+
+# Assign colors and shapes based on specific group numbers
+upregulated_groups <- c("2","4","6","8")
+downregulated_groups <- c("1","3","5","7")
+
+# Create the basic UpSet plot (no dynamic colors or shapes) to extract n_points
+dummy_upset <- ComplexUpset::upset(
+  data, 
+  colnames(data),  # Use column names (gene sets)
+  set_sizes = ComplexUpset::upset_set_size(),  # Display set sizes
+  sort_sets = FALSE,
+  
+  # Plot the intersection matrix with points (default shapes)
+  matrix = ComplexUpset::intersection_matrix(
+    ggplot2::geom_point(size = 3)  # Simple points without dynamic aesthetics
+  )
+)
+
+# Ensure n_points matches the actual data
+n_points <- nrow(dummy_upset$data)
+print(paste("Number of points being plotted:", n_points))  # Should be 300
+
+# Create empty vectors for colors and shapes
+color_vector <- rep(NA, n_points)  # To store colors
+shape_vector <- rep(NA, n_points)  # To store shapes
+
+# Assign shapes and colors based on group numbers
+for (i in 1:n_points) {
+  group_value <- as.character(dummy_upset$data$group[i])
+  
+  # Assign shapes
+  if (group_value %in% male_groups) {
+    shape_vector[i] <- 22  # Filled square for Male comparisons
+  } else if (group_value %in% female_groups) {
+    shape_vector[i] <- 21  # Circle for Female comparisons
+  }
+  
+  # Assign colors based on group numbers, only if the point is involved in an intersection
+  if (dummy_upset$data$value[i]) {  # If the point is part of an intersection
+    if (group_value %in% upregulated_groups) {
+      color_vector[i] <- "red"  # Red for Up-regulated
+    } else if (group_value %in% downregulated_groups) {
+      color_vector[i] <- "blue"  # Blue for Down-regulated
+    }
+  } else {
+    color_vector[i] <- NA  # No fill for points not involved in intersections
+  }
+}
+
+# Ensure both vectors are of correct length
+if (length(shape_vector) != n_points || length(color_vector) != n_points) {
+  stop("Error: shape_vector or color_vector length does not match the number of plotted points.")
+}
+
+# Print the color_vector to ensure correctness before plotting
+print(unique(color_vector))  # Ensure this contains only valid colors or NA
+
+# Reintroduce dynamic fill color for filled shapes
+upset_gene <- ComplexUpset::upset(
+  data, 
+  colnames(data),
+  set_sizes = (
+    ComplexUpset::upset_set_size() +
+    geom_text(aes(label = ..count..), hjust = 1.1, stat = 'count') +
+    expand_limits(y = 100)
+  ),
+  
+  # Prevent automatic sorting of sets
+  sort_sets = FALSE,
+  
+  matrix = ComplexUpset::intersection_matrix(
+    ggplot2::geom_point(
+      ggplot2::aes(shape = factor(shape_vector), fill = color_vector),  # Fill shapes with dynamic colors
+      size = 3,
+      stroke = 0.45  # Keeps the outline black
+    )
+  ) + ggplot2::scale_shape_manual(
+    name = "Sex",
+    labels = c("Male", "Female"),  # Legend labels
+    values = c(21, 22) # Circle=21, Filled square=22
+    ) + ggplot2::scale_fill_identity(na.translate = FALSE),  # Use the exact colors in color_vector and remove NA fill
+  
+    base_annotations = list(
+    'Intersection size' = (
+      intersection_size(bar_number_threshold = 1, width = 0.5) +
+      scale_y_continuous(expand = expansion(mult = c(0, 0.05)), limits = c(0, 100)) +
+      theme(
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.line = element_line(colour = 'black')
+      )
+    )
+  ),
+)
+
+# Add title
+upset_gene <- upset_gene + 
+  ggtitle("7 Days Comparison, FDRq < 0.10, |LFC| > 0.20")
+
+# Remove legend
+upset_gene <- upset_gene + theme(legend.position = "None")
+
+# Save temp without legend
+pdf(file = paste0(out, model, "/upset/7_days_comparison_FDRq_0.10_LFC_0.20.pdf"), 
+    height = 6, 
+    width = 8)
+upset_gene
+```
+
+### Extract
+```{r}
+# convert the gene sets into a binary matrix (like UpSet plot input)
+upset_data <- UpSetR::fromList(list_input)
+
+# call the function to extract the exclusive intersection genes
+exclusive_intersection_results <- get_exclusive_intersection_genes(upset_data, list_input)
+
+# convert the list to a data.frame with two columns: Total genes and gene list
+exclusive_intersection_df <- do.call(rbind, lapply(names(exclusive_intersection_results), function(x) {
+  data.frame(
+    Intersection = x,
+    Total_Genes = exclusive_intersection_results[[x]]$total_genes,
+    Gene_List = exclusive_intersection_results[[x]]$gene_list,
+    stringsAsFactors = FALSE
+  )
+}))
+exclusive_intersection_df <- 
+  exclusive_intersection_df[order(exclusive_intersection_df$Total_Genes, decreasing = TRUE),]
+
+# save
+write.table(x = exclusive_intersection_df,
+            file = paste0(out, model, "/upset/7_days_comparison_results.tsv"),
+            sep = "\t",
+            quote = FALSE,
+            col.names = TRUE,
+            row.names = FALSE)
 ```
 
 # Upset: all_samples vs all_samples_combat
