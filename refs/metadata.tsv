@@ -19,16 +19,16 @@ sample_id	group	group2	treatment	dose	timepoint	sex	animal_id	RNA_extraction_bat
 18	L.8h.F.18	L.8h	L.8h.F	psilocybin	0.25 mg / kg	8 hour	F	18	7	1	8 weeks	18 grams	9.2	C57BL/6	NA	Psi1	Psi1_A18_Low_Female	A00938	580	HTWCMDSX7	3
 19	L.8h.F.19	L.8h	L.8h.F	psilocybin	0.25 mg / kg	8 hour	F	19	7	1	8 weeks	18 grams	9.6	C57BL/6	NA	Psi1	Psi1_A19_Low_Female	A00938	580	HTWCMDSX7	3
 20	L.8h.F.20	L.8h	L.8h.F	psilocybin	0.25 mg / kg	8 hour	F	20	7	1	8 weeks	18 grams	9.5	C57BL/6	NA	Psi1	Psi1_A20_Low_Female	A00938	580	HTWCMDSX7	3
-21	S.8h.M.21	S.8h	S.8h.M	saline	0.9%	8 hour	M	21	7	1	8 weeks	26 grams	9.6	C57BL/6	NA	Psi1	Psi1_A21_NS_Male	A00938	580	HTWCMDSX7	3
-22	S.8h.M.22	S.8h	S.8h.M	saline	0.9%	8 hour	M	22	7	1	8 weeks	26 grams	9.2	C57BL/6	NA	Psi1	Psi1_A22_NS_Male	A00938	580	HTWCMDSX7	3
-23	S.8h.M.23	S.8h	S.8h.M	saline	0.9%	8 hour	M	23	6	1	8 weeks	26 grams	9.2	C57BL/6	NA	Psi1	Psi1_A23_NS_Male	A00938	580	HTWCMDSX7	3
-24	S.8h.M.24	S.8h	S.8h.M	saline	0.9%	8 hour	M	24	6	1	8 weeks	26 grams	9.2	C57BL/6	NA	Psi1	Psi1_A24_NS_Male	A00938	580	HTWCMDSX7	3
-25	S.8h.M.25	S.8h	S.8h.M	saline	0.9%	8 hour	M	25	6	1	8 weeks	26 grams	9.1	C57BL/6	NA	Psi1	Psi1_A25_NS_Male	A00938	580	HTWCMDSX7	3
-26	S.8h.F.26	S.8h	S.8h.F	saline	0.9%	8 hour	F	26	6	1	8 weeks	18 grams	9	C57BL/6	NA	Psi1	Psi1_A26_NS_Female	A00938	580	HTWCMDSX7	3
-27	S.8h.F.27	S.8h	S.8h.F	saline	0.9%	8 hour	F	27	6	1	8 weeks	18 grams	9.3	C57BL/6	NA	Psi1	Psi1_A27_NS_Female	A00938	580	HTWCMDSX7	3
-28	S.8h.F.28	S.8h	S.8h.F	saline	0.9%	8 hour	F	28	6	1	8 weeks	18 grams	9.6	C57BL/6	NA	Psi1	Psi1_A28_NS_Female	A00938	580	HTWCMDSX7	3
-29	S.8h.F.29	S.8h	S.8h.F	saline	0.9%	8 hour	F	29	6	1	8 weeks	18 grams	9.6	C57BL/6	NA	Psi1	Psi1_A29_NS_Female	A00938	580	HTWCMDSX7	3
-30	S.8h.F.30	S.8h	S.8h.F	saline	0.9%	8 hour	F	30	6	1	8 weeks	18 grams	9.5	C57BL/6	NA	Psi1	Psi1_A30_NS_Female	A00938	580	HTWCMDSX7	3
+21	S.8h.M.21	S.8h	S.8h.M	saline	0.90%	8 hour	M	21	7	1	8 weeks	26 grams	9.6	C57BL/6	NA	Psi1	Psi1_A21_NS_Male	A00938	580	HTWCMDSX7	3
+22	S.8h.M.22	S.8h	S.8h.M	saline	0.90%	8 hour	M	22	7	1	8 weeks	26 grams	9.2	C57BL/6	NA	Psi1	Psi1_A22_NS_Male	A00938	580	HTWCMDSX7	3
+23	S.8h.M.23	S.8h	S.8h.M	saline	0.90%	8 hour	M	23	6	1	8 weeks	26 grams	9.2	C57BL/6	NA	Psi1	Psi1_A23_NS_Male	A00938	580	HTWCMDSX7	3
+24	S.8h.M.24	S.8h	S.8h.M	saline	0.90%	8 hour	M	24	6	1	8 weeks	26 grams	9.2	C57BL/6	NA	Psi1	Psi1_A24_NS_Male	A00938	580	HTWCMDSX7	3
+25	S.8h.M.25	S.8h	S.8h.M	saline	0.90%	8 hour	M	25	6	1	8 weeks	26 grams	9.1	C57BL/6	NA	Psi1	Psi1_A25_NS_Male	A00938	580	HTWCMDSX7	3
+26	S.8h.F.26	S.8h	S.8h.F	saline	0.90%	8 hour	F	26	6	1	8 weeks	18 grams	9	C57BL/6	NA	Psi1	Psi1_A26_NS_Female	A00938	580	HTWCMDSX7	3
+27	S.8h.F.27	S.8h	S.8h.F	saline	0.90%	8 hour	F	27	6	1	8 weeks	18 grams	9.3	C57BL/6	NA	Psi1	Psi1_A27_NS_Female	A00938	580	HTWCMDSX7	3
+28	S.8h.F.28	S.8h	S.8h.F	saline	0.90%	8 hour	F	28	6	1	8 weeks	18 grams	9.6	C57BL/6	NA	Psi1	Psi1_A28_NS_Female	A00938	580	HTWCMDSX7	3
+29	S.8h.F.29	S.8h	S.8h.F	saline	0.90%	8 hour	F	29	6	1	8 weeks	18 grams	9.6	C57BL/6	NA	Psi1	Psi1_A29_NS_Female	A00938	580	HTWCMDSX7	3
+30	S.8h.F.30	S.8h	S.8h.F	saline	0.90%	8 hour	F	30	6	1	8 weeks	18 grams	9.5	C57BL/6	NA	Psi1	Psi1_A30_NS_Female	A00938	580	HTWCMDSX7	3
 31	H.24h.M.31	H.24h	H.24h.M	psilocybin	1 mg / kg	24 hour	M	31	6	2	8 weeks	26 grams	9.6	C57BL/6	NA	Psi1	Psi1_A31_High_Male	A00938	580	HTWCMDSX7	3
 32	H.24h.M.32	H.24h	H.24h.M	psilocybin	1 mg / kg	24 hour	M	32	6	2	8 weeks	26 grams	9.5	C57BL/6	NA	Psi1	Psi1_A32_High_Male	A00938	580	HTWCMDSX7	3
 33	H.24h.M.33	H.24h	H.24h.M	psilocybin	1 mg / kg	24 hour	M	33	6	2	8 weeks	26 grams	7.5	C57BL/6	NA	Psi1	Psi1_A33_High_Male	A00938	580	HTWCMDSX7	3
@@ -49,16 +49,16 @@ sample_id	group	group2	treatment	dose	timepoint	sex	animal_id	RNA_extraction_bat
 48	L.24h.F.48	L.24h	L.24h.F	psilocybin	0.25 mg / kg	24 hour	F	48	5	2	8 weeks	18 grams	9.4	C57BL/6	NA	Psi1	Psi1_A48_Low_Female	A00938	580	HTWCMDSX7	4
 49	L.24h.F.49	L.24h	L.24h.F	psilocybin	0.25 mg / kg	24 hour	F	49	5	2	8 weeks	18 grams	9.3	C57BL/6	NA	Psi1	Psi1_A49_Low_Female	A00938	580	HTWCMDSX7	4
 50	L.24h.F.50	L.24h	L.24h.F	psilocybin	0.25 mg / kg	24 hour	F	50	5	2	8 weeks	18 grams	9.2	C57BL/6	NA	Psi1	Psi1_A50_Low_Female	A00938	580	HTWCMDSX7	4
-51	S.24h.M.51	S.24h	S.24h.M	saline	0.9%	24 hour	M	51	4	2	8 weeks	26 grams	9.4	C57BL/6	NA	Psi1	Psi1_A51_NS_Male	A00938	580	HTWCMDSX7	4
-52	S.24h.M.52	S.24h	S.24h.M	saline	0.9%	24 hour	M	52	4	2	8 weeks	26 grams	9.3	C57BL/6	NA	Psi1	Psi1_A52_NS_Male	A00938	580	HTWCMDSX7	4
-53	S.24h.M.53	S.24h	S.24h.M	saline	0.9%	24 hour	M	53	4	2	8 weeks	26 grams	9.5	C57BL/6	NA	Psi1	Psi1_A53_NS_Male	A00938	580	HTWCMDSX7	4
-54	S.24h.M.54	S.24h	S.24h.M	saline	0.9%	24 hour	M	54	4	2	8 weeks	26 grams	9.5	C57BL/6	NA	Psi1	Psi1_A54_NS_Male	A00938	580	HTWCMDSX7	4
-55	S.24h.M.55	S.24h	S.24h.M	saline	0.9%	24 hour	M	55	4	2	8 weeks	26 grams	9.4	C57BL/6	NA	Psi1	Psi1_A55_NS_Male	A00938	580	HTWCMDSX7	4
-56	S.24h.F.56	S.24h	S.24h.F	saline	0.9%	24 hour	F	56	4	2	8 weeks	18 grams	9.4	C57BL/6	NA	Psi1	Psi1_A56_NS_Female	A00938	580	HTWCMDSX7	4
-57	S.24h.F.57	S.24h	S.24h.F	saline	0.9%	24 hour	F	57	4	2	8 weeks	18 grams	9.4	C57BL/6	NA	Psi1	Psi1_A57_NS_Female	A00938	580	HTWCMDSX7	4
-58	S.24h.F.58	S.24h	S.24h.F	saline	0.9%	24 hour	F	58	4	2	8 weeks	18 grams	9.3	C57BL/6	NA	Psi1	Psi1_A58_NS_Female	A00938	580	HTWCMDSX7	4
-59	S.24h.F.59	S.24h	S.24h.F	saline	0.9%	24 hour	F	59	4	2	8 weeks	18 grams	9.5	C57BL/6	NA	Psi1	Psi1_A59_NS_Female	A00938	580	HTWCMDSX7	4
-60	S.24h.F.60	S.24h	S.24h.F	saline	0.9%	24 hour	F	60	4	2	8 weeks	18 grams	9.3	C57BL/6	NA	Psi1	Psi1_A60_NS_Female	A00938	580	HTWCMDSX7	4
+51	S.24h.M.51	S.24h	S.24h.M	saline	0.90%	24 hour	M	51	4	2	8 weeks	26 grams	9.4	C57BL/6	NA	Psi1	Psi1_A51_NS_Male	A00938	580	HTWCMDSX7	4
+52	S.24h.M.52	S.24h	S.24h.M	saline	0.90%	24 hour	M	52	4	2	8 weeks	26 grams	9.3	C57BL/6	NA	Psi1	Psi1_A52_NS_Male	A00938	580	HTWCMDSX7	4
+53	S.24h.M.53	S.24h	S.24h.M	saline	0.90%	24 hour	M	53	4	2	8 weeks	26 grams	9.5	C57BL/6	NA	Psi1	Psi1_A53_NS_Male	A00938	580	HTWCMDSX7	4
+54	S.24h.M.54	S.24h	S.24h.M	saline	0.90%	24 hour	M	54	4	2	8 weeks	26 grams	9.5	C57BL/6	NA	Psi1	Psi1_A54_NS_Male	A00938	580	HTWCMDSX7	4
+55	S.24h.M.55	S.24h	S.24h.M	saline	0.90%	24 hour	M	55	4	2	8 weeks	26 grams	9.4	C57BL/6	NA	Psi1	Psi1_A55_NS_Male	A00938	580	HTWCMDSX7	4
+56	S.24h.F.56	S.24h	S.24h.F	saline	0.90%	24 hour	F	56	4	2	8 weeks	18 grams	9.4	C57BL/6	NA	Psi1	Psi1_A56_NS_Female	A00938	580	HTWCMDSX7	4
+57	S.24h.F.57	S.24h	S.24h.F	saline	0.90%	24 hour	F	57	4	2	8 weeks	18 grams	9.4	C57BL/6	NA	Psi1	Psi1_A57_NS_Female	A00938	580	HTWCMDSX7	4
+58	S.24h.F.58	S.24h	S.24h.F	saline	0.90%	24 hour	F	58	4	2	8 weeks	18 grams	9.3	C57BL/6	NA	Psi1	Psi1_A58_NS_Female	A00938	580	HTWCMDSX7	4
+59	S.24h.F.59	S.24h	S.24h.F	saline	0.90%	24 hour	F	59	4	2	8 weeks	18 grams	9.5	C57BL/6	NA	Psi1	Psi1_A59_NS_Female	A00938	580	HTWCMDSX7	4
+60	S.24h.F.60	S.24h	S.24h.F	saline	0.90%	24 hour	F	60	4	2	8 weeks	18 grams	9.3	C57BL/6	NA	Psi1	Psi1_A60_NS_Female	A00938	580	HTWCMDSX7	4
 61	H.7d.M.61	H.7d	H.7d.M	psilocybin	1 mg / kg	7 day	M	61	4	3	8 weeks	26 grams	9.3	C57BL/6	NA	Psi1	Psi1_A61_High_Male	A00938	580	HTWCMDSX7	4
 62	H.7d.M.62	H.7d	H.7d.M	psilocybin	1 mg / kg	7 day	M	62	4	3	8 weeks	26 grams	9.5	C57BL/6	NA	Psi1	Psi1_A62_High_Male	A00938	580	HTWCMDSX7	4
 63	H.7d.M.63	H.7d	H.7d.M	psilocybin	1 mg / kg	7 day	M	63	4	3	8 weeks	26 grams	9.2	C57BL/6	NA	Psi1	Psi1_A63_High_Male	A00938	580	HTWCMDSX7	4
@@ -79,13 +79,13 @@ sample_id	group	group2	treatment	dose	timepoint	sex	animal_id	RNA_extraction_bat
 78	L.7d.F.78	L.7d	L.7d.F	psilocybin	0.25 mg / kg	7 day	F	78	2	3	8 weeks	18 grams	7	C57BL/6	NA	Psi1	Psi1_A78_Low_Female	A00938	580	HTWCMDSX7	4
 79	L.7d.F.79	L.7d	L.7d.F	psilocybin	0.25 mg / kg	7 day	F	79	2	3	8 weeks	18 grams	9.3	C57BL/6	NA	Psi1	Psi1_A79_Low_Female	A00938	580	HTWCMDSX7	4
 80	L.7d.F.80	L.7d	L.7d.F	psilocybin	0.25 mg / kg	7 day	F	80	2	3	8 weeks	18 grams	9.6	C57BL/6	NA	Psi1	Psi1_A80_Low_Female	A00938	580	HTWCMDSX7	4
-81	S.7d.M.81	S.7d	S.7d.M	saline	0.9%	7 day	M	81	1	3	8 weeks	26 grams	9.4	C57BL/6	NA	Psi1	Psi1_A81_NS_Male	A00938	580	HTWCMDSX7	4
-82	S.7d.M.82	S.7d	S.7d.M	saline	0.9%	7 day	M	82	2	3	8 weeks	26 grams	9.3	C57BL/6	NA	Psi1	Psi1_A82_NS_Male	A00938	580	HTWCMDSX7	4
-83	S.7d.M.83	S.7d	S.7d.M	saline	0.9%	7 day	M	83	2	3	8 weeks	26 grams	9.1	C57BL/6	NA	Psi1	Psi1_A83_NS_Male	A00938	580	HTWCMDSX7	4
-84	S.7d.M.84	S.7d	S.7d.M	saline	0.9%	7 day	M	84	2	3	8 weeks	26 grams	9.4	C57BL/6	NA	Psi1	Psi1_A84_NS_Male	A00938	580	HTWCMDSX7	4
-85	S.7d.M.85	S.7d	S.7d.M	saline	0.9%	7 day	M	85	2	3	8 weeks	26 grams	9.4	C57BL/6	NA	Psi1	Psi1_A85_NS_Male	A00938	580	HTWCMDSX7	4
-86	S.7d.F.86	S.7d	S.7d.F	saline	0.9%	7 day	F	86	1	3	8 weeks	18 grams	9.4	C57BL/6	NA	Psi1	Psi1_A86_NS_Female	A00938	580	HTWCMDSX7	4
-87	S.7d.F.87	S.7d	S.7d.F	saline	0.9%	7 day	F	87	3	3	8 weeks	18 grams	9.3	C57BL/6	NA	Psi1	Psi1_A87_NS_Female	A00938	580	HTWCMDSX7	4
-88	S.7d.F.88	S.7d	S.7d.F	saline	0.9%	7 day	F	88	3	3	8 weeks	18 grams	9.3	C57BL/6	NA	Psi1	Psi1_A88_NS_Female	A00938	580	HTWCMDSX7	4
-89	S.7d.F.89	S.7d	S.7d.F	saline	0.9%	7 day	F	89	3	3	8 weeks	18 grams	9.2	C57BL/6	NA	Psi1	Psi1_A89_NS_Female	A00938	580	HTWCMDSX7	4
-90	S.7d.F.90	S.7d	S.7d.F	saline	0.9%	7 day	F	90	3	3	8 weeks	18 grams	9.1	C57BL/6	NA	Psi1	Psi1_A90_NS_Female	A00938	580	HTWCMDSX7	4
+81	S.7d.M.81	S.7d	S.7d.M	saline	0.90%	7 day	M	81	1	3	8 weeks	26 grams	9.4	C57BL/6	NA	Psi1	Psi1_A81_NS_Male	A00938	580	HTWCMDSX7	4
+82	S.7d.M.82	S.7d	S.7d.M	saline	0.90%	7 day	M	82	2	3	8 weeks	26 grams	9.3	C57BL/6	NA	Psi1	Psi1_A82_NS_Male	A00938	580	HTWCMDSX7	4
+83	S.7d.M.83	S.7d	S.7d.M	saline	0.90%	7 day	M	83	2	3	8 weeks	26 grams	9.1	C57BL/6	NA	Psi1	Psi1_A83_NS_Male	A00938	580	HTWCMDSX7	4
+84	S.7d.M.84	S.7d	S.7d.M	saline	0.90%	7 day	M	84	2	3	8 weeks	26 grams	9.4	C57BL/6	NA	Psi1	Psi1_A84_NS_Male	A00938	580	HTWCMDSX7	4
+85	S.7d.M.85	S.7d	S.7d.M	saline	0.90%	7 day	M	85	2	3	8 weeks	26 grams	9.4	C57BL/6	NA	Psi1	Psi1_A85_NS_Male	A00938	580	HTWCMDSX7	4
+86	S.7d.F.86	S.7d	S.7d.F	saline	0.90%	7 day	F	86	1	3	8 weeks	18 grams	9.4	C57BL/6	NA	Psi1	Psi1_A86_NS_Female	A00938	580	HTWCMDSX7	4
+87	S.7d.F.87	S.7d	S.7d.F	saline	0.90%	7 day	F	87	3	3	8 weeks	18 grams	9.3	C57BL/6	NA	Psi1	Psi1_A87_NS_Female	A00938	580	HTWCMDSX7	4
+88	S.7d.F.88	S.7d	S.7d.F	saline	0.90%	7 day	F	88	3	3	8 weeks	18 grams	9.3	C57BL/6	NA	Psi1	Psi1_A88_NS_Female	A00938	580	HTWCMDSX7	4
+89	S.7d.F.89	S.7d	S.7d.F	saline	0.90%	7 day	F	89	3	3	8 weeks	18 grams	9.2	C57BL/6	NA	Psi1	Psi1_A89_NS_Female	A00938	580	HTWCMDSX7	4
+90	S.7d.F.90	S.7d	S.7d.F	saline	0.90%	7 day	F	90	3	3	8 weeks	18 grams	9.1	C57BL/6	NA	Psi1	Psi1_A90_NS_Female	A00938	580	HTWCMDSX7	4
