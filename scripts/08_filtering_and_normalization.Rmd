@@ -52,8 +52,8 @@ library(tidyverse)          # pivot_wider()
 load_dot_env(file = "../refs/.env")  # Adjust the path to your .env file
 
 # Output directories and file paths
-out <- "../results/saline_vs_saline_both_sexes_analysis/"
-out2 <- "saline_vs_saline_both_sexes_analysis"
+out <- "../results/all_samples_sex_specific_combat_analysis/"
+out2 <- "all_samples_sex_specific_combat_analysis"
 ann <- Sys.getenv("MMUSCULUS_GTF")
 
 
@@ -156,6 +156,7 @@ dge$samples$hbb_log2cpm <- as.numeric(cpm(dge, log = TRUE)["Hbb-bs", ])
 
 ## Remove samples
 ```{r}
+# if subset by time point
 if (grepl("8_hours", out2)) {
   print("8 hours only")
   dge <- dge[,dge$samples$timepoint == "8 hour"]
@@ -174,6 +175,28 @@ if (grepl("8_hours", out2)) {
 }
 
 head(colnames(dge))
+dim(dge)
+```
+
+## ComBat
+```{r}
+# if a ComBat analysis
+if (grepl("combat", out2)) {
+  # extract meta
+  meta <- dge$samples
+  meta[c(1,5,6,7,8,9,11)] <- lapply(meta[c(1,5,6,7,8,9,11)], factor)
+  # create model
+  model <- model.matrix(~ dose + sex, data = meta)
+  # adjust counts for batch correction
+  adjusted_counts <- ComBat_seq(counts = dge$counts,
+                                batch = meta$lane,
+                                group = NULL, 
+                                covar_mod = model)
+  # update DGEList
+  dge <- DGEList(counts = adjusted_counts, 
+                 genes = dge$genes, 
+                 samples = meta)
+}
 dim(dge)
 ```
 
@@ -760,7 +783,7 @@ remove(counts,cpm,fpk,fpkm,tpm)
 # Filtering and normalization
 ## Lowly expressed genes
 ```{r filter_genes_by_expr}
-if (grepl("both_sexes_analysis", out2)) {
+if (grepl("both_sexes", out2)) {
   
   print("both sexes analysis")
   
@@ -827,7 +850,7 @@ if (grepl("both_sexes_analysis", out2)) {
   # cleanup
   remove(meta,avgPerGroup,cpm,start,end,filterTable)
   
-} else if (grepl("sex_specific_analysis", out2)) {
+} else if (grepl("sex_specific", out2)) {
   
   print("sex specific filtering")
     
