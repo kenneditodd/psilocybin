@@ -3,7 +3,6 @@ configfile: "refs/config.json"
 
 # CONFIG VARIABLES
 #--------------------------------------------------------------------------------
-rawReadsDir = config["DIRECTORIES"]["rawReads"]
 trimmedReadsDir = config["DIRECTORIES"]["trimmedReads"]
 rawQCDir = config["DIRECTORIES"]["rawQC"]
 trimmedQCDir = config["DIRECTORIES"]["trimmedQC"]
@@ -20,6 +19,7 @@ from dotenv import load_dotenv
 load_dotenv("refs/.env")
 
 # Get paths from environment variables
+rawReadsDir = os.getenv("RAW_READS_DIR") + "/"
 gtf_file = os.getenv("MMUSCULUS_GTF")
 fa_file = os.getenv("MMUSCULUS_FA")
 

@@ -1,12 +1,15 @@
 #!/bin/bash
-# This script prints each fastq file name along with its header and saves to fastq_headers.tsv.
+# This script prints each fastq file name along with its header and saves it to fastq_headers.tsv.
+
+# Get environment variables
+source ../refs/.env
 
 # Go to fastq directory
-cd ../rawReads || exit 1  # Exit if directory change fails
+cd $RAW_READS_DIR || exit 1  # Exit if directory change fails
 
 # Set variables
-fastq_files="../refs/fastq_file_list.txt"
-output_file="../refs/fastq_headers.tsv"
+fastq_files="${PROJECT_DIR}/refs/fastq_file_list.txt"
+output_file="${PROJECT_DIR}/refs/fastq_headers.tsv"
 
 # Check if the file list exists
 if [[ ! -f "$fastq_files" ]]; then

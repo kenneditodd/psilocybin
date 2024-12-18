@@ -24,6 +24,7 @@ library(plotly)
 library(tidyr)
 library(ComplexUpset)
 library(UpSetR)
+library(gridExtra)   # grid.arrange()
 ```
 
 ## Functions
@@ -3431,6 +3432,154 @@ write.table(x = exclusive_intersection_df,
             quote = FALSE,
             col.names = TRUE,
             row.names = FALSE)
+```
+
+# Heatmaps
+## High dose
+### Sex specific table
+```{r}
+# get files
+path <- "../results/all_samples_sex_specific_analysis/DEGs_with_hbb/DEG_tables"
+files <- list.files(path)
+files <- files[grepl("H", files)]
+files <- files[grepl("FDRq_1.00_LFC_0.00.tsv", files)]
+row_names <- gsub("_FDRq_1.00_LFC_0.00.tsv", "", files)
+
+# loop through DEG tables and create logFC master table
+ssLfc <- data.frame()
+for (i in files) {
+  print(i)
+  df <- read.delim2(file = paste0(path, "/", i))
+  df <- df[,c("gene_name_unique","logFC")]
+  rownames(df) <- df$gene_name_unique
+  df$gene_name_unique <- NULL
+  df <- t(df)
+  ssLfc <- gtools::smartbind(ssLfc, df)
+}
+
+# set row names
+rownames(ssLfc) <- row_names
+
+# reorder
+ssLfc <- ssLfc[c("H.8h.F_vs_S.8h.F", "H.8h.M_vs_S.8h.M",
+                       "H.24h.F_vs_S.24h.F", "H.24h.M_vs_S.24h.M",
+                       "H.7d.F_vs_S.7d.F", "H.7d.M_vs_S.7d.M"),]
+ssLfc <- t(ssLfc)
+
+# subset
+ssLfc2 <- ssLfc[1:50,]
+ssLfc2 <- as.data.frame(ssLfc2)
+gene_names <- rownames(ssLfc2)
+ssLfc2 <- as.data.frame(lapply(ssLfc2, as.numeric))
+rownames(ssLfc2) <- gene_names
+
+# cleanup
+ssLfc <- ssLfc2
+remove(ssLfc2)
+```
+
+### Both sexes table
+```{r}
+# get files
+path <- "../results/all_samples_both_sexes_analysis/DEGs_with_hbb/DEG_tables"
+files <- list.files(path)
+files <- files[grepl("H", files)]
+files <- files[grepl("FDRq_1.00_LFC_0.00.tsv", files)]
+row_names <- gsub("_FDRq_1.00_LFC_0.00.tsv", "", files)
+
+# loop through DEG tables and create logFC master table
+bsLfc <- data.frame()
+for (i in files) {
+  print(i)
+  df <- read.delim2(file = paste0(path, "/", i))
+  df <- df[,c("gene_name_unique","logFC")]
+  rownames(df) <- df$gene_name_unique
+  df$gene_name_unique <- NULL
+  df <- t(df)
+  bsLfc <- gtools::smartbind(bsLfc, df)
+}
+
+# set row names
+rownames(bsLfc) <- row_names
+
+# reorder
+bsLfc <- bsLfc[c("H.8h_vs_S.8h", "H.24h_vs_S.24h", "H.7d_vs_S.7d"),]
+bsLfc <- t(bsLfc)
+
+# check
+table(gene_names %in% rownames(bsLfc))
+
+# subset
+bsLfc2 <- bsLfc[gene_names,]
+bsLfc2 <- as.data.frame(bsLfc2)
+gene_names2 <- rownames(bsLfc2)
+bsLfc2 <- as.data.frame(lapply(bsLfc2, as.numeric))
+rownames(bsLfc2) <- gene_names2
+
+# cleanup
+bsLfc <- bsLfc2
+remove(bsLfc2,df)
+```
+
+### Plot
+```{r}
+# set heatmap colors, these are the same for both heatmaps
+paletteLength <- 100
+myColor <- colorRampPalette(c("blue", "white", "red"))(paletteLength)
+myBreaks <- c(seq(min(bsLfc,ssLfc), 0, length.out = ceiling(paletteLength/2) + 1), 
+              seq(max(bsLfc,ssLfc) / paletteLength, max(bsLfc,ssLfc), length.out = floor(paletteLength/2)))
+
+######################### sex specific heatmap ################################
+
+# set heatmap annotation
+ss_ann_colors <- list(sex = c(female = "gold", male = "purple"),
+                  time_point = c(`8 hours` = "green2", `24 hours` = "cornflowerblue",`7 days` = "tomato2"))
+ss_meta <- data.frame(sex = rep(c("female", "male"), 3),
+                   time_point = c("8 hours","8 hours","24 hours", "24 hours","7 days", "7 days"))
+rownames(ss_meta) <- colnames(ssLfc)
+
+# plot heatmap
+h1 <- pheatmap::pheatmap(
+  ssLfc,
+  cluster_rows = FALSE,
+  cluster_cols = FALSE,
+  annotation_col = ss_meta,
+  annotation_colors = ss_ann_colors,
+  color = myColor,
+  breaks = myBreaks)
+
+######################### sex specific heatmap ################################
+
+# set heatmap annotation
+bs_ann_colors <- list(
+  sex = c(both = "grey"),
+  time_point = c(`8 hours` = "green2", `24 hours` = "cornflowerblue", `7 days` = "tomato2"))
+bs_meta <- data.frame(sex = rep("both",3), time_point = c("8 hours", "24 hours", "7 days"))
+rownames(bs_meta) <- colnames(bsLfc)
+
+# plot heatmap
+h2 <- pheatmap::pheatmap(
+  bsLfc,
+  cluster_rows = FALSE,
+  cluster_cols = FALSE,
+  annotation_col = bs_meta,
+  annotation_colors = bs_ann_colors,
+  color = myColor,
+  breaks = myBreaks)
+```
+
+### Grid
+```{r}
+# Extract gtables directly from pheatmap objects
+h1_grob <- h1$gtable
+h2_grob <- h2$gtable
+
+# save
+path <- "../results/figures/high_dose_LFC_heatmap.pdf"
+pdf(path, width = 10, height = 10)
+
+# Arrange the grobs with custom widths
+grid.arrange(h2_grob, h1_grob, ncol = 2, widths = c(2, 3))
 ```
 
 # 3D LogFC Correaltion

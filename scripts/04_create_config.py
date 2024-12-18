@@ -9,7 +9,6 @@ output_file_path = '../refs/config.json'
 
 # Initialize directories and sample data
 directories = {
-    "rawReads": "rawReads/",
     "rawQC": "rawQC/",
     "trimmedReads": "trimmedReads/",
     "trimmedQC": "trimmedQC/",
@@ -27,7 +26,7 @@ with open(sample_list_path, 'r') as infile:
     
     # Read each line, strip whitespace, and remove the _R1 suffix
     sample_base_names = [
-        line.strip().replace("_R1.fastq.gz", "") 
+        line.split(".")[0]
         for line in infile
     ]
     
@@ -35,9 +34,9 @@ with open(sample_list_path, 'r') as infile:
     male_samples = []
     female_samples = []
     for sample in sample_base_names:
-        if "_Male_" in sample:
+        if "_Male" in sample:
             male_samples.append(sample)
-        if "_Female_" in sample:
+        if "_Female" in sample:
             female_samples.append(sample)
 
 # Create the config structure
@@ -56,9 +55,10 @@ config = {
 with open(sample_list_path, 'r') as infile:
     for line in infile:
         sample = line.strip()
-        base_name = sample.replace("_R1.fastq.gz", "")
+        base_name = sample.split(".")[0]
         read1 = sample.replace(".fastq.gz", "")
-        read2 = sample.replace("_R1.fastq.gz", "_R2")
+        read2 = sample.replace(".fastq.gz", "")
+        read = read2.replace("_R1_", "_R2_")
         config["SAMPLES"][base_name] = {
             "read1": read1,
             "read2": read2
