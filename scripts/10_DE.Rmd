@@ -22,11 +22,14 @@ knitr::opts_knit$set(root.dir = ".")
 ```{r libraries, message=FALSE, warning=FALSE}
 library(dplyr)             # %>%
 library(edgeR)             # to load .rds obj
+library(ggraph)
 library(ggrepel)           # geom_text_repel()
 library(ggplot2)           # ggplot()
+library(igraph)
 library(jsonlite)          # toJSON()
 library(limma)             # to load .rds obj
 library(pheatmap)          # pheatmap()
+library(tidygraph)
 library(tidyr)             # pivot_wider()
 library(WGCNA)             # pickSoftThreshold()
 ```
@@ -1362,9 +1365,8 @@ write.table(cpm, path, quote = FALSE, sep = "\t")
 - WGCNA = Weigh Gene Co-Expression Network Analysis
 ```{r WGCNA}
 # User defined variables
-degs <- TRUE
 sex <- "male"
-network_type <- "signed"
+network_type <- "unsigned"
 wgcna_out <- paste0(out, "WGCNA/", network_type, "_", sex, "/")
 
 # Extract the log2 CPM values from the voom object and meta
@@ -1372,60 +1374,57 @@ voom_data <- t(v$E)
 metadata <- v$targets
 remove(veBayesFit, contrasts, dge.filtered.norm)
 
-# if subsetting by DEGs
-if (degs == TRUE) {
-  # extract DEG list for H vs S and L vs S for all time points
-  if(out2 == "all_samples_both_sexes_analysis") {
-    files <- paste0(out, model, "DEG_tables/", c("L.8h_vs_S.8h_FDRq_0.10_LFC_0.20.tsv",
-                                                 "L.24h_vs_S.24h_FDRq_0.10_LFC_0.20.tsv",
-                                                 "L.7d_vs_S.7d_FDRq_0.10_LFC_0.20.tsv",
-                                                 "H.8h_vs_S.8h_FDRq_0.10_LFC_0.20.tsv",
-                                                 "H.24h_vs_S.24h_FDRq_0.10_LFC_0.20.tsv",
-                                                 "H.7d_vs_S.7d_FDRq_0.10_LFC_0.20.tsv"))
-  } else if (out2 == "all_samples_sex_specific_analysis" & sex == "female") {
-    files <- paste0(out, model, "DEG_tables/", c("L.8h.F_vs_S.8h.F_FDRq_0.10_LFC_0.20.tsv",
-                                             "L.24h.F_vs_S.24h.F_FDRq_0.10_LFC_0.20.tsv",
-                                             "L.7d.F_vs_S.7d.F_FDRq_0.10_LFC_0.20.tsv",
-                                             "H.8h.F_vs_S.8h.F_FDRq_0.10_LFC_0.20.tsv",
-                                             "H.24h.F_vs_S.24h.F_FDRq_0.10_LFC_0.20.tsv",
-                                             "H.7d.F_vs_S.7d.F_FDRq_0.10_LFC_0.20.tsv"))
-  } else if (out2 == "all_samples_sex_specific_analysis" & sex == "male") {
-    files <- paste0(out, model, "DEG_tables/", c("L.8h.M_vs_S.8h.M_FDRq_0.10_LFC_0.20.tsv",
-                                                 "L.24h.M_vs_S.24h.M_FDRq_0.10_LFC_0.20.tsv",
-                                                 "L.7d.M_vs_S.7d.M_FDRq_0.10_LFC_0.20.tsv",
-                                                 "H.8h.M_vs_S.8h.M_FDRq_0.10_LFC_0.20.tsv",
-                                                 "H.24h.M_vs_S.24h.M_FDRq_0.10_LFC_0.20.tsv",
-                                                 "H.7d.M_vs_S.7d.M_FDRq_0.10_LFC_0.20.tsv"))
-  }
-  
-  # init variables
-  genes <- NULL
-  
-  # Loop through files
-  for (i in files) {
-    # Read the first row to check if there's data beyond the header
-    df_preview <- try(read.delim2(i, nrows = 1), silent = TRUE)
-    
-    # Check if the file has data rows (i.e., df_preview has at least one row)
-    if (inherits(df_preview, "try-error") || nrow(df_preview) == 0) {
-      # Print a message if the file is empty (optional)
-      message(paste("Skipping empty file:", i))
-    } else {
-      # Read the full file since it has data
-      df <- read.delim2(i)
-      
-      # Append gene names to the genes vector
-      genes <- c(genes, df$gene_name)
-    }
-  }
-  
-  # subset cpm
-  genes <- unique(genes)
-  
-  # Filter with DEG list
-  voom_data <- voom_data[,genes]
+# extract DEG list for H vs S and L vs S for all time points
+if(out2 == "all_samples_both_sexes_analysis") {
+  files <- paste0(out, model, "DEG_tables/", c("L.8h_vs_S.8h_FDRq_0.10_LFC_0.20.tsv",
+                                               "L.24h_vs_S.24h_FDRq_0.10_LFC_0.20.tsv",
+                                               "L.7d_vs_S.7d_FDRq_0.10_LFC_0.20.tsv",
+                                               "H.8h_vs_S.8h_FDRq_0.10_LFC_0.20.tsv",
+                                               "H.24h_vs_S.24h_FDRq_0.10_LFC_0.20.tsv",
+                                               "H.7d_vs_S.7d_FDRq_0.10_LFC_0.20.tsv"))
+} else if (out2 == "all_samples_sex_specific_analysis" & sex == "female") {
+  files <- paste0(out, model, "DEG_tables/", c("L.8h.F_vs_S.8h.F_FDRq_0.10_LFC_0.20.tsv",
+                                           "L.24h.F_vs_S.24h.F_FDRq_0.10_LFC_0.20.tsv",
+                                           "L.7d.F_vs_S.7d.F_FDRq_0.10_LFC_0.20.tsv",
+                                           "H.8h.F_vs_S.8h.F_FDRq_0.10_LFC_0.20.tsv",
+                                           "H.24h.F_vs_S.24h.F_FDRq_0.10_LFC_0.20.tsv",
+                                           "H.7d.F_vs_S.7d.F_FDRq_0.10_LFC_0.20.tsv"))
+} else if (out2 == "all_samples_sex_specific_analysis" & sex == "male") {
+  files <- paste0(out, model, "DEG_tables/", c("L.8h.M_vs_S.8h.M_FDRq_0.10_LFC_0.20.tsv",
+                                               "L.24h.M_vs_S.24h.M_FDRq_0.10_LFC_0.20.tsv",
+                                               "L.7d.M_vs_S.7d.M_FDRq_0.10_LFC_0.20.tsv",
+                                               "H.8h.M_vs_S.8h.M_FDRq_0.10_LFC_0.20.tsv",
+                                               "H.24h.M_vs_S.24h.M_FDRq_0.10_LFC_0.20.tsv",
+                                               "H.7d.M_vs_S.7d.M_FDRq_0.10_LFC_0.20.tsv"))
 }
+  
+# init variables
+genes <- NULL
 
+# Loop through files
+for (i in files) {
+  # Read the first row to check if there's data beyond the header
+  df_preview <- try(read.delim2(i, nrows = 1), silent = TRUE)
+    
+  # Check if the file has data rows (i.e., df_preview has at least one row)
+  if (inherits(df_preview, "try-error") || nrow(df_preview) == 0) {
+    # Print a message if the file is empty (optional)
+    message(paste("Skipping empty file:", i))
+  } else {
+    # Read the full file since it has data
+    df <- read.delim2(i)
+      
+    # Append gene names to the genes vector
+    genes <- c(genes, df$gene_name)
+  }
+}
+  
+# subset cpm
+genes <- unique(genes)
+print(paste(length(genes), "unique genes for", sex, "DEGs"))
+  
+# Filter with DEG list
+voom_data <- voom_data[,genes]
 dim(voom_data)
 ```
 
@@ -1433,7 +1432,7 @@ dim(voom_data)
 - WGCNA requires an appropriate soft-thresholding power for network construction. \
 - This step helps determine the adjacency matrix. \
 - Commonly, powers between 4 and 12 are tested to see which power best approximates a scale-free topology. \
-- Choose a power where the Scale Free Topology Model Fit (R^2) is above 0.8, if possible. If many are above 0.8 choose the inflection point.
+- Choose a power where the Scale Free Topology Model Fit (R^2) is above 0.8
 ```{r soft_threshold}
 sft <- pickSoftThreshold(voom_data, powerVector = 1:20)
 
@@ -1459,7 +1458,7 @@ remove(sft)
 ```
 
 ## Construct network
-- mergeCutHeight: A value of 0.25 means that modules with a correlation of 0.75 or higher (1 - 0.25) between their eigengenes (the summary expression profiles for each module) will be merged. \
+- mergeCutHeight: A value of 0.25 means that modules with a correlation of 0.75 or higher (1 - 0.25) between their eigengenes (the summary expression profiles for each module) will be merged. By default, 0.15 is the cutoff which is relatively stringent so we will set ours to 0.25.c \
 - minModuleSize: A minimum module size of 30 genes is a common recommendation in WGCNA to ensure that each module has enough genes for reliable downstream analysis \
 ```{r construct_network, eval=FALSE}
 # from plot above
@@ -1480,181 +1479,68 @@ bwnet <- blockwiseModules(
   TOMType = network_type
 )
 
+# preview
+summary(bwnet)
+
 # cleanup
 remove(sft_data)
 ```
 
+- bwnet structure
+  - colors: a vector containing the numeric module assignment for each gene, each number can be converted to a color using labels2colors() \
+  - unmergedColors: module assignment before any merging of similar modules, assuming mergeCutHeight is enbabled \
+  - MEs: a data frame containing the module eigengenes \
+  - goodSamples: a logical vector indicating whether each sample passed QC checks was included in the analysis \
+  - goodGenes: a logical vector indicating whether each gene passed QC checks and was included in the analysis \
+  - dendrograms: a list of dendrograms for the genes in each block \
+  - TOMFiles: names of files storing the Topological Overlap Matrices (TOMs) for each block, used for determining network connectivity \
+  - blockGenes: a list where each element is a vector of indices specifying which genes belong to which block, relevant if split into blocks for computational efficiency \
+  - blocks: a vector indicating the block assignment of each gene, relevant if split into blocks for computational efficiency \
+  - MEsOK: a logical value indicated whether the module eigengenes were successfully calculated
+  
 ## Dendrogram
 ```{r WGCNA_dendrogram}
 # save
-pdf(file = paste0(wgcna_out, "cluster_dendrogram_filtered_by_degs.pdf"),
+pdf(file = paste0(wgcna_out, "cluster_dendrogram.pdf"),
     height = 5,
     width = 10)
 
 # extract module labels and module colors
 moduleLabels <- bwnet$colors
 moduleColors <- labels2colors(moduleLabels)
+colorMap <- data.frame(module_label = moduleLabels,
+                       module_color = moduleColors)
+colorMap <- colorMap[!duplicated(colorMap),]
 
 # plot dendrogram with module colors
 plotDendroAndColors(dendro = bwnet$dendrograms[[1]],
-                    colors = moduleColors[bwnet$blockGenes[[1]]],
-                    "Module Colors",
+                    colors = moduleColors,
+                    groupLabels = "Module Colors",
                     dendroLabels = FALSE,
                     hang = 0.03,
                     addGuide = TRUE,
                     guideHang = 0.05)
 ```
 
-## ANOVA
-```{r WGCNA_ANOVA}
-# subset meta to columns of interest
-meta <- metadata %>% select(c("group","group2","timepoint","treatment","dose",
-                              "sex","hbb_log2cpm"))
-meta[,1:6] <- as.data.frame(lapply(meta[,1:6], factor))
-
-# Extract module eigengenes from the blockwiseModules output
-module_eigengenes <- bwnet$MEs
-
-# Get the unique module numbers from the column names of module eigengenes
-unique_module_numbers <- as.numeric(sub("ME", "", colnames(module_eigengenes)))
-
-# Create a unique mapping of module numbers to colors
-# Here we use `match` to ensure that the module numbers align with the unique colors
-module_color_map <- unique(moduleColors)[match(unique_module_numbers, unique(moduleLabels))]
-
-# Assign these color names as the column names for module eigengenes
-colnames(module_eigengenes) <- module_color_map
-
-# make sure meta is ordered to match module_eigengenes
-all.equal(rownames(meta), rownames(module_eigengenes))
-
-# Initialize a data frame to store ANOVA p-values for each module-trait combination
-anova_pvalues <- data.frame(matrix(nrow = ncol(module_eigengenes), ncol = ncol(meta)))
-rownames(anova_pvalues) <- colnames(module_eigengenes)
-colnames(anova_pvalues) <- colnames(meta)
-
-# Loop through each module eigengene and each categorical variable in meta
-for (module in colnames(module_eigengenes)) {
-  for (trait in colnames(meta)) {
-    if (is.factor(meta[[trait]])) {
-      # Perform ANOVA for multi-level categorical variables
-      anova_result <- summary(aov(module_eigengenes[[module]] ~ meta[[trait]]))
-      anova_pvalues[module, trait] <- anova_result[[1]][["Pr(>F)"]][1]
-    } else {
-      # For numeric variables, calculate correlation and store p-value
-      cor_result <- cor.test(module_eigengenes[[module]], 
-                             meta[[trait]], 
-                             use = "pairwise.complete.obs")
-      anova_pvalues[module, trait] <- cor_result$p.value
-    }
-  }
-}
-remove(anova_result,cor_result)
-
-# Convert the data frame to a numeric matrix
-anova_pvalues <- as.matrix(anova_pvalues)
-
-# Apply p.adjust to the entire matrix of p-values after flattening to a vector
-adjustedAnovaPvalues <- matrix(
-  p.adjust(as.vector(anova_pvalues), method = "BH"),
-  nrow = nrow(anova_pvalues),
-  ncol = ncol(anova_pvalues),
-  dimnames = dimnames(anova_pvalues)
-)
-
-# save
-pdf(file = paste0(wgcna_out, "module_trait_relationship_qval_filtered_by_degs.pdf"),
-    height = 4,
-    width = 4)
-
-# Define color breaks for the heatmap
-breaks <- seq(0, 1, length.out = 51)
-colors <- colorRampPalette(c("darkgreen","gold","#fcf673","lightyellow","white"))(50)
-
-# Plot heatmap of module-trait correlations
-pheatmap(adjustedAnovaPvalues,
-         main = "q-values",
-         cluster_rows = FALSE,
-         cluster_cols = FALSE,
-         color = colors,
-         breaks = breaks,
-         number_color = "black",
-         display_numbers = round(adjustedAnovaPvalues, 4),
-         fontsize_number = 6
-)
-
-# cleanup
-remove(adjustedAnovaPvalues, anova_pvalues)
-```
-
-## Correlation
-```{r WGCNA_correlation}
-# Initialize a matrix to store correlation coefficients for each module-trait combination
-moduleTraitCor <- matrix(nrow = ncol(module_eigengenes), ncol = ncol(meta))
-rownames(moduleTraitCor) <- colnames(module_eigengenes)
-colnames(moduleTraitCor) <- colnames(meta)
-
-# Loop through each module eigengene and each trait in meta to calculate correlations
-for (module in colnames(module_eigengenes)) {
-  for (trait in colnames(meta)) {
-    if (is.numeric(meta[[trait]])) {
-      # For numeric traits, calculate Pearson correlation
-      moduleTraitCor[module, trait] <- cor(module_eigengenes[[module]], meta[[trait]], use = "pairwise.complete.obs")
-    } else {
-      # For categorical traits, calculate correlation by encoding as numeric
-      trait_numeric <- as.numeric(as.factor(meta[[trait]]))
-      moduleTraitCor[module, trait] <- cor(module_eigengenes[[module]], trait_numeric, use = "pairwise.complete.obs")
-    }
-  }
-}
-
-# Save the correlation plot as PDF
-pdf(file = paste0(wgcna_out,
-                  "module_trait_relationship_correlation_filtered_by_degs.pdf"), 
-    height = 4, width = 4)
-
-# Define color breaks for the correlation heatmap
-breaks <- seq(-1, 1, length.out = 51)
-colors <- colorRampPalette(c("blue", "white", "red"))(50)
-
-# Plot heatmap of module-trait correlations
-pheatmap(moduleTraitCor,
-         cluster_rows = FALSE,
-         cluster_cols = FALSE,
-         color = colors,
-         breaks = breaks,
-         display_numbers = TRUE,
-         number_color = "black",
-         fontsize_number = 6,
-         main = "correlation"
-)
-
-# cleanup
-remove(moduleTraitCor)
-```
-
-## Export results
+## Genes per module
 ```{r WGCNA_export}
-# check sample order is the same
-all.equal(rownames(voom_data), rownames(module_eigengenes))
-
 # create module df
 module_df <- data.frame(
   module_color = moduleColors,
-  gene_name = names(bwnet$colors)
+  gene_names = names(moduleLabels)
 )
 module_df <- module_df %>%
   group_by(module_color) %>%
-  summarise(genes = paste(gene_name, collapse = ",")) %>%
+  summarise(genes = paste(gene_names, collapse = ",")) %>%
   ungroup()
 
-# remove grey
+# remove grey (all leftover gene put into grey)
 module_df <- module_df[!module_df$module_color == "grey",]
 
 # save
 write.table(
   x = module_df,
-  file = paste0(wgcna_out, "module_gene_table_filtered_by_degs.tsv"),
+  file = paste0(wgcna_out, "module_gene_table.tsv"),
   sep = "\t",
   quote = FALSE,
   row.names = FALSE
@@ -1664,127 +1550,132 @@ write.table(
 remove(module_df)
 ```
 
-## Gene network and top 5 mod
-- The degree of a node is a measure of connectivity:
-  - In an undirected graph, the degree is the number of edges (connections) a node has.
-  - In a signed network, the adjacency matrix weights are continuous, and igraph calculates the degree as the sum of edge weights for a node (weighted degree). \
-```{r}
-# required libraries
-library(igraph)
-library(ggraph)
-library(tidygraph)
+## Top hub genes
+```{r top_hub_gene}
+# Calculate intramodular connectivity
+connectivity <- intramodularConnectivity.fromExpr(
+  datExpr = voom_data,               # Expression matrix
+  colors = moduleColors,             # Module assignments
+  networkType = network_type,        # e.g., "unsigned" or "signed"
+  power = softPower,                 # Soft threshold power
+  corFnc = "cor",                    # Correlation function
+  corOptions = "use = 'p'"           # Correlation options
+)
 
-# threshold for adjacency
-threshold <- 0.7
+# Initialize a list to store top 5 genes per module
+top_5_genes_per_module <- list()
 
-# define unique colors (excluding grey)
-module_colors <- unique(moduleColors)
-module_colors <- module_colors[!module_colors %in% "grey"]
-
-# create adjacency matrix
-adjacency_matrix <- adjacency(datExpr = voom_data, 
-                              power = softPower, 
-                              type = network_type)
-
-# init varibles
-top_hubs_per_module <- list()  # List to store top hubs for each module
-
-# loop through each module color
-for (module_color in module_colors) {
-  # genes in the current module
-  module_genes <- colnames(voom_data)[moduleColors == module_color]
+# Loop through each module
+unique_modules <- unique(moduleColors)
+for (module in unique_modules) {
+  if (module == "grey") next  # Skip the grey module (unassigned genes)
   
-  # subset adjacency matrix
-  module_adjacency <- adjacency_matrix[module_genes, module_genes]
+  # Get genes in the current module
+  module_genes <- colnames(voom_data)[moduleColors == module]
   
-  # apply threshold
-  module_adjacency[module_adjacency < threshold] <- 0
+  # Subset connectivity values for the module
+  module_connectivity <- connectivity[module_genes, ]
   
-  # Check if there are any edges left after applying the threshold
-  if (sum(module_adjacency != 0) == 0) {
-    # If no edges, skip this module and continue to the next one
-    message("Skipping ", module_color, ": Network has no edges.")
-    next
-  }
+  # Sort genes by their intramodular connectivity (KWithin) in descending order
+  top_5_genes <- head(order(module_connectivity$kWithin, decreasing = TRUE), 5)
   
-  # convert to graph object
-  network <- graph_from_adjacency_matrix(
-    module_adjacency, 
-    mode = "undirected", 
-    weighted = TRUE, 
-    diag = FALSE
-  )
-  
-  # remove unconnected nodes
-  network <- delete_vertices(network, V(network)[degree(network) == 0])
-  
-  # If the network is not connected, skip the current iteration and move to the next module
-  if (!is_connected(network)) {
-    message("Skipping ", module_color, ": Network is not connected.")
-    next  # Skip to the next module if the network is not connected
-  }
-  
-  # save top 5 genes, calculate degree (hub score) for each gene
-  node_degrees <- degree(network)
-  top_5_genes <- names(sort(node_degrees, decreasing = TRUE)[1:5])
-  top_hubs_per_module[[module_color]] <- top_5_genes
-  
-  # add node degree as a measure for node size and color
-  V(network)$degree <- degree(network)
-  
-  # convert to tidygraph
-  tidy_network <- as_tbl_graph(network)
-  
-  # plot with ggraph
-  pdf(file = paste0(wgcna_out, "gene_network_corr_", threshold, "/", 
-                    module_color, ".pdf"),
-      width = 12,
-      height = 12)
-  
-  g <- ggraph(tidy_network, layout = "kk") +
-    # edges
-    geom_edge_link(aes(edge_width = weight), edge_alpha = 0.5, edge_color = "grey") +
-    
-    # nodes (size and color scaled by degree)
-    geom_node_point(aes(size = degree, color = degree), show.legend = TRUE) +
-    
-    # labels (all in black)
-    geom_node_text(aes(label = name), size = 3, color = "black", 
-                   vjust = 0.5, hjust = 0.5, fontface = "bold") +
-    
-    # customize color gradient for nodes
-    scale_color_gradient(low = "#FFF715", high = "#356C0B") +
-    
-    # customize node size range
-    scale_size_continuous(range = c(3, 20)) +
-    
-    # theme and title
-    theme_void() +
-    labs(title = paste0(module_color, " network (threshold = ", threshold, ")"),
-         color = "degree",
-         size = "degree")
-  
-  print(g)
-  dev.off()
+  # Store the top 5 genes for the module
+  top_5_genes_per_module[[module]] <- module_genes[top_5_genes]
 }
 
-# Convert the list to a data frame for easy viewing
-top_hubs_df <- data.frame(
-  Module = rep(names(top_hubs_per_module), each = 5),
-  Top_Hub_Genes = unlist(top_hubs_per_module)
+# Convert the list to a data frame for easier viewing
+top_5_genes_df <- data.frame(
+  Module = rep(names(top_5_genes_per_module), each = 5),
+  Gene = unlist(top_5_genes_per_module)
 )
-top_hubs_df$Module_Order <- rownames(top_hubs_df)
-top_hubs_df <- top_hubs_df[,c(1,3,2)]
 
-# save the top 5 hubs
+# Save
 write.table(
-  top_hubs_df,
-  file = paste0(wgcna_out, "gene_network_corr_", threshold, "/", 
-                "top_5_hub_genes_per_module.tsv"),
+  x = top_5_genes_df,
+  file = paste0(wgcna_out, "top_5_genes_per_module.tsv"),
   sep = "\t",
   quote = FALSE,
   row.names = FALSE
 )
+```
+
+## Gene networks
+```{r gene_network}
+# Get unique module colors, excluding "grey"
+module_colors <- unique(moduleColors)
+module_colors <- module_colors[module_colors != "grey"]
+
+# Compute adjacency matrix for all genes
+adjacency_matrix <- adjacency(voom_data, power = softPower)
+
+# Loop through each module
+for (myModule in module_colors) {
+  cat("Processing module:", myModule, "\n")
+  
+  # Get genes in the current module
+  module_genes <- colnames(voom_data)[moduleColors == myModule]
+  
+  # Subset the adjacency matrix for the current module
+  module_adjacency <- adjacency_matrix[module_genes, module_genes]
+  
+  # Define thresholds for filtering edges
+  thresholds <- seq(0.2, 0.4, by = 0.1)
+  
+  # Loop through thresholds to visualize the network
+  for (threshold in thresholds) {
+    # Apply the threshold to the adjacency matrix
+    adj_filtered <- module_adjacency
+    adj_filtered[adj_filtered < threshold] <- 0
+    
+    # Create the graph
+    network <- graph_from_adjacency_matrix(
+      adjmatrix = adj_filtered, 
+      mode = "undirected", 
+      weighted = TRUE, 
+      diag = FALSE)
+    
+    # Add node degree as a measure for node size and color
+    V(network)$degree <- degree(network)
+    
+    # Remove nodes with degree 0 (not connected to any edges)
+    network <- delete_vertices(network, V(network)[degree(network) == 0])
+    
+    # Debugging
+    cat("Module:", myModule, ", Threshold:", threshold, "\n")
+    cat("Number of nodes:", vcount(network), "\n")
+    cat("Number of edges:", ecount(network), "\n")
+    
+    # Convert network to tidygraph
+    network <- as_tbl_graph(network)
+    
+    # Save
+    pdf(file = paste0(wgcna_out, "gene_network_corr_", threshold, "/", 
+                    myModule, ".pdf"), width = 12, height = 12)
+    
+    # Visualize the network
+    g <- ggraph(network, layout = "kk") +
+      # edges
+      geom_edge_link(aes(edge_width = weight), edge_alpha = 0.5, edge_color = "grey") +
+      # nodes (size and color scaled by degree)
+      geom_node_point(aes(size = degree, color = degree), show.legend = TRUE) +
+      # labels (all in black)
+      geom_node_text(aes(label = name), size = 3, color = "black", 
+                     vjust = 0.5, hjust = 0.5, fontface = "bold") +
+      # customize color gradient for nodes
+      scale_color_gradient(low = "#FFF715", high = "#356C0B") +
+      # customize node size range
+      scale_size_continuous(range = c(3, 20)) +
+      # theme and title
+      theme_void() +
+      labs(
+        title = paste0(myModule, " network (threshold = ", threshold, ")"),
+        color = "degree",
+        size = "degree"
+      )
+    print(g)  # Display the graph
+    dev.off()
+  }
+}
 ```
 
 # Power analysis
