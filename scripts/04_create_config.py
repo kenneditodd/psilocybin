@@ -9,6 +9,7 @@ output_file_path = '../refs/config.json'
 
 # Initialize directories and sample data
 directories = {
+    "rawReads": "rawReads/",
     "rawQC": "rawQC/",
     "trimmedReads": "trimmedReads/",
     "trimmedQC": "trimmedQC/",
@@ -23,12 +24,15 @@ cluster_info = {
 
 # Open the sample list file and process each line
 with open(sample_list_path, 'r') as infile:
-    
+  
     # Read each line, strip whitespace, and remove the _R1 suffix
-    sample_base_names = [
-        line.split(".")[0]
-        for line in infile
-    ]
+    sample_base_names = []  # Create an empty list
+
+    for line in infile:
+        line = line.strip()
+        line = line.split(".")[0]
+        line = line.replace("_R1", "")
+        sample_base_names.append(line)
     
     # Loop through each sample name in sample_base_names
     male_samples = []
@@ -56,9 +60,10 @@ with open(sample_list_path, 'r') as infile:
     for line in infile:
         sample = line.strip()
         base_name = sample.split(".")[0]
-        read1 = sample.replace(".fastq.gz", "")
-        read2 = sample.replace(".fastq.gz", "")
-        read2 = read2.replace("_R1_", "_R2_")
+        read1 = base_name
+        read2 = base_name.replace("_R1", "_R2")
+        base_name = base_name.replace("_R1", "")
+
         config["SAMPLES"][base_name] = {
             "read1": read1,
             "read2": read2
