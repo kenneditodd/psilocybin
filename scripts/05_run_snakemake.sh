@@ -11,7 +11,7 @@ source $HOME/.bash_profile
 conda activate psilo
 
 # Change directory to where the Snakefile is located
-cd ../..
+cd ../
 
 # Before running Snakemake, you should do a dry run with the command below
 #snakemake --dry-run --printshellcmds
