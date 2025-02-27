@@ -3,6 +3,7 @@ configfile: "refs/config.json"
 
 # CONFIG VARIABLES
 #--------------------------------------------------------------------------------
+rawReadsDir = config["DIRECTORIES"]["rawReads"]
 trimmedReadsDir = config["DIRECTORIES"]["trimmedReads"]
 rawQCDir = config["DIRECTORIES"]["rawQC"]
 trimmedQCDir = config["DIRECTORIES"]["trimmedQC"]
@@ -21,7 +22,6 @@ load_dotenv("refs/.env")
 # Get paths from environment variables
 gtf_file = os.getenv("MMUSCULUS_GTF")
 fa_file = os.getenv("MMUSCULUS_FA")
-rawReadsDir = os.getenv("RAW_READS_DIR")
 
 
 # RULE ALL
@@ -31,7 +31,7 @@ rule all:
         config["DIRECTORIES"]["genomeDir"] + "Genome",
         expand(trimmedReadsDir + "{sample}_trim_R1.fastq.gz", sample=config["SAMPLE_INFORMATION"]["allSamples"]),
         expand(trimmedReadsDir + "{sample}_trim_R2.fastq.gz", sample=config["SAMPLE_INFORMATION"]["allSamples"]),
-        expand(rawQCDir + "{sample}_R1_001_fastqc.zip", sample=config["SAMPLE_INFORMATION"]["allSamples"]),
+        expand(rawQCDir + "{sample}_R1_fastqc.zip", sample=config["SAMPLE_INFORMATION"]["allSamples"]),
         expand(trimmedQCDir + "{sample}_trim_R1_fastqc.zip", sample=config["SAMPLE_INFORMATION"]["allSamples"]),
         rawQCDir + "multiqc_report.html",
         trimmedQCDir + "multiqc_report.html",
@@ -63,8 +63,8 @@ rule raw_fastqc:
         R1 = lambda wildcards: rawReadsDir + config["SAMPLES"][wildcards.sample]["read1"] + ".fastq.gz",
         R2 = lambda wildcards: rawReadsDir + config["SAMPLES"][wildcards.sample]["read2"] + ".fastq.gz"
     output:
-        qc1 = rawQCDir + "{sample}_R1_001_fastqc.zip",
-        qc2 = rawQCDir + "{sample}_R2_001_fastqc.zip"
+        qc1 = rawQCDir + "{sample}_R1_fastqc.zip",
+        qc2 = rawQCDir + "{sample}_R2_fastqc.zip"
     params:
         threads = config["CLUSTER_INFORMATION"]["threads"]
     shell:
@@ -147,8 +147,8 @@ rule feature_count:
 #-------------------------------------------------------------------------------
 rule raw_multiqc:
     input:
-        expand(rawQCDir + "{sample}_R1_001_fastqc.zip", sample=config["SAMPLE_INFORMATION"]["allSamples"]),
-        expand(rawQCDir + "{sample}_R2_001_fastqc.zip", sample=config["SAMPLE_INFORMATION"]["allSamples"])
+        expand(rawQCDir + "{sample}_R1_fastqc.zip", sample=config["SAMPLE_INFORMATION"]["allSamples"]),
+        expand(rawQCDir + "{sample}_R2_fastqc.zip", sample=config["SAMPLE_INFORMATION"]["allSamples"])
     output:
         html = rawQCDir + "multiqc_report.html"
     params:
