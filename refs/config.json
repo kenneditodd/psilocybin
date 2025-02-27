@@ -201,363 +201,363 @@
     "SAMPLES": {
         "Psi1_A10_High_Female": {
             "read1": "Psi1_A10_High_Female.FCHTWCMDSX7_L3_R1_IAGTCAGACGA-ACCAGCGACA",
-            "read2": "Psi1_A10_High_Female.FCHTWCMDSX7_L3_R1_IAGTCAGACGA-ACCAGCGACA"
+            "read2": "Psi1_A10_High_Female.FCHTWCMDSX7_L3_R2_IAGTCAGACGA-ACCAGCGACA"
         },
         "Psi1_A11_Low_Male": {
             "read1": "Psi1_A11_Low_Male.FCHTWCMDSX7_L3_R1_ICCGTATGTTC-CATACACTGT",
-            "read2": "Psi1_A11_Low_Male.FCHTWCMDSX7_L3_R1_ICCGTATGTTC-CATACACTGT"
+            "read2": "Psi1_A11_Low_Male.FCHTWCMDSX7_L3_R2_ICCGTATGTTC-CATACACTGT"
         },
         "Psi1_A12_Low_Male": {
             "read1": "Psi1_A12_Low_Male.FCHTWCMDSX7_L3_R1_IGAGTCATAGG-GTGTGGCGCT",
-            "read2": "Psi1_A12_Low_Male.FCHTWCMDSX7_L3_R1_IGAGTCATAGG-GTGTGGCGCT"
+            "read2": "Psi1_A12_Low_Male.FCHTWCMDSX7_L3_R2_IGAGTCATAGG-GTGTGGCGCT"
         },
         "Psi1_A13_Low_Male": {
             "read1": "Psi1_A13_Low_Male.FCHTWCMDSX7_L3_R1_ICTTGCCATTA-ATCACGAAGG",
-            "read2": "Psi1_A13_Low_Male.FCHTWCMDSX7_L3_R1_ICTTGCCATTA-ATCACGAAGG"
+            "read2": "Psi1_A13_Low_Male.FCHTWCMDSX7_L3_R2_ICTTGCCATTA-ATCACGAAGG"
         },
         "Psi1_A14_Low_Male": {
             "read1": "Psi1_A14_Low_Male.FCHTWCMDSX7_L3_R1_IGAAGCGGCAC-CGGCTCTACT",
-            "read2": "Psi1_A14_Low_Male.FCHTWCMDSX7_L3_R1_IGAAGCGGCAC-CGGCTCTACT"
+            "read2": "Psi1_A14_Low_Male.FCHTWCMDSX7_L3_R2_IGAAGCGGCAC-CGGCTCTACT"
         },
         "Psi1_A15_Low_Male": {
             "read1": "Psi1_A15_Low_Male.FCHTWCMDSX7_L3_R1_ITCCATTGCCG-GAATGCACGA",
-            "read2": "Psi1_A15_Low_Male.FCHTWCMDSX7_L3_R1_ITCCATTGCCG-GAATGCACGA"
+            "read2": "Psi1_A15_Low_Male.FCHTWCMDSX7_L3_R2_ITCCATTGCCG-GAATGCACGA"
         },
         "Psi1_A16_Low_Female": {
             "read1": "Psi1_A16_Low_Female.FCHTWCMDSX7_L3_R1_ICGGTTACGGC-AAGACTATAG",
-            "read2": "Psi1_A16_Low_Female.FCHTWCMDSX7_L3_R1_ICGGTTACGGC-AAGACTATAG"
+            "read2": "Psi1_A16_Low_Female.FCHTWCMDSX7_L3_R2_ICGGTTACGGC-AAGACTATAG"
         },
         "Psi1_A17_Low_Female": {
             "read1": "Psi1_A17_Low_Female.FCHTWCMDSX7_L3_R1_IGAGAATGGTT-TCGGCAGCAA",
-            "read2": "Psi1_A17_Low_Female.FCHTWCMDSX7_L3_R1_IGAGAATGGTT-TCGGCAGCAA"
+            "read2": "Psi1_A17_Low_Female.FCHTWCMDSX7_L3_R2_IGAGAATGGTT-TCGGCAGCAA"
         },
         "Psi1_A18_Low_Female": {
             "read1": "Psi1_A18_Low_Female.FCHTWCMDSX7_L3_R1_IAGAGGCAACC-CTAATGATGG",
-            "read2": "Psi1_A18_Low_Female.FCHTWCMDSX7_L3_R1_IAGAGGCAACC-CTAATGATGG"
+            "read2": "Psi1_A18_Low_Female.FCHTWCMDSX7_L3_R2_IAGAGGCAACC-CTAATGATGG"
         },
         "Psi1_A19_Low_Female": {
             "read1": "Psi1_A19_Low_Female.FCHTWCMDSX7_L3_R1_ICCATCATTAG-GGTTGCCTCT",
-            "read2": "Psi1_A19_Low_Female.FCHTWCMDSX7_L3_R1_ICCATCATTAG-GGTTGCCTCT"
+            "read2": "Psi1_A19_Low_Female.FCHTWCMDSX7_L3_R2_ICCATCATTAG-GGTTGCCTCT"
         },
         "Psi1_A1_High_Male": {
             "read1": "Psi1_A1_High_Male.FCHTWCMDSX7_L3_R1_IGAACTGAGCG-TCGTGGAGCG",
-            "read2": "Psi1_A1_High_Male.FCHTWCMDSX7_L3_R1_IGAACTGAGCG-TCGTGGAGCG"
+            "read2": "Psi1_A1_High_Male.FCHTWCMDSX7_L3_R2_IGAACTGAGCG-TCGTGGAGCG"
         },
         "Psi1_A20_Low_Female": {
             "read1": "Psi1_A20_Low_Female.FCHTWCMDSX7_L3_R1_IGATAGGCCGA-CGCACATGGC",
-            "read2": "Psi1_A20_Low_Female.FCHTWCMDSX7_L3_R1_IGATAGGCCGA-CGCACATGGC"
+            "read2": "Psi1_A20_Low_Female.FCHTWCMDSX7_L3_R2_IGATAGGCCGA-CGCACATGGC"
         },
         "Psi1_A21_NS_Male": {
             "read1": "Psi1_A21_NS_Male.FCHTWCMDSX7_L3_R1_IATGGTTGACT-GGCCTGTCCT",
-            "read2": "Psi1_A21_NS_Male.FCHTWCMDSX7_L3_R1_IATGGTTGACT-GGCCTGTCCT"
+            "read2": "Psi1_A21_NS_Male.FCHTWCMDSX7_L3_R2_IATGGTTGACT-GGCCTGTCCT"
         },
         "Psi1_A22_NS_Male": {
             "read1": "Psi1_A22_NS_Male.FCHTWCMDSX7_L3_R1_ITATTGCGCTC-CTGTGTTAGG",
-            "read2": "Psi1_A22_NS_Male.FCHTWCMDSX7_L3_R1_ITATTGCGCTC-CTGTGTTAGG"
+            "read2": "Psi1_A22_NS_Male.FCHTWCMDSX7_L3_R2_ITATTGCGCTC-CTGTGTTAGG"
         },
         "Psi1_A23_NS_Male": {
             "read1": "Psi1_A23_NS_Male.FCHTWCMDSX7_L3_R1_IACGCCTTGTT-TAAGGAACGT",
-            "read2": "Psi1_A23_NS_Male.FCHTWCMDSX7_L3_R1_IACGCCTTGTT-TAAGGAACGT"
+            "read2": "Psi1_A23_NS_Male.FCHTWCMDSX7_L3_R2_IACGCCTTGTT-TAAGGAACGT"
         },
         "Psi1_A24_NS_Male": {
             "read1": "Psi1_A24_NS_Male.FCHTWCMDSX7_L3_R1_ITTCTACATAC-CTAACTGTAA",
-            "read2": "Psi1_A24_NS_Male.FCHTWCMDSX7_L3_R1_ITTCTACATAC-CTAACTGTAA"
+            "read2": "Psi1_A24_NS_Male.FCHTWCMDSX7_L3_R2_ITTCTACATAC-CTAACTGTAA"
         },
         "Psi1_A25_NS_Male": {
             "read1": "Psi1_A25_NS_Male.FCHTWCMDSX7_L3_R1_IAACCATAGAA-GGCGAGATGG",
-            "read2": "Psi1_A25_NS_Male.FCHTWCMDSX7_L3_R1_IAACCATAGAA-GGCGAGATGG"
+            "read2": "Psi1_A25_NS_Male.FCHTWCMDSX7_L3_R2_IAACCATAGAA-GGCGAGATGG"
         },
         "Psi1_A26_NS_Female": {
             "read1": "Psi1_A26_NS_Female.FCHTWCMDSX7_L3_R1_IGGTTGCGAGG-AATAGAGCAA",
-            "read2": "Psi1_A26_NS_Female.FCHTWCMDSX7_L3_R1_IGGTTGCGAGG-AATAGAGCAA"
+            "read2": "Psi1_A26_NS_Female.FCHTWCMDSX7_L3_R2_IGGTTGCGAGG-AATAGAGCAA"
         },
         "Psi1_A27_NS_Female": {
             "read1": "Psi1_A27_NS_Female.FCHTWCMDSX7_L3_R1_ITAAGCATCCA-TCAATCCATT",
-            "read2": "Psi1_A27_NS_Female.FCHTWCMDSX7_L3_R1_ITAAGCATCCA-TCAATCCATT"
+            "read2": "Psi1_A27_NS_Female.FCHTWCMDSX7_L3_R2_ITAAGCATCCA-TCAATCCATT"
         },
         "Psi1_A28_NS_Female": {
             "read1": "Psi1_A28_NS_Female.FCHTWCMDSX7_L3_R1_IACCACGACAT-TCGTATGCGG",
-            "read2": "Psi1_A28_NS_Female.FCHTWCMDSX7_L3_R1_IACCACGACAT-TCGTATGCGG"
+            "read2": "Psi1_A28_NS_Female.FCHTWCMDSX7_L3_R2_IACCACGACAT-TCGTATGCGG"
         },
         "Psi1_A29_NS_Female": {
             "read1": "Psi1_A29_NS_Female.FCHTWCMDSX7_L3_R1_IGCCGCACTCT-TCCGACCTCG",
-            "read2": "Psi1_A29_NS_Female.FCHTWCMDSX7_L3_R1_IGCCGCACTCT-TCCGACCTCG"
+            "read2": "Psi1_A29_NS_Female.FCHTWCMDSX7_L3_R2_IGCCGCACTCT-TCCGACCTCG"
         },
         "Psi1_A2_High_Male": {
             "read1": "Psi1_A2_High_Male.FCHTWCMDSX7_L3_R1_IAGGTCAGATA-CTACAAGATA",
-            "read2": "Psi1_A2_High_Male.FCHTWCMDSX7_L3_R1_IAGGTCAGATA-CTACAAGATA"
+            "read2": "Psi1_A2_High_Male.FCHTWCMDSX7_L3_R2_IAGGTCAGATA-CTACAAGATA"
         },
         "Psi1_A30_NS_Female": {
             "read1": "Psi1_A30_NS_Female.FCHTWCMDSX7_L3_R1_ICCACCAGGCA-CTTATGGAAT",
-            "read2": "Psi1_A30_NS_Female.FCHTWCMDSX7_L3_R1_ICCACCAGGCA-CTTATGGAAT"
+            "read2": "Psi1_A30_NS_Female.FCHTWCMDSX7_L3_R2_ICCACCAGGCA-CTTATGGAAT"
         },
         "Psi1_A31_High_Male": {
             "read1": "Psi1_A31_High_Male.FCHTWCMDSX7_L3_R1_IGTGACACGCA-GCTTACGGAC",
-            "read2": "Psi1_A31_High_Male.FCHTWCMDSX7_L3_R1_IGTGACACGCA-GCTTACGGAC"
+            "read2": "Psi1_A31_High_Male.FCHTWCMDSX7_L3_R2_IGTGACACGCA-GCTTACGGAC"
         },
         "Psi1_A32_High_Male": {
             "read1": "Psi1_A32_High_Male.FCHTWCMDSX7_L3_R1_IACAGTGTATG-GAACATACGG",
-            "read2": "Psi1_A32_High_Male.FCHTWCMDSX7_L3_R1_IACAGTGTATG-GAACATACGG"
+            "read2": "Psi1_A32_High_Male.FCHTWCMDSX7_L3_R2_IACAGTGTATG-GAACATACGG"
         },
         "Psi1_A33_High_Male": {
             "read1": "Psi1_A33_High_Male.FCHTWCMDSX7_L3_R1_ITGATTATACG-GTCGATTACA",
-            "read2": "Psi1_A33_High_Male.FCHTWCMDSX7_L3_R1_ITGATTATACG-GTCGATTACA"
+            "read2": "Psi1_A33_High_Male.FCHTWCMDSX7_L3_R2_ITGATTATACG-GTCGATTACA"
         },
         "Psi1_A34_High_Male": {
             "read1": "Psi1_A34_High_Male.FCHTWCMDSX7_L3_R1_ICAGCCGCGTA-ACTAGCCGTG",
-            "read2": "Psi1_A34_High_Male.FCHTWCMDSX7_L3_R1_ICAGCCGCGTA-ACTAGCCGTG"
+            "read2": "Psi1_A34_High_Male.FCHTWCMDSX7_L3_R2_ICAGCCGCGTA-ACTAGCCGTG"
         },
         "Psi1_A35_High_Male": {
             "read1": "Psi1_A35_High_Male.FCHTWCMDSX7_L3_R1_IGGTAACTCGC-AAGTTGGTGA",
-            "read2": "Psi1_A35_High_Male.FCHTWCMDSX7_L3_R1_IGGTAACTCGC-AAGTTGGTGA"
+            "read2": "Psi1_A35_High_Male.FCHTWCMDSX7_L3_R2_IGGTAACTCGC-AAGTTGGTGA"
         },
         "Psi1_A36_High_Female": {
             "read1": "Psi1_A36_High_Female.FCHTWCMDSX7_L3_R1_IACCGGCCGTA-TGGCAATATT",
-            "read2": "Psi1_A36_High_Female.FCHTWCMDSX7_L3_R1_IACCGGCCGTA-TGGCAATATT"
+            "read2": "Psi1_A36_High_Female.FCHTWCMDSX7_L3_R2_IACCGGCCGTA-TGGCAATATT"
         },
         "Psi1_A37_High_Female": {
             "read1": "Psi1_A37_High_Female.FCHTWCMDSX7_L3_R1_ITGTAATCGAC-GATCACCGCG",
-            "read2": "Psi1_A37_High_Female.FCHTWCMDSX7_L3_R1_ITGTAATCGAC-GATCACCGCG"
+            "read2": "Psi1_A37_High_Female.FCHTWCMDSX7_L3_R2_ITGTAATCGAC-GATCACCGCG"
         },
         "Psi1_A38_High_Female": {
             "read1": "Psi1_A38_High_Female.FCHTWCMDSX7_L3_R1_IGTGCAGACAG-TACCATCCGT",
-            "read2": "Psi1_A38_High_Female.FCHTWCMDSX7_L3_R1_IGTGCAGACAG-TACCATCCGT"
+            "read2": "Psi1_A38_High_Female.FCHTWCMDSX7_L3_R2_IGTGCAGACAG-TACCATCCGT"
         },
         "Psi1_A39_High_Female": {
             "read1": "Psi1_A39_High_Female.FCHTWCMDSX7_L3_R1_ICAATCGGCTG-GCTGTAGGAA",
-            "read2": "Psi1_A39_High_Female.FCHTWCMDSX7_L3_R1_ICAATCGGCTG-GCTGTAGGAA"
+            "read2": "Psi1_A39_High_Female.FCHTWCMDSX7_L3_R2_ICAATCGGCTG-GCTGTAGGAA"
         },
         "Psi1_A3_High_Male": {
             "read1": "Psi1_A3_High_Male.FCHTWCMDSX7_L3_R1_ICGTCTCATAT-TATAGTAGCT",
-            "read2": "Psi1_A3_High_Male.FCHTWCMDSX7_L3_R1_ICGTCTCATAT-TATAGTAGCT"
+            "read2": "Psi1_A3_High_Male.FCHTWCMDSX7_L3_R2_ICGTCTCATAT-TATAGTAGCT"
         },
         "Psi1_A40_High_Female": {
             "read1": "Psi1_A40_High_Female.FCHTWCMDSX7_L3_R1_ITATGTAGTCA-CGCACTAATG",
-            "read2": "Psi1_A40_High_Female.FCHTWCMDSX7_L3_R1_ITATGTAGTCA-CGCACTAATG"
+            "read2": "Psi1_A40_High_Female.FCHTWCMDSX7_L3_R2_ITATGTAGTCA-CGCACTAATG"
         },
         "Psi1_A41_Low_Male": {
             "read1": "Psi1_A41_Low_Male.FCHTWCMDSX7_L3_R1_IACTCGGCAAT-GACAACTGAA",
-            "read2": "Psi1_A41_Low_Male.FCHTWCMDSX7_L3_R1_IACTCGGCAAT-GACAACTGAA"
+            "read2": "Psi1_A41_Low_Male.FCHTWCMDSX7_L3_R2_IACTCGGCAAT-GACAACTGAA"
         },
         "Psi1_A42_Low_Male": {
             "read1": "Psi1_A42_Low_Male.FCHTWCMDSX7_L3_R1_IGTCTAATGGC-AGTGGTCAGG",
-            "read2": "Psi1_A42_Low_Male.FCHTWCMDSX7_L3_R1_IGTCTAATGGC-AGTGGTCAGG"
+            "read2": "Psi1_A42_Low_Male.FCHTWCMDSX7_L3_R2_IGTCTAATGGC-AGTGGTCAGG"
         },
         "Psi1_A43_Low_Male": {
             "read1": "Psi1_A43_Low_Male.FCHTWCMDSX7_L3_R1_ICCATCTCGCC-TTCTATGGTT",
-            "read2": "Psi1_A43_Low_Male.FCHTWCMDSX7_L3_R1_ICCATCTCGCC-TTCTATGGTT"
+            "read2": "Psi1_A43_Low_Male.FCHTWCMDSX7_L3_R2_ICCATCTCGCC-TTCTATGGTT"
         },
         "Psi1_A44_Low_Male": {
             "read1": "Psi1_A44_Low_Male.FCHTWCMDSX7_L3_R1_ICTGCGAGCCA-AATCCGGCCA",
-            "read2": "Psi1_A44_Low_Male.FCHTWCMDSX7_L3_R1_ICTGCGAGCCA-AATCCGGCCA"
+            "read2": "Psi1_A44_Low_Male.FCHTWCMDSX7_L3_R2_ICTGCGAGCCA-AATCCGGCCA"
         },
         "Psi1_A45_Low_Male": {
             "read1": "Psi1_A45_Low_Male.FCHTWCMDSX7_L3_R1_ICGTTATTCTA-CCATAAGGTT",
-            "read2": "Psi1_A45_Low_Male.FCHTWCMDSX7_L3_R1_ICGTTATTCTA-CCATAAGGTT"
+            "read2": "Psi1_A45_Low_Male.FCHTWCMDSX7_L3_R2_ICGTTATTCTA-CCATAAGGTT"
         },
         "Psi1_A46_Low_Female": {
             "read1": "Psi1_A46_Low_Female.FCHTWCMDSX7_L4_R1_IAGATCCATTA-ATCTCTACCA",
-            "read2": "Psi1_A46_Low_Female.FCHTWCMDSX7_L4_R1_IAGATCCATTA-ATCTCTACCA"
+            "read2": "Psi1_A46_Low_Female.FCHTWCMDSX7_L4_R2_IAGATCCATTA-ATCTCTACCA"
         },
         "Psi1_A47_Low_Female": {
             "read1": "Psi1_A47_Low_Female.FCHTWCMDSX7_L4_R1_IGTCCTGGATA-CGGTGGCGAA",
-            "read2": "Psi1_A47_Low_Female.FCHTWCMDSX7_L4_R1_IGTCCTGGATA-CGGTGGCGAA"
+            "read2": "Psi1_A47_Low_Female.FCHTWCMDSX7_L4_R2_IGTCCTGGATA-CGGTGGCGAA"
         },
         "Psi1_A48_Low_Female": {
             "read1": "Psi1_A48_Low_Female.FCHTWCMDSX7_L4_R1_ICAGTGGCACT-TAACAATAGG",
-            "read2": "Psi1_A48_Low_Female.FCHTWCMDSX7_L4_R1_ICAGTGGCACT-TAACAATAGG"
+            "read2": "Psi1_A48_Low_Female.FCHTWCMDSX7_L4_R2_ICAGTGGCACT-TAACAATAGG"
         },
         "Psi1_A49_Low_Female": {
             "read1": "Psi1_A49_Low_Female.FCHTWCMDSX7_L4_R1_IAGTGTTGCAC-CTGGTACACG",
-            "read2": "Psi1_A49_Low_Female.FCHTWCMDSX7_L4_R1_IAGTGTTGCAC-CTGGTACACG"
+            "read2": "Psi1_A49_Low_Female.FCHTWCMDSX7_L4_R2_IAGTGTTGCAC-CTGGTACACG"
         },
         "Psi1_A4_High_Male": {
             "read1": "Psi1_A4_High_Male.FCHTWCMDSX7_L3_R1_IATTCCATAAG-TGCCTGGTGG",
-            "read2": "Psi1_A4_High_Male.FCHTWCMDSX7_L3_R1_IATTCCATAAG-TGCCTGGTGG"
+            "read2": "Psi1_A4_High_Male.FCHTWCMDSX7_L3_R2_IATTCCATAAG-TGCCTGGTGG"
         },
         "Psi1_A50_Low_Female": {
             "read1": "Psi1_A50_Low_Female.FCHTWCMDSX7_L4_R1_IGACACCATGT-TCAACGTGTA",
-            "read2": "Psi1_A50_Low_Female.FCHTWCMDSX7_L4_R1_IGACACCATGT-TCAACGTGTA"
+            "read2": "Psi1_A50_Low_Female.FCHTWCMDSX7_L4_R2_IGACACCATGT-TCAACGTGTA"
         },
         "Psi1_A51_NS_Male": {
             "read1": "Psi1_A51_NS_Male.FCHTWCMDSX7_L4_R1_ICCTGTCTGTC-ACTGTTGTGA",
-            "read2": "Psi1_A51_NS_Male.FCHTWCMDSX7_L4_R1_ICCTGTCTGTC-ACTGTTGTGA"
+            "read2": "Psi1_A51_NS_Male.FCHTWCMDSX7_L4_R2_ICCTGTCTGTC-ACTGTTGTGA"
         },
         "Psi1_A52_NS_Male": {
             "read1": "Psi1_A52_NS_Male.FCHTWCMDSX7_L4_R1_ITGATGTAAGA-GTGCGTCCTT",
-            "read2": "Psi1_A52_NS_Male.FCHTWCMDSX7_L4_R1_ITGATGTAAGA-GTGCGTCCTT"
+            "read2": "Psi1_A52_NS_Male.FCHTWCMDSX7_L4_R2_ITGATGTAAGA-GTGCGTCCTT"
         },
         "Psi1_A53_NS_Male": {
             "read1": "Psi1_A53_NS_Male.FCHTWCMDSX7_L4_R1_IGGAATTGTAA-AGCACATCCT",
-            "read2": "Psi1_A53_NS_Male.FCHTWCMDSX7_L4_R1_IGGAATTGTAA-AGCACATCCT"
+            "read2": "Psi1_A53_NS_Male.FCHTWCMDSX7_L4_R2_IGGAATTGTAA-AGCACATCCT"
         },
         "Psi1_A54_NS_Male": {
             "read1": "Psi1_A54_NS_Male.FCHTWCMDSX7_L4_R1_IGCATAAGCTT-TTCCGTCGCA",
-            "read2": "Psi1_A54_NS_Male.FCHTWCMDSX7_L4_R1_IGCATAAGCTT-TTCCGTCGCA"
+            "read2": "Psi1_A54_NS_Male.FCHTWCMDSX7_L4_R2_IGCATAAGCTT-TTCCGTCGCA"
         },
         "Psi1_A55_NS_Male": {
             "read1": "Psi1_A55_NS_Male.FCHTWCMDSX7_L4_R1_ICTGAGGAATA-CTTAACCACT",
-            "read2": "Psi1_A55_NS_Male.FCHTWCMDSX7_L4_R1_ICTGAGGAATA-CTTAACCACT"
+            "read2": "Psi1_A55_NS_Male.FCHTWCMDSX7_L4_R2_ICTGAGGAATA-CTTAACCACT"
         },
         "Psi1_A56_NS_Female": {
             "read1": "Psi1_A56_NS_Female.FCHTWCMDSX7_L4_R1_IAACGCACGAG-GCCTCGGATA",
-            "read2": "Psi1_A56_NS_Female.FCHTWCMDSX7_L4_R1_IAACGCACGAG-GCCTCGGATA"
+            "read2": "Psi1_A56_NS_Female.FCHTWCMDSX7_L4_R2_IAACGCACGAG-GCCTCGGATA"
         },
         "Psi1_A57_NS_Female": {
             "read1": "Psi1_A57_NS_Female.FCHTWCMDSX7_L4_R1_ITCTATCCTAA-CGTCGACTGG",
-            "read2": "Psi1_A57_NS_Female.FCHTWCMDSX7_L4_R1_ITCTATCCTAA-CGTCGACTGG"
+            "read2": "Psi1_A57_NS_Female.FCHTWCMDSX7_L4_R2_ITCTATCCTAA-CGTCGACTGG"
         },
         "Psi1_A58_NS_Female": {
             "read1": "Psi1_A58_NS_Female.FCHTWCMDSX7_L4_R1_ICTCGCTTCGG-TACTAGTCAA",
-            "read2": "Psi1_A58_NS_Female.FCHTWCMDSX7_L4_R1_ICTCGCTTCGG-TACTAGTCAA"
+            "read2": "Psi1_A58_NS_Female.FCHTWCMDSX7_L4_R2_ICTCGCTTCGG-TACTAGTCAA"
         },
         "Psi1_A59_NS_Female": {
             "read1": "Psi1_A59_NS_Female.FCHTWCMDSX7_L4_R1_ICTGTTGGTCC-ATAGACCGTT",
-            "read2": "Psi1_A59_NS_Female.FCHTWCMDSX7_L4_R1_ICTGTTGGTCC-ATAGACCGTT"
+            "read2": "Psi1_A59_NS_Female.FCHTWCMDSX7_L4_R2_ICTGTTGGTCC-ATAGACCGTT"
         },
         "Psi1_A5_High_Male": {
             "read1": "Psi1_A5_High_Male.FCHTWCMDSX7_L3_R1_IGACGAGATTA-ACATTATCCT",
-            "read2": "Psi1_A5_High_Male.FCHTWCMDSX7_L3_R1_IGACGAGATTA-ACATTATCCT"
+            "read2": "Psi1_A5_High_Male.FCHTWCMDSX7_L3_R2_IGACGAGATTA-ACATTATCCT"
         },
         "Psi1_A60_NS_Female": {
             "read1": "Psi1_A60_NS_Female.FCHTWCMDSX7_L4_R1_ITTACCTGGAA-ACAGTTCCAG",
-            "read2": "Psi1_A60_NS_Female.FCHTWCMDSX7_L4_R1_ITTACCTGGAA-ACAGTTCCAG"
+            "read2": "Psi1_A60_NS_Female.FCHTWCMDSX7_L4_R2_ITTACCTGGAA-ACAGTTCCAG"
         },
         "Psi1_A61_High_Male": {
             "read1": "Psi1_A61_High_Male.FCHTWCMDSX7_L4_R1_ITGGCTAATCA-AGGCATGTAG",
-            "read2": "Psi1_A61_High_Male.FCHTWCMDSX7_L4_R1_ITGGCTAATCA-AGGCATGTAG"
+            "read2": "Psi1_A61_High_Male.FCHTWCMDSX7_L4_R2_ITGGCTAATCA-AGGCATGTAG"
         },
         "Psi1_A62_High_Male": {
             "read1": "Psi1_A62_High_Male.FCHTWCMDSX7_L4_R1_IAACACTGTTA-GCAAGTCTCA",
-            "read2": "Psi1_A62_High_Male.FCHTWCMDSX7_L4_R1_IAACACTGTTA-GCAAGTCTCA"
+            "read2": "Psi1_A62_High_Male.FCHTWCMDSX7_L4_R2_IAACACTGTTA-GCAAGTCTCA"
         },
         "Psi1_A63_High_Male": {
             "read1": "Psi1_A63_High_Male.FCHTWCMDSX7_L4_R1_IATTGCGCGGT-TTGGCTCCGC",
-            "read2": "Psi1_A63_High_Male.FCHTWCMDSX7_L4_R1_IATTGCGCGGT-TTGGCTCCGC"
+            "read2": "Psi1_A63_High_Male.FCHTWCMDSX7_L4_R2_IATTGCGCGGT-TTGGCTCCGC"
         },
         "Psi1_A64_High_Male": {
             "read1": "Psi1_A64_High_Male.FCHTWCMDSX7_L4_R1_ITGGCGCGAAC-AACTGATACT",
-            "read2": "Psi1_A64_High_Male.FCHTWCMDSX7_L4_R1_ITGGCGCGAAC-AACTGATACT"
+            "read2": "Psi1_A64_High_Male.FCHTWCMDSX7_L4_R2_ITGGCGCGAAC-AACTGATACT"
         },
         "Psi1_A65_High_Male": {
             "read1": "Psi1_A65_High_Male.FCHTWCMDSX7_L4_R1_ITAATGTGTCT-GTAAGGCATA",
-            "read2": "Psi1_A65_High_Male.FCHTWCMDSX7_L4_R1_ITAATGTGTCT-GTAAGGCATA"
+            "read2": "Psi1_A65_High_Male.FCHTWCMDSX7_L4_R2_ITAATGTGTCT-GTAAGGCATA"
         },
         "Psi1_A66_High_Female": {
             "read1": "Psi1_A66_High_Female.FCHTWCMDSX7_L4_R1_IATACCAACGC-AATTGCTGCG",
-            "read2": "Psi1_A66_High_Female.FCHTWCMDSX7_L4_R1_IATACCAACGC-AATTGCTGCG"
+            "read2": "Psi1_A66_High_Female.FCHTWCMDSX7_L4_R2_IATACCAACGC-AATTGCTGCG"
         },
         "Psi1_A67_High_Female": {
             "read1": "Psi1_A67_High_Female.FCHTWCMDSX7_L4_R1_IAGGATGTGCT-TTACAATTCC",
-            "read2": "Psi1_A67_High_Female.FCHTWCMDSX7_L4_R1_IAGGATGTGCT-TTACAATTCC"
+            "read2": "Psi1_A67_High_Female.FCHTWCMDSX7_L4_R2_IAGGATGTGCT-TTACAATTCC"
         },
         "Psi1_A68_High_Female": {
             "read1": "Psi1_A68_High_Female.FCHTWCMDSX7_L4_R1_ICACGGAACAA-AACCTAGCAC",
-            "read2": "Psi1_A68_High_Female.FCHTWCMDSX7_L4_R1_ICACGGAACAA-AACCTAGCAC"
+            "read2": "Psi1_A68_High_Female.FCHTWCMDSX7_L4_R2_ICACGGAACAA-AACCTAGCAC"
         },
         "Psi1_A69_High_Female": {
             "read1": "Psi1_A69_High_Female.FCHTWCMDSX7_L4_R1_ITGGAGTACTT-TCTGTGTGGA",
-            "read2": "Psi1_A69_High_Female.FCHTWCMDSX7_L4_R1_ITGGAGTACTT-TCTGTGTGGA"
+            "read2": "Psi1_A69_High_Female.FCHTWCMDSX7_L4_R2_ITGGAGTACTT-TCTGTGTGGA"
         },
         "Psi1_A6_High_Female": {
             "read1": "Psi1_A6_High_Female.FCHTWCMDSX7_L3_R1_IAACATCGCGC-GTCCACTTGT",
-            "read2": "Psi1_A6_High_Female.FCHTWCMDSX7_L3_R1_IAACATCGCGC-GTCCACTTGT"
+            "read2": "Psi1_A6_High_Female.FCHTWCMDSX7_L3_R2_IAACATCGCGC-GTCCACTTGT"
         },
         "Psi1_A70_High_Female": {
             "read1": "Psi1_A70_High_Female.FCHTWCMDSX7_L4_R1_IGTATTGACGT-GGAATTCCAA",
-            "read2": "Psi1_A70_High_Female.FCHTWCMDSX7_L4_R1_IGTATTGACGT-GGAATTCCAA"
+            "read2": "Psi1_A70_High_Female.FCHTWCMDSX7_L4_R2_IGTATTGACGT-GGAATTCCAA"
         },
         "Psi1_A71_Low_Male": {
             "read1": "Psi1_A71_Low_Male.FCHTWCMDSX7_L4_R1_ICTTGTACACC-AAGCGCGCTT",
-            "read2": "Psi1_A71_Low_Male.FCHTWCMDSX7_L4_R1_ICTTGTACACC-AAGCGCGCTT"
+            "read2": "Psi1_A71_Low_Male.FCHTWCMDSX7_L4_R2_ICTTGTACACC-AAGCGCGCTT"
         },
         "Psi1_A72_Low_Male": {
             "read1": "Psi1_A72_Low_Male.FCHTWCMDSX7_L4_R1_IACACAGGTGG-TGAGCGTTGT",
-            "read2": "Psi1_A72_Low_Male.FCHTWCMDSX7_L4_R1_IACACAGGTGG-TGAGCGTTGT"
+            "read2": "Psi1_A72_Low_Male.FCHTWCMDSX7_L4_R2_IACACAGGTGG-TGAGCGTTGT"
         },
         "Psi1_A73_Low_Male": {
             "read1": "Psi1_A73_Low_Male.FCHTWCMDSX7_L4_R1_ICCTGCGGAAC-ATCATAGGCT",
-            "read2": "Psi1_A73_Low_Male.FCHTWCMDSX7_L4_R1_ICCTGCGGAAC-ATCATAGGCT"
+            "read2": "Psi1_A73_Low_Male.FCHTWCMDSX7_L4_R2_ICCTGCGGAAC-ATCATAGGCT"
         },
         "Psi1_A74_Low_Male": {
             "read1": "Psi1_A74_Low_Male.FCHTWCMDSX7_L4_R1_ITTCATAAGGT-TGTTAGAAGG",
-            "read2": "Psi1_A74_Low_Male.FCHTWCMDSX7_L4_R1_ITTCATAAGGT-TGTTAGAAGG"
+            "read2": "Psi1_A74_Low_Male.FCHTWCMDSX7_L4_R2_ITTCATAAGGT-TGTTAGAAGG"
         },
         "Psi1_A75_Low_Male": {
             "read1": "Psi1_A75_Low_Male.FCHTWCMDSX7_L4_R1_ICTCTGCAGCG-GATGGATGTA",
-            "read2": "Psi1_A75_Low_Male.FCHTWCMDSX7_L4_R1_ICTCTGCAGCG-GATGGATGTA"
+            "read2": "Psi1_A75_Low_Male.FCHTWCMDSX7_L4_R2_ICTCTGCAGCG-GATGGATGTA"
         },
         "Psi1_A76_Low_Female": {
             "read1": "Psi1_A76_Low_Female.FCHTWCMDSX7_L4_R1_ICTGACTCTAC-ACGGCCGTCA",
-            "read2": "Psi1_A76_Low_Female.FCHTWCMDSX7_L4_R1_ICTGACTCTAC-ACGGCCGTCA"
+            "read2": "Psi1_A76_Low_Female.FCHTWCMDSX7_L4_R2_ICTGACTCTAC-ACGGCCGTCA"
         },
         "Psi1_A77_Low_Female": {
             "read1": "Psi1_A77_Low_Female.FCHTWCMDSX7_L4_R1_ITCTGGTATCC-CGTTGCTTAC",
-            "read2": "Psi1_A77_Low_Female.FCHTWCMDSX7_L4_R1_ITCTGGTATCC-CGTTGCTTAC"
+            "read2": "Psi1_A77_Low_Female.FCHTWCMDSX7_L4_R2_ITCTGGTATCC-CGTTGCTTAC"
         },
         "Psi1_A78_Low_Female": {
             "read1": "Psi1_A78_Low_Female.FCHTWCMDSX7_L4_R1_ICATTAGTGCG-TGACTACATA",
-            "read2": "Psi1_A78_Low_Female.FCHTWCMDSX7_L4_R1_ICATTAGTGCG-TGACTACATA"
+            "read2": "Psi1_A78_Low_Female.FCHTWCMDSX7_L4_R2_ICATTAGTGCG-TGACTACATA"
         },
         "Psi1_A79_Low_Female": {
             "read1": "Psi1_A79_Low_Female.FCHTWCMDSX7_L4_R1_IACGGTCAGGA-CGGCCTCGTT",
-            "read2": "Psi1_A79_Low_Female.FCHTWCMDSX7_L4_R1_IACGGTCAGGA-CGGCCTCGTT"
+            "read2": "Psi1_A79_Low_Female.FCHTWCMDSX7_L4_R2_IACGGTCAGGA-CGGCCTCGTT"
         },
         "Psi1_A7_High_Female": {
             "read1": "Psi1_A7_High_Female.FCHTWCMDSX7_L3_R1_ICTAGTGCTCT-TGGAACAGTA",
-            "read2": "Psi1_A7_High_Female.FCHTWCMDSX7_L3_R1_ICTAGTGCTCT-TGGAACAGTA"
+            "read2": "Psi1_A7_High_Female.FCHTWCMDSX7_L3_R2_ICTAGTGCTCT-TGGAACAGTA"
         },
         "Psi1_A80_Low_Female": {
             "read1": "Psi1_A80_Low_Female.FCHTWCMDSX7_L4_R1_IGGCAAGCCAG-CAAGCATCCG",
-            "read2": "Psi1_A80_Low_Female.FCHTWCMDSX7_L4_R1_IGGCAAGCCAG-CAAGCATCCG"
+            "read2": "Psi1_A80_Low_Female.FCHTWCMDSX7_L4_R2_IGGCAAGCCAG-CAAGCATCCG"
         },
         "Psi1_A81_NS_Male": {
             "read1": "Psi1_A81_NS_Male.FCHTWCMDSX7_L4_R1_ITGTCGCTGGT-TCGTCTGACT",
-            "read2": "Psi1_A81_NS_Male.FCHTWCMDSX7_L4_R1_ITGTCGCTGGT-TCGTCTGACT"
+            "read2": "Psi1_A81_NS_Male.FCHTWCMDSX7_L4_R2_ITGTCGCTGGT-TCGTCTGACT"
         },
         "Psi1_A82_NS_Male": {
             "read1": "Psi1_A82_NS_Male.FCHTWCMDSX7_L4_R1_IACCGTTACAA-CTCATAGCGA",
-            "read2": "Psi1_A82_NS_Male.FCHTWCMDSX7_L4_R1_IACCGTTACAA-CTCATAGCGA"
+            "read2": "Psi1_A82_NS_Male.FCHTWCMDSX7_L4_R2_IACCGTTACAA-CTCATAGCGA"
         },
         "Psi1_A83_NS_Male": {
             "read1": "Psi1_A83_NS_Male.FCHTWCMDSX7_L4_R1_ITATGCCTTAC-AGACACATTA",
-            "read2": "Psi1_A83_NS_Male.FCHTWCMDSX7_L4_R1_ITATGCCTTAC-AGACACATTA"
+            "read2": "Psi1_A83_NS_Male.FCHTWCMDSX7_L4_R2_ITATGCCTTAC-AGACACATTA"
         },
         "Psi1_A84_NS_Male": {
             "read1": "Psi1_A84_NS_Male.FCHTWCMDSX7_L4_R1_IACAAGTGGAC-GCGCGATGTT",
-            "read2": "Psi1_A84_NS_Male.FCHTWCMDSX7_L4_R1_IACAAGTGGAC-GCGCGATGTT"
+            "read2": "Psi1_A84_NS_Male.FCHTWCMDSX7_L4_R2_IACAAGTGGAC-GCGCGATGTT"
         },
         "Psi1_A85_NS_Male": {
             "read1": "Psi1_A85_NS_Male.FCHTWCMDSX7_L4_R1_ITGGTACCTAA-CATGAGTACT",
-            "read2": "Psi1_A85_NS_Male.FCHTWCMDSX7_L4_R1_ITGGTACCTAA-CATGAGTACT"
+            "read2": "Psi1_A85_NS_Male.FCHTWCMDSX7_L4_R2_ITGGTACCTAA-CATGAGTACT"
         },
         "Psi1_A86_NS_Female": {
             "read1": "Psi1_A86_NS_Female.FCHTWCMDSX7_L4_R1_ITTGGAATTCC-ACGTCAATAC",
-            "read2": "Psi1_A86_NS_Female.FCHTWCMDSX7_L4_R1_ITTGGAATTCC-ACGTCAATAC"
+            "read2": "Psi1_A86_NS_Female.FCHTWCMDSX7_L4_R2_ITTGGAATTCC-ACGTCAATAC"
         },
         "Psi1_A87_NS_Female": {
             "read1": "Psi1_A87_NS_Female.FCHTWCMDSX7_L4_R1_ICCTCTACATG-GATACCTCCT",
-            "read2": "Psi1_A87_NS_Female.FCHTWCMDSX7_L4_R1_ICCTCTACATG-GATACCTCCT"
+            "read2": "Psi1_A87_NS_Female.FCHTWCMDSX7_L4_R2_ICCTCTACATG-GATACCTCCT"
         },
         "Psi1_A88_NS_Female": {
             "read1": "Psi1_A88_NS_Female.FCHTWCMDSX7_L4_R1_IGGAGCGTGTA-ATCCGTAAGT",
-            "read2": "Psi1_A88_NS_Female.FCHTWCMDSX7_L4_R1_IGGAGCGTGTA-ATCCGTAAGT"
+            "read2": "Psi1_A88_NS_Female.FCHTWCMDSX7_L4_R2_IGGAGCGTGTA-ATCCGTAAGT"
         },
         "Psi1_A89_NS_Female": {
             "read1": "Psi1_A89_NS_Female.FCHTWCMDSX7_L4_R1_IGTCCGTAAGC-CGTGTATCTT",
-            "read2": "Psi1_A89_NS_Female.FCHTWCMDSX7_L4_R1_IGTCCGTAAGC-CGTGTATCTT"
+            "read2": "Psi1_A89_NS_Female.FCHTWCMDSX7_L4_R2_IGTCCGTAAGC-CGTGTATCTT"
         },
         "Psi1_A8_High_Female": {
             "read1": "Psi1_A8_High_Female.FCHTWCMDSX7_L3_R1_IGATCAAGGCA-CCTTGTTAAT",
-            "read2": "Psi1_A8_High_Female.FCHTWCMDSX7_L3_R1_IGATCAAGGCA-CCTTGTTAAT"
+            "read2": "Psi1_A8_High_Female.FCHTWCMDSX7_L3_R2_IGATCAAGGCA-CCTTGTTAAT"
         },
         "Psi1_A90_NS_Female": {
             "read1": "Psi1_A90_NS_Female.FCHTWCMDSX7_L4_R1_IACTTCAAGCG-GAACCATGAA",
-            "read2": "Psi1_A90_NS_Female.FCHTWCMDSX7_L4_R1_IACTTCAAGCG-GAACCATGAA"
+            "read2": "Psi1_A90_NS_Female.FCHTWCMDSX7_L4_R2_IACTTCAAGCG-GAACCATGAA"
         },
         "Psi1_A9_High_Female": {
             "read1": "Psi1_A9_High_Female.FCHTWCMDSX7_L3_R1_IGACTGAGTAG-GTTGATAGTG",
-            "read2": "Psi1_A9_High_Female.FCHTWCMDSX7_L3_R1_IGACTGAGTAG-GTTGATAGTG"
+            "read2": "Psi1_A9_High_Female.FCHTWCMDSX7_L3_R2_IGACTGAGTAG-GTTGATAGTG"
         }
     }
 }

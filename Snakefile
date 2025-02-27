@@ -19,19 +19,19 @@ from dotenv import load_dotenv
 load_dotenv("refs/.env")
 
 # Get paths from environment variables
-rawReadsDir = os.getenv("RAW_READS_DIR") + "/"
 gtf_file = os.getenv("MMUSCULUS_GTF")
 fa_file = os.getenv("MMUSCULUS_FA")
+rawReadsDir = os.getenv("RAW_READS_DIR")
 
 
 # RULE ALL
 #-------------------------------------------------------------------------------
 rule all:
     input:
-        config["DIRECTORIES"]["genomeDir"] + "SA",
+        config["DIRECTORIES"]["genomeDir"] + "Genome",
         expand(trimmedReadsDir + "{sample}_trim_R1.fastq.gz", sample=config["SAMPLE_INFORMATION"]["allSamples"]),
         expand(trimmedReadsDir + "{sample}_trim_R2.fastq.gz", sample=config["SAMPLE_INFORMATION"]["allSamples"]),
-        expand(rawQCDir + "{sample}_R1_fastqc.zip", sample=config["SAMPLE_INFORMATION"]["allSamples"]),
+        expand(rawQCDir + "{sample}_R1_001_fastqc.zip", sample=config["SAMPLE_INFORMATION"]["allSamples"]),
         expand(trimmedQCDir + "{sample}_trim_R1_fastqc.zip", sample=config["SAMPLE_INFORMATION"]["allSamples"]),
         rawQCDir + "multiqc_report.html",
         trimmedQCDir + "multiqc_report.html",
@@ -46,7 +46,7 @@ rule index_genome:
         fa = fa_file,
         gtf = gtf_file
     output:
-        starIndex = config["DIRECTORIES"]["genomeDir"] + "SA",
+        starIndex = config["DIRECTORIES"]["genomeDir"] + "Genome"
     params:
         genomeDir = config["DIRECTORIES"]["genomeDir"],
         threads = config["CLUSTER_INFORMATION"]["threads"]
@@ -63,8 +63,8 @@ rule raw_fastqc:
         R1 = lambda wildcards: rawReadsDir + config["SAMPLES"][wildcards.sample]["read1"] + ".fastq.gz",
         R2 = lambda wildcards: rawReadsDir + config["SAMPLES"][wildcards.sample]["read2"] + ".fastq.gz"
     output:
-        qc1 = rawQCDir + "{sample}_R1_fastqc.zip",
-        qc2 = rawQCDir + "{sample}_R2_fastqc.zip"
+        qc1 = rawQCDir + "{sample}_R1_001_fastqc.zip",
+        qc2 = rawQCDir + "{sample}_R2_001_fastqc.zip"
     params:
         threads = config["CLUSTER_INFORMATION"]["threads"]
     shell:
@@ -113,15 +113,16 @@ rule align_reads:
     input:
         trimR1 = trimmedReadsDir + "{sample}_trim_R1.fastq.gz",
         trimR2 = trimmedReadsDir + "{sample}_trim_R2.fastq.gz",
-        genomeDir = config["DIRECTORIES"]["genomeDir"]
+        genomeIndex = rules.index_genome.output.starIndex
     output:
         aligned = starDir + "{sample}.Aligned.sortedByCoord.out.bam"
     params:
         prefix = starDir + "{sample}.",
-        threads = config["CLUSTER_INFORMATION"]["threads"]
+        threads = config["CLUSTER_INFORMATION"]["threads"],
+        genomeDir = config["DIRECTORIES"]["genomeDir"]
     shell:
         """
-        STAR --genomeDir {input.genomeDir} --runThreadN {params.threads} --readFilesCommand zcat --limitBAMsortRAM 31000000000 --readFilesIn {input.trimR1} {input.trimR2} --outFileNamePrefix {params.prefix} --outSAMtype BAM SortedByCoordinate
+        STAR --genomeDir {params.genomeDir} --runThreadN {params.threads} --readFilesCommand zcat --limitBAMsortRAM 31000000000 --readFilesIn {input.trimR1} {input.trimR2} --outFileNamePrefix {params.prefix} --outSAMtype BAM SortedByCoordinate
         """
 
 
@@ -144,23 +145,23 @@ rule feature_count:
 
 # MULTIQC FOR RAW FASTQC
 #-------------------------------------------------------------------------------
-rule multiqc_raw:
+rule raw_multiqc:
     input:
-        expand(rawQCDir + "{sample}_R1_fastqc.zip", sample=config["SAMPLE_INFORMATION"]["allSamples"]),
-        expand(rawQCDir + "{sample}_R2_fastqc.zip", sample=config["SAMPLE_INFORMATION"]["allSamples"])
+        expand(rawQCDir + "{sample}_R1_001_fastqc.zip", sample=config["SAMPLE_INFORMATION"]["allSamples"]),
+        expand(rawQCDir + "{sample}_R2_001_fastqc.zip", sample=config["SAMPLE_INFORMATION"]["allSamples"])
     output:
         html = rawQCDir + "multiqc_report.html"
     params:
         outdir = rawQCDir
     shell:
         """
-        multiqc {rawQCDir} -o {params.outdir}
+        multiqc --interactive {rawQCDir} -o {params.outdir}
         """
 
 
 # MULTIQC FOR TRIMMED FASTQC
 #-------------------------------------------------------------------------------
-rule multiqc_trimmed:
+rule trimmed_multiqc:
     input:
         expand(trimmedQCDir + "{sample}_trim_R1_fastqc.zip", sample=config["SAMPLE_INFORMATION"]["allSamples"]),
         expand(trimmedQCDir + "{sample}_trim_R2_fastqc.zip", sample=config["SAMPLE_INFORMATION"]["allSamples"])
@@ -170,6 +171,6 @@ rule multiqc_trimmed:
         outdir = trimmedQCDir
     shell:
         """
-        multiqc {trimmedQCDir} -o {params.outdir}
+        multiqc --interactive {trimmedQCDir} -o {params.outdir}
         """
 
