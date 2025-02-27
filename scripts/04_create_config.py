@@ -58,7 +58,7 @@ with open(sample_list_path, 'r') as infile:
         base_name = sample.split(".")[0]
         read1 = sample.replace(".fastq.gz", "")
         read2 = sample.replace(".fastq.gz", "")
-        read = read2.replace("_R1_", "_R2_")
+        read2 = read2.replace("_R1_", "_R2_")
         config["SAMPLES"][base_name] = {
             "read1": read1,
             "read2": read2
