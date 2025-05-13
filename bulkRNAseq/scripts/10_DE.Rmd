@@ -29,6 +29,8 @@ library(igraph)
 library(jsonlite)          # toJSON()
 library(limma)             # to load .rds obj
 library(pheatmap)          # pheatmap()
+library(ssizeRNA)          # check.power()
+library(stringr)           # str_match()
 library(tidygraph)
 library(tidyr)             # pivot_wider()
 library(WGCNA)             # pickSoftThreshold()
@@ -37,8 +39,8 @@ library(WGCNA)             # pickSoftThreshold()
 ## User defined variables
 ```{r set_variables}
 # Output directories and file paths
-out <- "../results/all_samples_sex_specific_analysis/"
-out2 <- "all_samples_sex_specific_analysis"
+out <- "../results/all_samples_both_sexes_analysis/"
+out2 <- "all_samples_both_sexes_analysis"
 model <- "DEGs_with_hbb/"
 
 # Colors and levels
@@ -1679,8 +1681,76 @@ for (myModule in module_colors) {
 ```
 
 # Power analysis
-## Check power
-```{r}
+## Power - sex specific
+```{r power_sex_specific}
+# design
+group <- interaction(dge.filtered.norm$samples$group2)
+hbb <- dge.filtered.norm$samples$hbb_log2cpm
+design <- model.matrix(~ 0 + group + hbb)
+design.names <- gsub("group","", colnames(design))
+design.names <- gsub("sex", "", design.names)
+colnames(design) <- design.names
+head(design)
+
+# find dispersion
+dge.filtered.norm <- estimateDisp(dge.filtered.norm, design)
+myDisp <- dge.filtered.norm$common.dispersion
+myDisp
+
+# get dataframes
+counts <- as.data.frame(dge.filtered.norm$counts)
+meta <- dge.filtered.norm$samples[,c("sample_id","group2")]
+
+# find avg count per group
+mean.group <- counts |>
+  mutate(gene = row.names(counts)) |>
+  pivot_longer(-gene, names_to = "sample_id") |>
+  left_join(meta, by = "sample_id") |>
+  summarize(mean = mean(value), .by = c(gene, group2)) |>
+  pivot_wider(names_from = group2, values_from = mean)
+mean.group <- as.data.frame(mean.group)
+rownames(mean.group) <- mean.group$gene
+mean.group$gene <- NULL
+mean.group <- round(mean.group, digits = 4)
+
+# check mean read count for control group of interest
+summary(mean.group)
+
+# set var
+maxGenes <- dim(dge.filtered.norm)[1]
+
+# extract DEG comparison table
+degs <- read.delim2(file = paste0(out, model,"DEG_tables/DEG_comparison_FDRq_0.10_LFC_0.20.tsv"))
+rownames(degs) <- degs$direction
+degs$direction <- NULL
+comparisons <- colnames(degs)
+
+powerTable <- as.data.frame(matrix(NA, nrow = 1, ncol = length(comparisons)))
+colnames(powerTable) <- comparisons
+
+for (i in comparisons) {
+  # mean read counts in reference group
+  print(i)
+  refGroup <- str_match(i, ".+_vs_(.+)")[,2]
+  refMean <- mean(mean.group[,refGroup])
+
+  # loop through comparisons and check power
+  pow <- check.power(
+              nGenes = maxGenes,                  # total num genes
+              pi0 = degs["NotSig", i] / maxGenes, # nonsig proportion
+              m = 5,                              # sample size, n=10 per group
+              mu = refMean,                       # mean read counts in a control group
+              disp = myDisp,                      # dispersion for all genes
+              fc = 0.2,                           # fold change for DE genes
+              up = degs["Up", i] / maxGenes,      # upreg proportion
+              fdr = 0.1)                          # false discovery rate  
+  pow <- pow$pow_bh_ave
+  powerTable[1,i] <- pow
+}
+```
+
+## Power - both sexes
+```{r power_both_sexes}
 # design
 group <- interaction(dge.filtered.norm$samples$group)
 sex <- factor(dge.filtered.norm$samples$sex)
@@ -1718,29 +1788,38 @@ summary(mean.group)
 # set var
 maxGenes <- dim(dge.filtered.norm)[1]
 
-# check power
-check.power(nGenes = maxGenes, # total num genes
-            pi0 = 1-((1771+1938)/maxGenes), # proportion of nonsig genes
-            m = 10, # sample size
-            mu = 7334, # mean read counts in a control group
-            disp = myDisp, # dispersion for all genes
-            fc = 0.2,
-            up = 1938/(1771+1938), # proportion of DE genes that are upreg
-            fdr = 0.05)
+# extract DEG comparison table
+degs <- read.delim2(file = paste0(out, model,"DEG_tables/DEG_comparison_FDRq_0.10_LFC_0.20.tsv"))
+rownames(degs) <- degs$direction
+degs$direction <- NULL
+comparisons <- colnames(degs)
+
+powerTable <- as.data.frame(matrix(NA, nrow = 1, ncol = length(comparisons)))
+colnames(powerTable) <- comparisons
+
+for (i in comparisons) {
+  # mean read counts in reference group
+  print(i)
+  refGroup <- str_match(i, ".+_vs_(.+)")[,2]
+  refMean <- mean(mean.group[,refGroup])
+
+  # loop through comparisons and check power
+  pow <- check.power(
+              nGenes = maxGenes,                  # total num genes
+              pi0 = degs["NotSig", i] / maxGenes, # nonsig proportion
+              m = 10,                             # sample size, n=10 per group
+              mu = refMean,                       # mean read counts in a control group
+              disp = myDisp,                      # dispersion for all genes
+              fc = 0.2,                           # fold change for DE genes
+              up = degs["Up", i] / maxGenes,      # upreg proportion
+              fdr = 0.1)                          # false discovery rate  
+  pow <- pow$pow_bh_ave
+  powerTable[1,i] <- pow
+}
 ```
-$pow_bh_ave
-[1] 1
-
-$fdr_bh_ave
-[1] 0.03608035
-
-$pow_qvalue_ave
-[1] 1
-
-$fdr_qvalue_ave
-[1] 0.04992364
 
 ## Sample size calculator
+Use for future experiments.
 ```{r}
 ssizeRNA_single(nGenes = 13000,                # total genes
                 pi0 = 0.9,                     # proportion nonsig genes
@@ -1752,8 +1831,6 @@ ssizeRNA_single(nGenes = 13000,                # total genes
                 fdr = 0.05,                    # adjusted p value
                 power = 0.8)                   # prob you accept alternative hypothesis
 ```
-
-
 
 ```{r}
 sessionInfo()

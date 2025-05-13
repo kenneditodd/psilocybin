@@ -1,0 +1,16 @@
+Pathway	Genes	Log10(p)	Direction
+negative regulation of oligodendrocyte differentiation	DUSP10|TMEM98|NKX6-2	-3.352809865	DOWN
+central nervous system myelination	ASPA|MAG|SOX10|FA2H|NKX6-2	-5.06229095	DOWN
+regulation of oligodendrocyte differentiation	ASPA|NKX2-2|DUSP10|TMEM98|NKX6-2|IL33|OPALIN|DUSP15	-7.433714926	DOWN
+regulation of glial cell differentiation	ASPA|MAG|NKX2-2|NR1D1|DUSP10|TMEM98|NKX6-2|IL33|OPALIN|DUSP15	-7.761788225	DOWN
+cortical actin cytoskeleton organization	KCNC3|PLS1|EPB41L3|RHOQ|CAVIN3	-4.013475485	DOWN
+Mitochondrial complex IV assembly	COX5B|COX8A|COX5A|PNKD	-3.282799322	DOWN
+Circadian rhythm	DBP|PRKAB1|NR1D1|BHLHE41	-3.282799322	DOWN
+myelination	ASPA|ITGB4|MAG|PPP3R1|SOX10|BCAS1|GAL3ST1|EPB41L3|PLLP|FA2H|SH3TC2|NKX6-2|SERINC5	-8.709855973	DOWN
+regulation of gliogenesis	ASPA|MAG|NKX2-2|SOX10|NR1D1|DUSP10|TMEM98|GJC2|NKX6-2|IL33	-6.307207004	DOWN
+regulation of neurogenesis	ACAN|ASPA|LIMK1|MAG|NEFL|NKX2-2|PLXNB3|SEMA3F|SOX10|RND2|NR1D1|DUSP10|TMEM98|DLL4|GJC2|HAPLN2|METRN|BHLHE41|NKX6-2|IL33	-7.954969397	DOWN
+regulation of presynaptic cytosolic calcium ion concentration	CALB1|SV2B|ERC2	-4.689414761	UP
+long-term synaptic potentiation	CRHR2|GRIN2B|MAPK1|SNCA|SHANK2	-5.368004293	UP
+axonemal dynein complex assembly	DNAL1|DRC1|ODAD3	-3.381325815	UP
+Neurexins and neuroligins	DLG3|GRIN2B|SYT1|SHANK2	-4.315219898	UP
+synaptic vesicle exocytosis	SNCA|SYT1|SYT5|ERC2	-4.109999405	UP

@@ -1,0 +1,21 @@
+Pathway	Genes	Log10(p)	Direction
+striatal medium spiny neuron differentiation	INHBA|ZSWIM6|SHANK3	-4.927069168	DOWN
+dendrite arborization	PTN|SEMA3A|ZNF365|PHACTR1	-4.884309195	DOWN
+G protein-coupled acetylcholine receptor signaling pathway	CHRM4|GNA15|ITPR1|PRKCB|CDK5R1|HRH3|PLCB1	-7.914598819	DOWN
+adenylate cyclase-activating dopamine receptor signaling pathway	ADCY5|DRD1|GNAL|PTGER1|NHERF1	-6.836868866	DOWN
+phospholipase C-activating dopamine receptor signaling pathway	DRD1|GNA15|NHERF1	-3.628281473	DOWN
+neuron projection arborization	PTN|SEMA3A|ZNF365|PAK6|LRRK2|PHACTR1	-6.852973598	DOWN
+GABAergic neuron differentiation	DRD1|INHBA|LHX6|ZSWIM6|SHANK3|ARX	-6.693482962	DOWN
+Voltage gated Potassium channels	KCNB1|KCND2|KCNF1|KCNH1|KCNQ3|KCNS2|KCNH4|KCNH3|KCNH5|KCNQ5|KCNH7	-10.72021731	DOWN
+G protein-coupled dopamine receptor signaling pathway	ADCY5|DRD1|GNA15|GNAL|PTGER1|NHERF1|KLF16	-6.614380435	DOWN
+regulation of dendritic spine morphogenesis	CDK5R1|LZTS3|IL1RAPL1|CUX2|NGEF|SIPA1L1|SHANK3|ARHGAP33|LRRK2	-7.852340301	DOWN
+common myeloid progenitor cell proliferation	GSTP1|ITPKB|LIPA	-3.669796452	UP
+glial cell fate commitment	ASCL1|NKX2-2|TAL1|OLIG2	-4.613658277	UP
+positive regulation of oligodendrocyte differentiation	MYRF|MDK|NKX2-2|OLIG2|NKX6-2|ZNF488	-5.680080781	UP
+neuron projection fasciculation	EPHB2|NDN|NRP1|TNFRSF21	-3.816351073	UP
+central nervous system myelination	ABCA2|MYRF|SOX10|FA2H|NKX6-2	-4.570342965	UP
+oligodendrocyte development	ABCA2|ASCL1|MYRF|NKX2-2|SOX10|FA2H|NKX6-2|OLIG1|ZNF488	-7.630220342	UP
+regulation of oligodendrocyte differentiation	MYRF|MDK|NKX2-2|OLIG2|TNFRSF21|NKX6-2|ZNF488	-5.479345646	UP
+positive regulation of neural precursor cell proliferation	ACAN|ASCL1|LHX1|MDK|SOX10|ADGRG1|GJC2|HAPLN2|LHX5	-6.583279807	UP
+glial cell development	ABCA2|ASCL1|MYRF|GFAP|MDK|NKX2-2|SOX10|ARHGEF10|NDRG1|FA2H|NKX6-2|OLIG1|ZNF488	-7.494870954	UP
+Cell lineage map for neuronal differentiation	ADRA2A|GFAP|GLRA1|HTR1A|LHX1|NEFL|SLC6A9|SOX10|GLRA3|HOMER3|OLIG2|CD24	-6.435481267	UP
