@@ -1,0 +1,17 @@
+Pathway	Genes	Log10(p)	Direction
+Hippocampal synaptogenesis and neurogenesis	CAMK4|DIO2|CAMKK2	-3.523967881	DOWN
+negative regulation of cell maturation	NPPC|NPR2|SHB	-5.054015757	DOWN
+G alpha (z) signalling events	PRKCB|RGS4|RGS20|GNB4	-3.855630831	DOWN
+cerebral cortex radial glia-guided migration	GLI3|SUN1|P2RY12	-3.369285349	DOWN
+adenylate cyclase-inhibiting G protein-coupled receptor signaling pathway	GRM3|HTR1F|SSTR2|HRH3|P2RY12	-4.232850618	DOWN
+Potassium Channels	KCNJ4|KCNK2|KCNS2|KCNH4|KCNH3|GNB4	-4.645646218	DOWN
+regulation of cytosolic calcium ion concentration	CALB1|ITPR1|RYR1|SLC35G1	-3.535541139	DOWN
+regulation of dendritic spine morphogenesis	IL1RAPL1|NGEF|ARHGAP33	-2.714742377	DOWN
+Oxytocin signaling pathway	CAMK4|ITPR1|KCNJ4|NPR2|PRKCB|RYR1|CAMKK2|CACNA2D3	-5.64816726	DOWN
+regulation of signaling receptor activity	DLGAP2|NOG|ZFYVE28|DLGAP3|PCSK9	-3.681843793	DOWN
+adaptive thermogenesis	MC4R|SCTR|UCP3	-3.41600377	UP
+cerebellar Purkinje cell layer development	LHX1|KLHL1|LHX5	-3.368465262	UP
+Dopaminergic neurogenesis	DDC|EN2|RET|SLC18A2	-4.736369229	UP
+glial cell migration	MMP14|NDN|ADGRG1	-2.732698869	UP
+activation of protein kinase activity	ADRA2A|FGF1|TNFRSF10B|CARD10	-3.306795054	UP
+regulation of behavior	MC4R|OPRL1|TACR3|CNTNAP4	-3.191488464	UP

@@ -1,0 +1,22 @@
+Pathway	Genes	Log10(p)	Direction
+neurofilament bundle assembly	NEFM|NEFH|NEFL	-5.094165384	DOWN
+gamma-aminobutyric acid biosynthetic process	ABAT|GAD2|SLC38A1	-3.812784858	DOWN
+positive regulation of cerebellar granule cell precursor proliferation	LHX1|SHH|LHX5	-3.812784858	DOWN
+regulation of oligodendrocyte differentiation	ASPA|NKX2-2|SHH|TMEM98|NKX6-2|IL33|OPALIN|DUSP15	-5.474134666	DOWN
+central nervous system myelination	ASPA|KCNJ10|SOX10|NKX6-2	-2.771582938	DOWN
+neurofilament cytoskeleton organization	NEFH|NEFL|ATP8A2	-3.060740782	DOWN
+oligodendrocyte development	ASPA|KCNJ10|NKX2-2|SHH|SOX10|NKX6-2|OLIG1	-4.280046985	DOWN
+Voltage gated Potassium channels	KCNA1|KCNA2|KCNC1|KCNC3|KCNH2|KCNG4	-3.68401275	DOWN
+glycine transport	SLC6A9|SLC7A10|SLC38A1	-2.703066474	DOWN
+regulation of presynaptic membrane potential	GRIA4|GRIN2D|KCNA1|KCNA2|KCNC1|SCN1A	-4.688966347	DOWN
+SNARE complex (VAMP2, SNAP25, STX1a, CPLX2)	STX1A|VAMP2|CPLX2	-4.433971387	UP
+somatostatin receptor signaling pathway	SST|SSTR2|SSTR3|SSTR4	-5.545448214	UP
+Long-term potentiation	CALM2|CAMK2A|DLG3|DLG4|GRIA2|GRIN2A|NRGN	-7.757552926	UP
+Glutamate Neurotransmitter Release Cycle	SLC1A2|SLC1A3|STX1A|VAMP2|SYT1|PPFIA3|RIMS1|SLC17A7	-7.855564889	UP
+PID RAS PATHWAY	LGALS1|PRKCA|PRKCB|PRKCE|RASAL1|SYNGAP1|RIN1|RASGRP1|DAB2IP	-8.12205411	UP
+Trafficking of AMPA receptors	CAMK2A|DLG4|GRIA2|PRKCA|PRKCB|PRKCG|CACNG3	-6.340597296	UP
+Hippocampal synaptogenesis and neurogenesis	BDNF|CAMK2A|CCND2|DIO2|PRKCA|MAPK1|CAMKK2	-6.340597296	UP
+G protein-coupled acetylcholine receptor signaling pathway	CHRM1|CHRM3|ITPR1|PRKCB|CDK5R1|PLCB1	-5.447268979	UP
+regulation of synaptic vesicle membrane organization	GRIK5|SYT1|SYT5|CPLX2|ERC2|CPLX3	-5.316776376	UP
+Neurexins and neuroligins	DLG3|DLG4|GRIN2A|STX1A|SYT1|DLGAP1|HOMER1|SHANK2|SIPA1L1|LIN7B	-7.673479013	UP
+glutamate receptor signaling pathway	DLG4|PTK2B|GRIA2|GRIK5|GRIN2A|KCNB1|MEF2C|CDK5R1|HOMER1|PLCB1	-7.194592899	UP
