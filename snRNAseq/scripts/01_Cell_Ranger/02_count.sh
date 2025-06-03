@@ -1,5 +1,5 @@
 #!/bin/sh
-#SBATCH --job-name=n10x_count       # Name of the job
+#SBATCH --job-name=n10x_multi       # Name of the job
 #SBATCH --mem=50G                   # Amount of memory allocated for the job
 #SBATCH --tasks=32                  # Number of tasks (or CPU cores)
 #SBATCH --output=logs/%x.%j.stdout  # File for standard output
@@ -20,24 +20,27 @@ echo "Project directory: $PROJECT_DIR"
 # print fastq directory
 echo "FASTQ directory: $FASTQ_DIR"
 
+# Config CSV path
+CONFIG_FILE="${PROJECT_DIR}/refs/config.csv"
+echo "Using config: $CONFIG_FILE"
+
 # print sample variable passed from 03_sample_loop.sh script
 SAMPLE=$1
 echo "Sample: $SAMPLE"
 
 # run cellranger
-cellranger count \
-	--id=$SAMPLE \
-	--create-bam=false \
-	--sample=$SAMPLE \
-	--fastqs=$FASTQ_DIR \
-	--transcriptome="${ANNOTATION_REFS}/refdata-gex-GRCm39-2024-A" \
-	--localcores=$SLURM_NTASKS \
-	--localmem=$(($SLURM_MEM_PER_NODE / 1024))
+cellranger multi \
+  --id="$SAMPLE" \
+  --csv="$CONFIG_FILE" \
+  --localcores=$SLURM_NTASKS \
+  --localmem=$(($SLURM_MEM_PER_NODE / 1024))
 
 # key:
-# --id, output folder named after the sample
-# --sample, sample name matching the FASTQ files
-# --fastqs, directory with FASTQ files
-# --transcriptome, path to reference transcriptome
-# --localcores, number of CPU cores to use (32 in this case)
-# --localmem, memory allocation in GB
+# --id, sets the name of the output directory for this run (e.g., counts/JDFSeq_0169)
+# --csv, points to the config CSV that includes fastq_ids and sample_id for this sample
+# --localcores, number of CPU cores to use (matches --cpus-per-task from SLURM)
+# --localmem, memory in GB (matches --mem from SLURM)
+# [gene-expression] section in config file defines the transcriptome path and options
+# [libraries] section lists the two flowcell-specific FASTQ prefixes for the sample
+# [samples] section defines the sample_id (should match $SAMPLE)
+# Output goes to: $PROJECT_DIR/counts/$SAMPLE/outs/
