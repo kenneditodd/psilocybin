@@ -1,0 +1,411 @@
+---
+title: "Psi1 snRNAseq"
+subtitle: "Recluster Neuronal Cells"
+author: "Kennedi Todd"
+date: "05/15/2025"
+output:
+  html_document:
+  code_folding: hide
+theme: cerulean
+toc: true
+toc_float: true
+editor_options: 
+  chunk_output_type: inline
+---
+  
+# Setup
+## Set working directory
+```{r working_directory}
+knitr::opts_knit$set(root.dir = ".")
+```
+
+## Load libraries
+```{r libraries, message=FALSE, warnings=FALSE}
+# load libraries
+library(cowplot)        # plot_grid()
+library(dotenv)         # load_dot_env()
+library(dplyr)          # left_join()
+library(ggplot2)        # ggplot()
+library(gridExtra)      # grid.arrange()
+library(rtracklayer)    # import()
+library(scCustomize)    # Merge_Seurat_List()
+library(Seurat)         # Read10X_h5()
+library(SeuratWrappers) # RunPrestoAll
+library(stringr)        # str_match()
+```
+
+## Variables and functions
+```{r set_variables_and_thresholds}
+# source thresholds and output paths
+source("../../refs/thresholds_and_outs.R")
+out <- paste0(out, "pass2/recluster_neuronal/")
+
+# single cell functions
+files <- list.files("../../functions", full.names = TRUE)
+invisible(lapply(files, source))
+
+# load the environment variables
+load_dot_env(file = "../../refs/.env")
+project_dir <- Sys.getenv("PROJECT_DIR")
+```
+
+## Load data
+```{r load_data}
+mouse.annotated <- readRDS(
+  file = paste0( "../../rObjects/seurat_obj_annotated_", filtering_method, "_pass2.rds")
+)
+
+# cell type of interest to subcluster
+cell_types <- c("Neurons 1", "Neurons 2", "Neurons 3")
+```
+
+## UMAP
+```{r annotated_umap}
+# set colors
+cluster_colors <- c("firebrick1","gold","gray","darkgreen","lightblue","cyan","blue",
+                    "pink","violet","purple","black")
+
+# annotated umap
+DimPlot(mouse.annotated,
+        cols = cluster_colors,
+        shuffle = TRUE)
+```
+
+# Recluster non-neuronal
+## Subset
+```{r subset_seurat}
+# subset on cell types of interest
+sub <- subset(mouse.annotated, annotated_clusters %in% cell_types)
+
+# check
+DimPlot(sub, shuffle = TRUE, cols = cluster_colors)
+```
+
+## Filter genes
+```{r filter_genes}
+# filter genes
+counts <- GetAssayData(object = sub, layer = "counts")
+nonzero <- counts > 0  # produces logical
+keep <- Matrix::rowSums(nonzero) >= 10  # sum the true/false
+counts.filtered <- counts[keep,]  # keep certain genes
+
+# overwrite sub
+sub <- CreateSeuratObject(counts.filtered, meta.data = sub@meta.data[,c(1,4:27)])
+
+# print features removed
+print(paste0(dim(counts)[1] - dim(counts.filtered)[1], " features removed"))
+
+# cleanup data
+remove(counts,counts.filtered,nonzero,mouse.annotated)
+```
+
+## Recluster
+```{r recluster}
+# split
+sub[["RNA"]] <- split(sub[["RNA"]], f = sub$sample_id)
+
+# transform
+options(future.globals.maxSize = 8000 * 1024^2)
+sub <- SCTransform(sub, verbose = FALSE)
+
+# PCA
+sub <- RunPCA(object = sub, assay = "SCT")
+DefaultAssay(sub) <- "SCT"
+
+# re-join layers
+sub[["RNA"]] <- JoinLayers(sub[["RNA"]])
+
+# save
+saveRDS(sub, 
+        file = paste0( "../../rObjects/", filtering_method, "_pass2_seurat_obj.rds"),
+        compress = FALSE)
+
+# elbow plot
+ElbowPlot(sub,
+          ndims = 30,
+          reduction = "pca") +
+  geom_vline(xintercept = 15, linetype = "dashed", color = "red")
+
+# run UMAP
+sub2 <- RunUMAP(sub,
+               dims = 1:10,
+               reduction = "pca",
+               n.components = 3)
+
+# Determine the K-nearest neighbor graph
+sub2 <- FindNeighbors(object = sub2,
+                     assay = "SCT",
+                     reduction = "pca",
+                     dims = 1:10)
+
+# Determine the clusters for various resolutions
+sub2 <- FindClusters(object = sub2,
+                    algorithm = 1,
+                    resolution = 0.5)
+
+# Set default assay and normalize for visualization
+DefaultAssay(sub2) <- "RNA"
+sub2 <- NormalizeData(sub2)
+```
+
+# Unannotated
+## UMAP
+```{r unannotated_umap}
+Idents(sub2) <- "seurat_clusters"
+
+u1 <- DimPlot(sub2, shuffle = TRUE, label = TRUE)
+u1
+
+u2 <- DimPlot(sub2, shuffle = TRUE, dims = c(2,3))
+u2
+```
+
+```{r save_unannotated_umap}
+pdf(paste0(out, "unannotated_umap.pdf"), width = 6, height = 5)
+u1
+dev.off()
+```
+
+
+## Auto markers
+```{r unannotated_auto_find_markers}
+# set params
+Idents(sub2) <- "seurat_clusters"
+
+# find markers
+markers <- SeuratWrappers::RunPrestoAll(
+  object = sub2,
+  assay = "RNA",
+  slot = "counts",
+  only.pos = TRUE
+)
+
+# filter based on adjusted p-value
+markers <- markers[markers$p_val_adj < 0.01,]
+
+# get top 3 and top 20 per cluster
+top2 <- Reduce(rbind,
+               by(markers,
+                  markers["cluster"],
+                  head,
+                  n = 2))
+top20 <- Reduce(rbind,
+               by(markers,
+                  markers["cluster"],
+                  head,
+                  n = 20))
+
+# save
+write.table(markers, 
+            paste0(out, "unannotated_auto_find_markers_adjpval_0.01.tsv"),
+            sep = "\t",
+            quote = FALSE,
+            row.names = FALSE)
+```
+
+## Canonical markers
+```{r unannotated_canonical_markers}
+# Auto markers
+d1 <- DotPlot(sub2,
+              features = unique(top2$gene),
+              cols = "RdYlBu",
+              assay = "RNA") +
+  coord_flip() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+d1
+
+# Canonical
+canonical_markers <- c(
+  "Aldoc", "Aqp4", "Gja1", "Clu", "Apoe",             # Astrocytes
+  "Ptprb", "Cldn5", "Flt1",                           # Endothelial
+  "Col1a1", "Col1a2", "Dcn",                          # Fibroblast
+  "Cfap44", "Spag16",                                 # Ependymal
+  "Aif1", "C1qa", "P2ry12", "Tmem119","Trem2","Mrc1", # Microglia
+  "Syt1", "Snap25", "Gad1", "Meg3", "Igfbpl1","Sox4", # Neurons
+  "Mog", "Opalin", "Mal", "Mag", "Mbp",               # Oligodendrocytes
+  "Pdgfra", "Cspg4", "Olig1", "Olig2", "Tnr")         # OPCs
+
+d2 <- DotPlot(sub2,
+              features = canonical_markers,
+              cols = "RdYlBu",
+              assay = "RNA") +
+  coord_flip() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+d2
+```
+
+```{r save_unannotated_canonical_markers}
+pdf(paste0(out, "unannotated_auto_top2_markers.pdf"), width = 10, height = 10)
+d1
+dev.off()
+
+pdf(paste0(out, "unannotated_canonical_markers.pdf"), width = 10, height = 10)
+d2
+dev.off()
+```
+
+## Heatmap
+```{r}
+f1 <- FeaturePlot(sub2, 
+            reduction = "umap", 
+            features = "Mbp")  + 
+  scale_colour_gradientn(colours = c("blue","lightblue","yellow","orange","red"))
+f1
+```
+
+## Assign idetities
+```{r assign_identities}
+new_cluster_names <- c(
+  "0" = "Doublets 1",
+  "1" = "Neurons",
+  "2" = "Neurons",
+  "3" = "Neurons",
+  "4" = "Neurons",
+  "5" = "Neurons",
+  "6" = "Neurons",
+  "7" = "Neurons",
+  "8" = "Neurons",
+  "9" = "Neurons",
+  "10" = "Doublets 2",
+  "11" = "Neurons",
+  "12" = "Neurons",
+  "13" = "Doublets 3",
+  "14" = "Neurons",
+  "15" = "Neurons",
+  "16" = "Neurons",
+  "17" = "Doublets 4",
+  "18" = "Neurons",
+  "19" = "Neurons"
+)
+
+# set new idents
+sub2 <- RenameIdents(sub2, new_cluster_names)
+sub2$annotated_clusters <- Idents(sub2)
+
+# set level
+sub2$annotated_clusters <- factor(sub2$annotated_clusters,
+                                  levels = c("Neurons",
+                                             "Doublets 1",
+                                             "Doublets 2",
+                                             "Doublets 3",
+                                             "Doublets 4"))
+Idents(sub2) <- "annotated_clusters"
+```
+
+# Annotated
+## UMAP
+```{r annotated_umap}
+cluster_colors <- c("lightblue","firebrick1","green","darkgreen","gold",
+                    "blue","purple","gray","tan","chocolate4","#000000")
+
+u1 <- DimPlot(sub2, 
+              group.by = "annotated_clusters", 
+              cols = cluster_colors,
+              shuffle = TRUE)
+u1
+
+u2 <- DimPlot(sub2, 
+              dims = c(2,3),
+              cols = cluster_colors,
+              group.by = "annotated_clusters", 
+              shuffle = TRUE)
+u2
+```
+
+```{r save_annotated_umap}
+pdf(paste0(out, "annotated_umap.pdf"), width = 6, height = 4)
+u1
+dev.off()
+```
+
+```{r annotated_auto_find_markers}
+# find markers
+markers <- SeuratWrappers::RunPrestoAll(
+  object = sub2,
+  assay = "RNA",
+  slot = "counts",
+  only.pos = TRUE
+)
+
+# filter based on adjusted p-value
+markers <- markers[markers$p_val_adj < 0.01,]
+
+# get top 3 and top 20 per cluster
+top2 <- Reduce(rbind,
+               by(markers,
+                  markers["cluster"],
+                  head,
+                  n = 2))
+top20 <- Reduce(rbind,
+               by(markers,
+                  markers["cluster"],
+                  head,
+                  n = 20))
+
+# save
+write.table(markers, 
+            paste0(out, "annotated_auto_find_markers_adjpval_0.01.tsv"),
+            sep = "\t",
+            quote = FALSE,
+            row.names = FALSE)
+```
+
+## Canonical markers
+```{r annotated_canonical_markers}
+# Auto markers
+d1 <- DotPlot(sub2,
+              features = unique(top2$gene),
+              cols = "RdYlBu",
+              assay = "RNA") +
+  coord_flip() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+d1
+
+canonical_markers <- c(
+  "Syt1", "Snap25", "Gad1", "Meg3",                   # Neurons
+  "Aldoc", "Aqp4", "Gja1", "Clu", "Apoe",             # Astrocytes
+  "Ptprb", "Cldn5", "Flt1",                           # Endothelial
+  "Cfap44", "Spag16",                                 # Ependymal
+  "Col1a1", "Col1a2", "Dcn",                          # Fibroblast
+  "Aif1", "C1qa", "P2ry12", "Tmem119","Trem2","Mrc1", # Microglia
+  "Pdgfra", "Cspg4", "Olig1", "Olig2", "Tnr",         # OPCs
+  "Mog", "Opalin", "Mal", "Mag", "Mbp")               # Oligodendrocytes
+
+d2 <- DotPlot(sub2,
+              features = canonical_markers,
+              cols = "RdYlBu",
+              assay = "RNA") +
+  coord_flip() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+d2
+```
+
+```{r save_annotated_markers}
+pdf(paste0(out, "annotated_atuo_top2_markers.pdf"), width = 8, height = 10)
+d1
+dev.off()
+
+pdf(paste0(out, "annotated_canonical_markers.pdf"), width = 8, height = 10)
+d2
+dev.off()
+```
+
+# Extract barcodes
+```{r extract_barcoes}
+# subset noisy clusters
+noise <- subset(sub2, annotated_clusters %in% c("Doublets 1",
+                                                "Doublets 2",
+                                                "Doublets 3",
+                                                "Doublets 4"))
+
+# check
+table(noise$annotated_clusters)
+
+# get barcodes of noisy clusters
+barcodes <- colnames(noise)
+
+# save
+saveRDS(barcodes, file = "../../rObjects/neuronal_barcodes_to_remove.rds",
+        compress = FALSE)
+```
+

@@ -1,0 +1,1028 @@
+---
+title: "Psi1 snRNAseq"
+subtitle: "Pass 2: DE and QC"
+author: "Kennedi Todd"
+date: "05/27/2025"
+output:
+  html_document:
+  code_folding: hide
+theme: cerulean
+toc: true
+toc_float: true
+editor_options: 
+  chunk_output_type: inline
+---
+
+# Setup
+## Working directory
+```{r working_directory}
+knitr::opts_knit$set(root.dir = ".")
+```
+
+## Libraries
+```{r libraries, message=FALSE, warning=FALSE}
+# load packages
+library(ComplexUpset) # instersection_size()
+library(DESeq2)       # DESeqDataSetFromMatrix
+library(dotenv)       # load_dot_env()
+library(dplyr)        # ungroup()
+library(ggrepel)      # geom_text_repel()
+library(gridExtra)    # grid.arrange()
+library(gtools)       # smartbind()
+library(parallel)     # detectCores()
+library(plotly)       # plot_ly()
+library(Seurat)       # DimPlot()
+library(stringr)      # str_match
+library(tidyr)        # %>%
+library(UpSetR)       # fromList()
+```
+
+## Variables and functions
+```{r set_variables_and_functions}
+# source thresholds and output paths
+source("../../refs/thresholds_and_outs.R")
+out <- paste0(out, "pass2/")
+
+# single cell functions
+files <- list.files("../../functions", full.names = TRUE)
+invisible(lapply(files, source))
+
+# load the environment variables
+load_dot_env(file = "../../refs/.env")
+```
+
+## Load data
+```{r read_annotated_obj}
+mouse.annotated <- readRDS(paste0( "../../rObjects/", filtering_method, 
+                                   "_pass2_annotated_seurat_obj.rds"))
+```
+
+# Pseudobulk DESeq2
+- DESeq2 expects raw (integer) counts as input \
+- It automatically estimates size factors to normalize for sequencing depth and library size differences between samples. \
+- If you pre-normalize (e.g., CPM, TPM, log-transformed), the internal DESeq2 model becomes invalid — you’ll violate its statistical assumptions. \
+## Aggregate counts
+```{r aggregate_counts}
+# summarize by cell type and sample
+pb_counts <- AggregateExpression(
+  mouse.annotated,
+  group.by = c("annotated_clusters", "sample_id"),
+  slot = "counts",
+  return.seurat = FALSE
+)$RNA
+
+# get sample meta
+sample_meta <- unique(mouse.annotated@meta.data[, c("sample_id", "group", "group2", "treatment")])
+rownames(sample_meta) <- sample_meta$sample_id
+```
+
+## Split matrix
+```{r split_matrix}
+cell_types <- unique(mouse.annotated$annotated_clusters)
+
+split_pb_counts <- lapply(cell_types, function(ct) {
+  cols <- grep(paste0("^", ct, "_"), colnames(pb_counts), value = TRUE)
+  pb_counts[, cols, drop = FALSE]
+})
+
+names(split_pb_counts) <- cell_types
+
+remove(pb_counts)
+```
+
+## Define comparisons
+```{r define_comparisons}
+comparisons <- list(
+  c("group", "L.24h", "S.24h"),
+  c("group", "H.24h", "S.24h"),
+  c("group2", "L.24h.F", "S.24h.F"),
+  c("group2", "L.24h.M", "S.24h.M"),
+  c("group2", "H.24h.F", "S.24h.F"),
+  c("group2", "H.24h.M", "S.24h.M"),
+  c("treatment", "psilocybin", "saline")
+)
+```
+
+## DE for all cell types
+```{r de_all}
+for (cmp in comparisons) {
+  group_col <- cmp[1]
+  g1 <- cmp[2]
+  g2 <- cmp[3]
+
+  # Filter metadata for current comparison
+  meta_cmp <- sample_meta %>%
+    filter(.data[[group_col]] %in% c(g1, g2)) %>%
+    distinct(sample_id, .keep_all = TRUE)
+
+  comparison_results <- list()
+
+  for (ct in cell_types) {
+
+    sample_cols <- paste0(ct, "_", meta_cmp$sample_id)
+    pb_counts <- split_pb_counts[[ct]][, colnames(split_pb_counts[[ct]]) %in% sample_cols, drop = FALSE]
+    
+    min_samples = min(
+      sum(meta_cmp[[group_col]] == g1),
+      sum(meta_cmp[[group_col]] == g2)
+    )
+
+    res <- DESeq2_per_cell_type(
+      cell_type = ct,
+      pb_counts = pb_counts,
+      sample_meta = meta_cmp,
+      group_column = group_col,
+      group1 = g1,
+      group2 = g2,
+      min_samples = min_samples
+    )
+
+    if (!is.null(res)) {
+      comparison_results[[ct]] <- res
+    }
+  }
+
+  # Combine all cell types for this comparison and write once
+  all_res <- do.call(rbind, comparison_results)
+  output_file <- file.path(paste0(out, "DEGs_pseudobulk/DEG_tables/", g1, "_vs_", g2, "_DEGs.tsv"))
+  write.table(all_res, file = output_file, sep = "\t", quote = FALSE, row.names = FALSE)
+}
+```
+
+# QC
+## Sex check
+```{r sex_check}
+dot <- DotPlot(mouse.annotated,
+               features = c("Uty","Xist"),
+               group.by = "sample_id")
+dot
+```
+
+```{r save_sex_check, echo=FALSE, eval=FALSE}
+pdf(paste0(out, "clustering_QC/sex_check_dot_plot.pdf"), width = 6, height = 8)
+dot
+dev.off()
+remove(dot)
+```
+
+## Annotated UMAP
+```{r annotated_umap}
+cluster_colors <- c("firebrick1","gold","darkgreen","deeppink","gray","cyan"
+                    ,"cornflowerblue", "blue")
+
+u1 <- DimPlot(mouse.annotated, 
+              group.by = "annotated_clusters", 
+              cols = cluster_colors,
+              shuffle = TRUE)
+u1
+```
+
+## UMAP meta
+```{r split_umaps}
+# group
+umap1 <- DimPlot(object = mouse.annotated,
+                 reduction = "umap",
+                 group.by = "group",
+                 raster = FALSE,
+                 shuffle = TRUE)
+umap1
+
+# group2
+umap2 <- DimPlot(object = mouse.annotated,
+                 reduction = "umap",
+                 group.by = "group2",
+                 raster = FALSE,
+                 shuffle = TRUE)
+umap2
+
+# sex
+umap3 <- DimPlot(object = mouse.annotated,
+                 reduction = "umap",
+                 group.by = "sex",
+                 raster = FALSE,
+                 shuffle = TRUE)
+umap3
+
+# dose
+umap4 <- DimPlot(object = mouse.annotated, 
+                 reduction = "umap",
+                 group.by = "dose",
+                 raster = FALSE,
+                 shuffle = TRUE)
+umap4
+
+# mito_factor
+umap5 <- DimPlot(object = mouse.annotated, 
+                 group.by = "mito_factor",
+                 reduction = "umap",
+                 raster = FALSE,
+                 shuffle = TRUE)
+umap5
+
+# phase
+umap6 <- DimPlot(object = mouse.annotated, 
+                 reduction = "umap",
+                 group.by = "phase",
+                 raster = FALSE,
+                 shuffle = TRUE)
+umap6
+```
+
+```{r save_split_umap, echo=FALSE, eval=FALSE}
+path <- paste0(out, "clustering_QC/umap_colored_by_")
+pdf(paste0(path, "group.pdf"), width = 6, height = 4)
+umap1
+dev.off()
+
+pdf(paste0(path, "group2.pdf"), width = 6, height = 4)
+umap2
+dev.off()
+
+pdf(paste0(path, "sex.pdf"), width = 6, height = 4)
+umap3
+dev.off()
+
+pdf(paste0(path, "dose.pdf"), width = 6, height = 4)
+umap4
+dev.off()
+
+pdf(paste0(path, "mito_factor.pdf"), width = 6, height = 4)
+umap5
+dev.off()
+
+pdf(paste0(path, "cell_cycle_phase.pdf"), width = 6, height = 4)
+umap6
+dev.off()
+
+remove(umap1,umap2,umap3,umap4,umap5,umap6)
+```
+
+# Compare DEGs
+DE done in separate script.
+## All 
+```{r compare_degs}
+# set thresh
+adjpval_thresh <- 0.01
+lfc_thresh <- 0
+
+# get file paths
+files <- list.files(paste0(out, "DEGs_pseudobulk/DEG_tables"))
+files <- files[grepl(".+_DEGs.tsv", files)]
+
+# init data.frame
+deg.df <- data.frame()
+
+# loop through files
+for (i in files) {
+  
+  # read table
+  df <- read.table(paste0(out, "DEGs_pseudobulk/DEG_tables/", i),
+                   sep = "\t", 
+                   header = TRUE)
+  
+  # filter
+  df <- df[!is.na(df$padj),]
+  df <- df[df$padj < adjpval_thresh,]
+  df <- df[df$log2FoldChange < -lfc_thresh | df$log2FoldChange > lfc_thresh,]
+  
+  # add direction column
+  comparisonName <- gsub("_DEGs.tsv", "", i)
+  direction <- df$log2FoldChange > 0 # already filtered on lfc so only matters it's positive/negative
+  direction <- gsub(TRUE, paste0(comparisonName, "_up"), direction)
+  direction <- gsub(FALSE, paste0(comparisonName, "_down"), direction)
+  df$direction <- direction
+  
+  # reformat table
+  df <- df %>% 
+    dplyr::count(cell_type, direction) %>%
+    tidyr::spread(cell_type, n)
+  
+  # add to MASTer table
+  deg.df <- smartbind(deg.df, df)
+}
+
+# reorder rows
+rownames(deg.df) <- 1:nrow(deg.df)
+deg.df <- deg.df[c(9,11,7,10,12,8,3,5,1,4,6,2,13,14),]
+rownames(deg.df) <- deg.df$direction
+
+# reformat
+deg.df[is.na(deg.df)] <- 0
+deg.df$direction <- NULL
+
+# save
+prefix <- paste0(out, "DEGs_pseudobulk/DEG_comparison/",
+                 "DEG_comparison_FDRq_", format(adjpval_thresh, nsmall = 2),
+                 "_LFC_", format(lfc_thresh, nsmall = 2))
+write.table(df, 
+            paste0(prefix, ".tsv"),
+            sep = "\t", quote = FALSE, row.names = TRUE)
+
+# set heatmap colors and names
+paletteLength <- 100
+myColor <- colorRampPalette(c("white","#f0eb9e","darkgreen"))(paletteLength)
+
+meta <- data.frame(treatment = c(rep("low dose psilocybin", 6),
+                                 rep("high dose psilocybin", 6),
+                                 rep("any dose psilocybin",2)),
+                   sex = c(rep(c("female", "male", "both sexes"), 4),
+                           rep("both sexes", 2)),
+                   direction = c(rep("down-regulated", 3),
+                                 rep("up-regulated", 3),
+                                 rep("down-regulated", 3),
+                                 rep("up-regulated", 3),
+                                 "down-regulated", "up-regulated")
+                   )
+rownames(meta) <- rownames(deg.df)
+
+ann_colors <- list(treatment = c(`low dose psilocybin` = "green", 
+                                 `high dose psilocybin` = "purple",
+                                 `any dose psilocybin` = "tan"),
+                   sex = c(`female` = "gold", 
+                           `male` = "gray",
+                           `both sexes` = "cyan"),
+                   direction = c(`down-regulated` = "#0271f0", 
+                                 `up-regulated` = "tomato"))
+
+# save
+pdf(paste0(prefix, ".pdf"), width = 10, height = 6)
+
+# plot
+pheatmap::pheatmap(deg.df,
+                   main = paste0("FDRq < ", format(adjpval_thresh, nsmall = 2), 
+                                 ", |LFC| > ", format(lfc_thresh, nsmall = 2)),
+                   treeheight_row = 0,
+                   treeheight_col = 0,
+                   color = myColor,
+                   cluster_rows = FALSE,
+                   annotation_row = meta,
+                   annotation_colors = ann_colors,
+                   display_numbers = round(deg.df, digits = 0),
+                   fontsize_number = 12,
+                   number_color = "black")
+```
+
+## Sex specific
+```{r compare_sex_specific_degs, eval=FALSE}
+# set thresh
+adjpval_thresh <- 0.01
+lfc_thresh <- 0
+
+# get file paths
+files <- list.files(paste0(out, "DEGs_pseudobulk/DEG_tables"))
+files <- files[grepl(".+[MF]_vs_.+[MF]_DEGs.tsv", files)]
+
+# init data.frame
+deg.df <- data.frame()
+
+# loop through files
+for (i in files) {
+  
+  # read table
+  df <- read.table(paste0(out, "DEGs_pseudobulk/DEG_tables/", i),
+                   sep = "\t", 
+                   header = TRUE)
+  
+  # filter
+  df <- df[!is.na(df$padj),]
+  df <- df[df$padj < adjpval_thresh,]
+  df <- df[df$log2FoldChange < -lfc_thresh | df$log2FoldChange > lfc_thresh,]
+  
+  # add direction column
+  comparisonName <- gsub("_DEGs.tsv", "", i)
+  direction <- df$log2FoldChange > 0 # already filtered on lfc so only matters it's positive/negative
+  direction <- gsub(TRUE, paste0(comparisonName, "_up"), direction)
+  direction <- gsub(FALSE, paste0(comparisonName, "_down"), direction)
+  df$direction <- direction
+  
+  # reformat table
+  df <- df %>% 
+    dplyr::count(cell_type, direction) %>%
+    tidyr::spread(cell_type, n)
+  
+  # add to MASTer table
+  deg.df <- smartbind(deg.df, df)
+}
+
+# reformat
+deg.df[is.na(deg.df)] <- 0
+rownames(deg.df) <- deg.df$direction
+deg.df$direction <- NULL
+
+# reorder rows
+deg.df <- deg.df[c(5:8,1:4),]
+
+# save
+prefix <- paste0(out, "DEGs_pseudobulk/DEG_comparison/",
+                 "sex_specific_DEG_comparison_FDRq_", format(adjpval_thresh, nsmall = 2),
+                 "_LFC_", format(lfc_thresh, nsmall = 2))
+write.table(df, 
+            paste0(prefix, ".tsv"),
+            sep = "\t", quote = FALSE, row.names = TRUE)
+
+# set heatmap colors and names
+paletteLength <- 100
+myColor <- colorRampPalette(c("white","#f0eb9e","darkgreen"))(paletteLength)
+
+meta <- data.frame(treatment = c(rep("Low psilocybin", 4),
+                                 rep("High psilocybin", 4)),
+                   sex = c(rep("Female", 2), rep("Male", 2),
+                           rep("Female", 2), rep("Male", 2)),
+                   direction = rep(c("down-regulated","up-regulated"), 4))
+rownames(meta) <- rownames(deg.df)
+
+ann_colors <- list(treatment = c(`Low psilocybin` = "green", `High psilocybin` = "purple"),
+                   sex = c(`Female` = "gold", `Male` = "gray"),
+                   direction = c(`down-regulated` = "#0271f0", `up-regulated` = "tomato"))
+
+# save
+pdf(paste0(prefix, ".pdf"), width = 10, height = 6)
+
+# plot
+pheatmap::pheatmap(deg.df,
+                   main = paste0("FDRq < ", format(adjpval_thresh, nsmall = 2), 
+                                 ", |LFC| > ", format(lfc_thresh, nsmall = 2)),
+                   treeheight_row = 0,
+                   treeheight_col = 0,
+                   color = myColor,
+                   cluster_rows = FALSE,
+                   annotation_row = meta,
+                   annotation_colors = ann_colors,
+                   display_numbers = round(deg.df, digits = 0),
+                   fontsize_number = 12,
+                   number_color = "black")
+```
+
+## Both sexes
+```{r compare_both_sexes_degs}
+# set thresh
+adjpval_thresh <- 0.01
+lfc_thresh <- 0
+
+# get file paths
+files <- list.files(paste0(out, "DEGs_pseudobulk/DEG_tables"))
+files <- files[grepl("[LH].24h_vs_S.24h_DEGs.tsv", files)]
+
+# init data.frame
+deg.df <- data.frame()
+
+# loop through files
+for (i in files) {
+  
+  # read table
+  df <- read.table(paste0(out, "DEGs_pseudobulk/DEG_tables/", i),
+                   sep = "\t", 
+                   header = TRUE)
+  
+  # filter
+  df <- df[!is.na(df$padj),]
+  df <- df[df$padj < adjpval_thresh,]
+  df <- df[df$log2FoldChange < -lfc_thresh | df$log2FoldChange > lfc_thresh,]
+  
+  # add direction column
+  comparisonName <- gsub("_DEGs.tsv", "", i)
+  direction <- df$log2FoldChange > 0 # already filtered on lfc so only matters it's positive/negative
+  direction <- gsub(TRUE, paste0(comparisonName, "_up"), direction)
+  direction <- gsub(FALSE, paste0(comparisonName, "_down"), direction)
+  df$direction <- direction
+  
+  # reformat table
+  df <- df %>% 
+    dplyr::count(cell_type, direction) %>%
+    tidyr::spread(cell_type, n)
+  
+  # add to MASTer table
+  deg.df <- smartbind(deg.df, df)
+}
+
+# reformat
+deg.df[is.na(deg.df)] <- 0
+rownames(deg.df) <- deg.df$direction
+deg.df$direction <- NULL
+
+# reorder rows
+deg.df <- deg.df[c(3:4,1:2),]
+
+# save
+prefix <- paste0(out, "DEGs_pseudobulk/DEG_comparison/",
+                 "both_sexes_DEG_comparison_FDRq_", format(adjpval_thresh, nsmall = 2),
+                 "_LFC_", format(lfc_thresh, nsmall = 2))
+write.table(df, 
+            paste0(prefix, ".tsv"),
+            sep = "\t", quote = FALSE, row.names = TRUE)
+
+# set heatmap colors and names
+paletteLength <- 100
+myColor <- colorRampPalette(c("white","#f0eb9e","darkgreen"))(paletteLength)
+
+meta <- data.frame(treatment = c(rep("Low psilocybin", 2),
+                                 rep("High psilocybin", 2)),
+                   direction = rep(c("down-regulated","up-regulated"), 2))
+rownames(meta) <- rownames(deg.df)
+
+ann_colors <- list(treatment = c(`Low psilocybin` = "green", `High psilocybin` = "purple"),
+                   direction = c(`down-regulated` = "#0271f0", `up-regulated` = "tomato"))
+
+# save
+pdf(paste0(prefix, ".pdf"), width = 10, height = 6)
+
+# plot
+pheatmap::pheatmap(deg.df,
+                   main = paste0("FDRq < ", format(adjpval_thresh, nsmall = 2), 
+                                 ", |LFC| > ", format(lfc_thresh, nsmall = 2)),
+                   treeheight_row = 0,
+                   treeheight_col = 0,
+                   color = myColor,
+                   cluster_rows = FALSE,
+                   annotation_row = meta,
+                   annotation_colors = ann_colors,
+                   display_numbers = round(deg.df, digits = 0),
+                   fontsize_number = 12,
+                   number_color = "black")
+```
+
+# Volcano
+```{r volcano, message=FALSE, eval=FALSE}
+# set thresh
+adjpval_thresh <- 0.05
+lfc_thresh <- 0
+
+# get file paths
+files <- list.files(paste0(out, "DEGs_pseudobulk/DEG_tables"), full.names = TRUE)
+files <- files[grepl(".+_DEGs.tsv", files)]
+
+for (file in files) {
+  
+  # read DEG file
+  treatment_vs_control <- read.delim(file)
+  
+  # filter NA values
+  treatment_vs_control <- treatment_vs_control[!is.na(treatment_vs_control$padj),]
+  
+  # extract title for plot later
+  p.comparison <- str_match(file, "DEG_tables/(.+)_DEGs.tsv")[,2]
+  
+  # assign colors
+  color_values <- vector()
+  max <- nrow(treatment_vs_control)
+  for(row in 1:max){
+    if (treatment_vs_control$padj[row] < adjpval_thresh){
+      if (treatment_vs_control$log2FoldChange [row] > lfc_thresh){
+        color_values <- c(color_values, 1) # 1 when logFC > thresh and FDRq < thresh
+      } else if (treatment_vs_control$log2FoldChange[row] < -lfc_thresh){
+        color_values <- c(color_values, 2) # 2 when logFC < thresh and FDRq < thresh
+      } else {
+        color_values <- c(color_values, 3) # 2 when FDRq < thresh and LFC not met
+      }
+    }
+    else{
+      color_values <- c(color_values, 3) # 3 when FDRq >= thresh
+    }
+  }
+  treatment_vs_control$color_adjpval_thresh <- factor(color_values)
+  
+  # loop through clusters
+  for (j in unique(treatment_vs_control$cell_type)) {
+    
+    # subset cluster
+    data <- subset(treatment_vs_control, cell_type == j)
+    
+    # plot only if there are DEGs with padj < thresh
+    num <- subset(data, padj < adjpval_thresh)
+    num <- nrow(num)
+    if(num != 0) {
+        
+      # subset genes to label
+      up <- data[data$color_adjpval_thresh == 1,]
+      up.sig <- up[order(up$padj),][1:15,]
+      up.lfc <- up[order(up$log2FoldChange, decreasing = TRUE),][1:15,]
+      up30 <- rbind(up.sig,up.lfc)
+      up30 <- unique(up30)
+      up30 <- up30[rowSums(is.na(up30)) != ncol(up30), ]
+      down <- data[data$color_adjpval_thresh == 2,]
+      down.sig <- down[order(down$padj),][1:15,]
+      down.lfc <- down[order(down$log2FoldChange, decreasing = FALSE),][1:15,]
+      down30 <- rbind(down.sig,down.lfc)
+      down30 <- unique(down30)
+      down30 <- down30[rowSums(is.na(down30)) != ncol(down30), ]
+      
+      # set manual colors
+      if (!1 %in% unique(data$color_adjpval_thresh)) {
+        my_colors <- c("blue","gray")
+      } else if (!2 %in% unique(data$color_adjpval_thresh)) {
+        my_colors <- c("red","gray")
+      } else if (!1 %in% unique(data$color_adjpval_thresh) && !2 %in% unique(data$color_adjpval_thresh)) {
+        my_colors <- c("gray")
+      } else {
+        my_colors <- c("red","blue","gray")
+      }
+      
+      # set significance threshold
+      hadjpval <- (-log10(max(
+        data$pvalue[data$padj < adjpval_thresh], 
+        na.rm=TRUE)))
+
+      # plot
+      p <-
+        ggplot(data = data, 
+               aes(x = log2FoldChange,     # x-axis is logFC
+                   y = -log10(pvalue),  # y-axis will be -log10 of P.Value
+                   color = color_adjpval_thresh)) +  # color is based on factored color column
+        geom_point(alpha = 0.8, size = 2) +  # create scatterplot, alpha makes points transparent
+        theme_bw() +  # set color theme
+        theme(legend.position = "none") +  # no legend
+        scale_color_manual(values = my_colors) +
+        labs(
+          title = "",
+          x = expression(log[2](FC)),
+          y = expression(-log[10] ~ "(" ~ italic("p") ~ "-value)")
+        ) +
+        theme(axis.title.x = element_text(size = 10),
+              axis.text.x = element_text(size = 10)) +
+        theme(axis.title.y = element_text(size = 10),
+              axis.text.y = element_text(size = 10)) +
+        geom_hline(yintercept = hadjpval, colour = "#000000", linetype = "dashed") +
+        geom_vline(xintercept = lfc_thresh, colour = "#000000", linetype = "dashed") +
+        geom_vline(xintercept = -lfc_thresh, colour = "#000000", linetype = "dashed") +
+        ggtitle(paste0(j, "\n", p.comparison, ", q < ", format(adjpval_thresh, nsmall = 2), 
+                       ", |LFC| > ", format(lfc_thresh, nsmall = 2))) +
+        geom_text_repel(data = up30,
+                        aes(x = log2FoldChange, y= -log10(pvalue), label = gene), 
+                        color = "maroon", 
+                        fontface="italic",
+                        max.overlaps = getOption("ggrepel.max.overlaps", default = 30)
+                        ) +
+        geom_text_repel(data = down30,
+                        aes(x = log2FoldChange, y= -log10(pvalue), label = gene), 
+                        color = "navyblue", 
+                        fontface="italic",
+                        max.overlaps = getOption("ggrepel.max.overlaps", default = 30)
+                        )
+      p
+      
+      # create dir if doesn't exist
+      prefix <- paste0(out, "DEGs_pseudobulk/volcano/", p.comparison)
+      if (!dir.exists(prefix)) {
+        dir.create(prefix, recursive = TRUE)
+      }
+      
+      # save
+      plot_out <- paste0(prefix, "/", p.comparison, "_", gsub(" ", "_", tolower(j)),
+                    "_FDRq_", format(adjpval_thresh, nsmall = 2), "_LFC_", 
+                    format(lfc_thresh, nsmall = 2), "_volcano.pdf")
+      pdf(plot_out, height = 8, width = 8)
+      print(p)
+      dev.off()
+      
+      print(paste("comparison =",p.comparison,", cell type =", j))
+      
+    }
+  } # end loop through clusters
+} # end loop through variables
+```
+
+# Metascape input
+```{r metascape_sex_specific}
+# set thresh
+adjpval_thresh <- 0.05
+lfc_thresh <- 0
+
+# get file paths
+files <- list.files(paste0(out, "DEGs_pseudobulk/DEG_tables"), full.names = TRUE)
+files <- files[grepl(".+_DEGs.tsv", files)]
+
+# loop through files
+for (i in 1:length(files)) {
+  
+  # read table
+  data <- read.table(files[i], header = TRUE, sep = "\t")
+  
+  # filter
+  data <- data[!is.na(data$padj),]
+  data <- data[data$padj < adjpval_thresh,]
+  data <- data[data$log2FoldChange < -lfc_thresh | data$log2FoldChange > lfc_thresh,]
+  
+  # separate into up and down-regulated
+  up.df <- data[data$log2FoldChange > 0,]
+  down.df <- data[data$log2FoldChange < 0,]
+  
+  cell_types <- unique(data$cell_type)
+  
+  # create dir if doesn't exist
+  p.comparison <- str_match(files[i], "DEG_tables/(.+)_DEGs.tsv")[,2]
+  prefix <- paste0(out, "DEGs_pseudobulk/metascape_input/", p.comparison)
+  if (!dir.exists(prefix)) {
+    dir.create(prefix, recursive = TRUE)
+  }
+  
+  # loop through cell_type
+  for (j in cell_types) {
+    
+    # subset based on cell_type
+    print(paste0(p.comparison, ": ", j))
+    up <- up.df[up.df$cell_type == j,]
+    up <- up$gene
+    down <- down.df[down.df$cell_type == j,]
+    down <- down$gene
+    
+    # file name
+    prefix <- paste0(out, "DEGs_pseudobulk/metascape_input/", p.comparison,
+                     "/", p.comparison, "_", gsub(" ", "_", tolower(j)), 
+                     "_FDRq_", format(adjpval_thresh, nsmall = 2), 
+                     "_LFC_", format(lfc_thresh, nsmall = 2))
+     
+    # save
+    if(length(up) > 10) {
+      write.table(x = up,
+                  file = paste0(prefix, "_up.tsv"),
+                  quote = FALSE,
+                  row.names = FALSE,
+                  col.names = FALSE)      
+    }
+    if (length(down) > 10) {
+       write.table(x = down,
+                file = paste0(prefix, "_down.tsv"),
+                quote = FALSE,
+                row.names = FALSE,
+                col.names = FALSE)   
+    }
+  } # end j for loop
+} # end i for loop
+```
+
+# Plotting biases
+## Heatmap
+```{r heatmap_bias}
+goi <- "Meg3"
+f1 <- FeaturePlot(mouse.annotated, 
+            reduction = "umap", 
+            features = goi, 
+            slot = "data") +
+  scale_colour_gradientn(colours = c("blue", "lightblue", "yellow", "orange", "red"))
+f1
+
+f2 <- FeaturePlot(mouse.annotated, 
+            reduction = "umap", 
+            features = goi, 
+            slot = "counts") +
+  scale_colour_gradientn(colours = c("blue", "lightblue", "yellow", "orange", "red"))
+f2
+
+f3 <- FeaturePlot(mouse.annotated, 
+            reduction = "umap", 
+            features = goi, 
+            slot = "counts", 
+            min.cutoff = 5, 
+            max.cutoff = 100) +  # adjust based on your data
+  scale_colour_gradientn(colours = c("blue", "lightblue", "yellow", "orange", "red"))
+f3
+```
+
+## Dot plot
+```{r}
+canonical_markers <- c(
+  "Aldoc", "Aqp4", "Gja1", "Clu", "Apoe",             # Astrocytes
+  "Col1a1", "Col1a2", "Dcn",                          # Fibroblast
+  "Ptprb", "Cldn5", "Flt1",                           # Endothelial
+  "Aif1", "C1qa", "P2ry12", "Tmem119","Trem2","Mrc1", # Microglia
+  "Syt1", "Snap25", "Rbfox3",                         # Neurons
+  "Pdgfra", "Cspg4", "Olig1", "Olig2", "Tnr",         # OPCs
+  "Mog", "Opalin", "Mal", "Mag", "Mbp",               # Oligodendrocytes
+  "Cfap44", "Spag16","Folr1","Ttr")                   # Ependymal
+
+d1 <- DotPlot(mouse.annotated,
+              features = canonical_markers,
+              cols = "RdYlBu",
+              assay = "RNA") +
+  coord_flip() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+d1
+
+d2 <- DotPlot(mouse.annotated,
+              features = canonical_markers,
+              cols = "RdYlBu",
+              assay = "RNA",
+              col.min = NA,
+              col.max = NA) +
+  coord_flip() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+d2
+
+d3 <- DotPlot(mouse.annotated,
+              features = canonical_markers,
+              cols = "RdYlBu",
+              assay = "RNA",
+              slot = "counts",
+              scale = FALSE) +
+  coord_flip() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+d3
+```
+
+# Upset plots
+### Function
+```{r upset_function}
+get_exclusive_intersection_genes <- function(upset_data, list_input) {
+  # Initialize a list to store the results
+  results <- list()
+  
+  # Get the names of the columns (gene sets)
+  set_names <- colnames(upset_data)
+  
+  # For each row of the UpSet matrix, extract the exclusive intersection
+  for (i in 1:nrow(upset_data)) {
+    # Check which sets (columns) are "active" (i.e., 1) for the current row
+    active_sets <- set_names[upset_data[i, ] == 1]
+    
+    if (length(active_sets) > 0) {
+      # Find the intersection of genes in the active sets
+      intersected_genes <- Reduce(intersect, list_input[active_sets])
+      
+      # Find genes that are present in any of the other sets (not part of this combination)
+      other_sets <- set_names[upset_data[i, ] == 0]
+      other_genes <- Reduce(union, list_input[other_sets])
+      
+      # Subtract the genes that are in the other sets to make the intersection exclusive
+      exclusive_genes <- setdiff(intersected_genes, other_genes)
+      
+      # Create a label for the current intersection (e.g., "Set1 & Set2")
+      intersection_label <- paste(active_sets, collapse = " & ")
+      
+      # Store the number of genes and the exclusive gene list
+      results[[intersection_label]] <- list(
+        total_genes = length(exclusive_genes),
+        gene_list = paste(exclusive_genes, collapse = ", ")
+      )
+    }
+  }
+  
+  return(results)
+}
+```
+
+### RRP vs HD sex specifc
+```{r E4C_vs_E3C_tables}
+# set thresh
+thresh <- 0.05
+
+# read tables
+prefix <- paste0(out, "DEGs/DEG_tables/")
+RRP_F_vs_HD_F <- read.table(paste0(prefix,"RRP_F_vs_HD_F_DEGs.tsv"),
+                            sep = "\t",
+                            header = TRUE)
+RRP_M_vs_HD_M <- read.table(paste0(prefix,"RRP_M_vs_HD_M_DEGs.tsv"),
+                            sep = "\t",
+                            header = TRUE)
+
+# filter
+RRP_F_vs_HD_F <- RRP_F_vs_HD_F[RRP_F_vs_HD_F$padj < thresh,]
+RRP_M_vs_HD_M <- RRP_M_vs_HD_M[RRP_M_vs_HD_M$padj < thresh,]
+```
+
+```{r upset, eval=FALSE}
+# loop through cell types
+clusters <- unique(c(RRP_F_vs_HD_F$cluster, RRP_M_vs_HD_M$cluster))
+
+for (i in clusters) {
+  
+  # skip cluster with not enough DEGs
+  #if (i == "cluster") {
+  #  next
+  #}
+  
+  # Subset df by cluster
+  RRP_F_vs_HD_F_ct <- RRP_F_vs_HD_F[RRP_F_vs_HD_F$cluster == i,]
+  RRP_M_vs_HD_M_ct <- RRP_M_vs_HD_M[RRP_M_vs_HD_M$cluster == i,]
+  
+  # Subset by log2FC
+  RRP_F_vs_HD_F_ct_up <- RRP_F_vs_HD_F_ct[RRP_F_vs_HD_F_ct$log2FoldChange > 0,][,"gene"]
+  RRP_M_vs_HD_M_ct_up <- RRP_M_vs_HD_M_ct[RRP_M_vs_HD_M_ct$log2FoldChange > 0,][,"gene"]
+  RRP_F_vs_HD_F_ct_down <- RRP_F_vs_HD_F_ct[RRP_F_vs_HD_F_ct$log2FoldChange < 0,][,"gene"]
+  RRP_M_vs_HD_M_ct_down <- RRP_M_vs_HD_M_ct[RRP_M_vs_HD_M_ct$log2FoldChange < 0,][,"gene"]
+  axis_max <- max(length(RRP_F_vs_HD_F_ct_up), length(RRP_M_vs_HD_M_ct_up),
+                  length(RRP_F_vs_HD_F_ct_down), length(RRP_M_vs_HD_M_ct_down)) + 300
+  axis_max <- ceiling(axis_max / 100) * 100
+ 
+  # format in a list
+  list_input <- list(
+    "E4CM vs E3CM Down-regulated" = RRP_M_vs_HD_M_ct_down,
+    "E4CF vs E3CF Down-regulated" = RRP_F_vs_HD_F_ct_down,
+    "E4CM vs E3CM Up-regulated" = RRP_M_vs_HD_M_ct_up,
+    "E4CF vs E3CF Up-regulated" = RRP_F_vs_HD_F_ct_up
+  )
+  data <- UpSetR::fromList(list_input)
+  
+  # You will specify the male and female groups by their group number
+  # Print this to help assign shapes/colors below
+  group_mapping <- data.frame(
+    Group_Number = 1:4,  # Group numbers (1-8)
+    Gene_Set_Name = sort(colnames(data))  # Sorted gene set names
+  )
+  
+  # Assign shapes based on group numbers
+  male_groups <- c("3","4")  # Male group numbers
+  female_groups <- c("1","2")  # Female group numbers
+  
+  # Assign colors and shapes based on specific group numbers
+  upregulated_groups <- c("2","4")
+  downregulated_groups <- c("1","3")
+  
+  # Create the basic UpSet plot (no dynamic colors or shapes) to extract n_points
+  dummy_upset <- ComplexUpset::upset(
+    data, 
+    colnames(data),  # Use column names (gene sets)
+    set_sizes = ComplexUpset::upset_set_size(),  # Display set sizes
+    sort_sets = FALSE,
+    
+    # Plot the intersection matrix with points (default shapes)
+    matrix = ComplexUpset::intersection_matrix(
+      ggplot2::geom_point(size = 3)  # Simple points without dynamic aesthetics
+    )
+  )
+  
+  # Ensure n_points matches the actual data
+  n_points <- nrow(dummy_upset$data)
+  
+  # Create empty vectors for colors and shapes
+  color_vector <- rep(NA, n_points)  # To store colors
+  shape_vector <- rep(NA, n_points)  # To store shapes
+  
+  # Assign shapes and colors based on group numbers
+  for (j in 1:n_points) {
+    group_value <- as.character(dummy_upset$data$group[j])
+    
+    # Assign shapes
+    if (group_value %in% male_groups) {
+      shape_vector[j] <- 22  # Filled square for Male comparisons
+    } else if (group_value %in% female_groups) {
+      shape_vector[j] <- 21  # Circle for Female comparisons
+    }
+    
+    # Assign colors based on group numbers, only if the point is involved in an intersection
+    if (dummy_upset$data$value[j]) {  # If the point is part of an intersection
+      if (group_value %in% upregulated_groups) {
+        color_vector[j] <- "red"  # Red for Up-regulated
+      } else if (group_value %in% downregulated_groups) {
+        color_vector[j] <- "blue"  # Blue for Down-regulated
+      }
+    } else {
+      color_vector[j] <- NA  # No fill for points not involved in intersections
+    }
+  }
+  
+  # Ensure both vectors are of correct length
+  if (length(shape_vector) != n_points || length(color_vector) != n_points) {
+    stop("Error: shape_vector or color_vector length does not match the number of plotted points.")
+  }
+  
+  # Reintroduce dynamic fill color for filled shapes
+  upset_gene <- ComplexUpset::upset(
+    data, 
+    colnames(data),
+    set_sizes = (
+      ComplexUpset::upset_set_size() +
+      geom_text(aes(label = ..count..), hjust = 1.1, stat = 'count') +
+      expand_limits(y = axis_max)
+    ),
+    
+    # Prevent automatic sorting of sets
+    sort_sets = FALSE,
+    
+    matrix = ComplexUpset::intersection_matrix(
+      ggplot2::geom_point(
+        ggplot2::aes(shape = factor(shape_vector), fill = color_vector),  # Fill shapes with dynamic colors
+        size = 3,
+        stroke = 0.45  # Keeps the outline black
+      )
+    ) + ggplot2::scale_shape_manual(
+      name = "Sex",
+      labels = c("Male", "Female"),  # Legend labels
+      values = c(21, 22) # Circle=21, Filled square=22
+      ) + ggplot2::scale_fill_identity(na.translate = FALSE),  # Use the exact colors in color_vector and remove NA fill
+    
+      base_annotations = list(
+      'Intersection size' = (
+        intersection_size(bar_number_threshold = 1, width = 0.5) +
+        scale_y_continuous(expand = expansion(mult = c(0, 0.05)), limits = c(0, axis_max)) +
+        theme(
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          axis.line = element_line(colour = 'black')
+        )
+      )
+    ),
+  )
+  
+  # give title
+  upset_gene <- upset_gene + ggtitle(paste0(i,", adj_p_val < 0.05"))
+  
+  # remove legend
+  upset_gene <- upset_gene + theme(legend.position = "None")
+  
+  # save
+  i <- gsub(" ","_",i)
+  pdf(paste0(out, "DEGs/upset/", tolower(i), "_upset.pdf"), height = 6, width = 12)
+  print(upset_gene)
+  dev.off()
+}
+```
