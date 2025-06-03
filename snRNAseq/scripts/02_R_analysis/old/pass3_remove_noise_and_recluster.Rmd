@@ -1,0 +1,889 @@
+---
+title: "Psi1 snRNAseq"
+subtitle: "Pass 2 Recluster"
+author: "Kennedi Todd"
+date: "05/19/2025"
+output:
+  html_document:
+  code_folding: hide
+theme: cerulean
+toc: true
+toc_float: true
+editor_options: 
+  chunk_output_type: inline
+---
+  
+# Setup
+## Set working directory
+```{r working_directory}
+knitr::opts_knit$set(root.dir = ".")
+```
+
+## Load libraries
+```{r libraries, message=FALSE, warnings=FALSE}
+# load libraries
+library(cowplot)        # plot_grid()
+library(dotenv)         # load_dot_env()
+library(dplyr)          # left_join()
+library(ggplot2)        # ggplot()
+library(gridExtra)      # grid.arrange()
+library(rtracklayer)    # import()
+library(scCustomize)    # Merge_Seurat_List()
+library(Seurat)         # Read10X_h5()
+library(SeuratWrappers) # RunPrestoAll
+library(stringr)        # str_match()
+library(tidyr)          # pivot_wider()
+```
+
+## Variables and functions
+```{r set_variables_and_thresholds}
+# source thresholds and output paths
+source("../../refs/thresholds_and_outs.R")
+out <- paste0(out, "pass3/")
+
+# single cell functions
+files <- list.files("../../functions", full.names = TRUE)
+invisible(lapply(files, source))
+
+# load the environment variables
+load_dot_env(file = "../../refs/.env")
+project_dir <- Sys.getenv("PROJECT_DIR")
+```
+
+## Load data
+```{r load_data}
+mouse.annotated <- readRDS(
+  file = paste0( "../../rObjects/seurat_obj_annotated_", filtering_method, "_pass2.rds")
+)
+```
+
+## UMAP
+```{r annotated_umap}
+# set colors
+cluster_colors <- c("firebrick1","gold","gray","darkgreen","lightblue","cyan","blue",
+                    "pink","violet","purple","black")
+
+# annotated umap
+DimPlot(mouse.annotated,
+        cols = cluster_colors,
+        shuffle = TRUE)
+```
+
+# Recluster pass 3
+## Subset
+```{r subset_seurat}
+# noisey barcodes
+barcodes <- readRDS("../../rObjects/pass2_barcodes_to_remove.rds")
+
+# create keep column
+mouse.annotated$keep <- !colnames(mouse.annotated) %in% barcodes
+table(mouse.annotated$keep)
+
+# check
+DimPlot(mouse.annotated, shuffle = TRUE, group.by = "keep")
+
+# subset on cell types of interest
+mouse <- subset(mouse.annotated, keep == TRUE)
+
+# check
+DimPlot(mouse, shuffle = TRUE, group.by = "keep")
+
+# cleanup
+remove(mouse.annotated)
+```
+
+## Filter genes
+```{r filter_genes}
+# filter genes
+counts <- GetAssayData(object = mouse, layer = "counts")
+nonzero <- counts > 0  # produces logical
+keep <- Matrix::rowSums(nonzero) >= 10  # sum the true/false
+counts.filtered <- counts[keep,]  # keep certain genes
+
+# overwrite sub
+mouse <- CreateSeuratObject(counts.filtered, meta.data = mouse@meta.data[,c(1,4:27)])
+
+# print features removed
+print(paste0(dim(counts)[1] - dim(counts.filtered)[1], " features removed"))
+
+# cleanup data
+remove(counts,counts.filtered,nonzero)
+```
+
+## Recluster
+```{r recluster}
+# split
+mouse[["RNA"]] <- split(mouse[["RNA"]], f = mouse$sample_id)
+
+# transform
+options(future.globals.maxSize = 8000 * 1024^2)
+mouse <- SCTransform(mouse, verbose = FALSE)
+
+# PCA
+mouse <- RunPCA(object = mouse, assay = "SCT")
+DefaultAssay(mouse) <- "SCT"
+
+# re-join layers
+mouse[["RNA"]] <- JoinLayers(mouse[["RNA"]])
+
+# elbow plot
+ElbowPlot(mouse,
+          ndims = 30,
+          reduction = "pca") +
+  geom_vline(xintercept = 13, linetype = "dashed", color = "red")
+
+# save
+saveRDS(mouse, 
+        file = paste0( "../../rObjects/seurat_obj_pca_", filtering_method, "_pass3.rds"),
+        compress = FALSE)
+
+# run UMAP
+mouse.unannotated <- RunUMAP(mouse,
+                             dims = 1:13,
+                             min.dist = 0.2,
+                             n.neighbors = 50,
+                             seed.use = 42,
+                             reduction = "pca",
+                             n.components = 3)
+
+# Determine the K-nearest neighbor graph
+mouse.unannotated <- FindNeighbors(object = mouse.unannotated,
+                                   assay = "SCT",
+                                   reduction = "pca",
+                                   dims = 1:13)
+
+# Determine the clusters for various resolutions
+mouse.unannotated <- FindClusters(object = mouse.unannotated,
+                                  algorithm = 1,
+                                  resolution = 0.3)
+
+# Set default assay and normalize for visualization
+DefaultAssay(mouse.unannotated) <- "RNA"
+mouse.unannotated <- NormalizeData(mouse.unannotated)
+
+# save
+saveRDS(mouse.unannotated, 
+        file = paste0( "../../rObjects/seurat_obj_unannotated_", filtering_method, "_pass3.rds"),
+        compress = FALSE)
+```
+
+# Unannotated
+## UMAP
+```{r unannotated_umap}
+Idents(mouse.unannotated) <- "seurat_clusters"
+
+u1 <- DimPlot(mouse.unannotated, shuffle = TRUE, label = TRUE)
+u1
+
+u2 <- DimPlot(mouse.unannotated, shuffle = TRUE, dims = c(2,3))
+u2
+```
+
+```{r save_unannotated_umap}
+pdf(paste0(out, "UMAP/unannotated_umap.pdf"), width = 6, height = 5)
+u1
+dev.off()
+```
+
+
+## Auto markers
+```{r unannotated_auto_find_markers}
+# set params
+Idents(mouse.unannotated) <- "seurat_clusters"
+
+# find markers
+markers <- SeuratWrappers::RunPrestoAll(
+  object = mouse.unannotated,
+  assay = "RNA",
+  slot = "counts",
+  only.pos = TRUE
+)
+
+# filter based on adjusted p-value
+markers <- markers[markers$p_val_adj < 0.01,]
+
+# get top 3 and top 20 per cluster
+top2 <- Reduce(rbind,
+               by(markers,
+                  markers["cluster"],
+                  head,
+                  n = 2))
+top20 <- Reduce(rbind,
+               by(markers,
+                  markers["cluster"],
+                  head,
+                  n = 20))
+
+# save
+write.table(markers, 
+            paste0(out, "markers/unannotated_auto_find_markers_adjpval_0.01.tsv"),
+            sep = "\t",
+            quote = FALSE,
+            row.names = FALSE)
+```
+
+## Canonical markers
+```{r unannotated_canonical_markers}
+# Auto markers
+d1 <- DotPlot(mouse.unannotated,
+              features = unique(top2$gene),
+              cols = "RdYlBu",
+              assay = "RNA") +
+  coord_flip() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+d1
+
+# Canonical
+canonical_markers <- c(
+  "Aldoc", "Aqp4", "Gja1", "Clu", "Apoe",             # Astrocytes
+  "Ptprb", "Cldn5", "Flt1",                           # Endothelial
+  "Col1a1", "Col1a2", "Dcn",                          # Fibroblast
+  "Aif1", "C1qa", "P2ry12", "Tmem119","Trem2","Mrc1", # Microglia
+  "Syt1", "Snap25", "Gad1", "Meg3", "Igfbpl1","Sox4", # Neurons
+  "Mog", "Opalin", "Mal", "Mag", "Mbp",               # Oligodendrocytes
+  "Pdgfra", "Cspg4", "Olig1", "Olig2", "Tnr")         # OPCs
+
+d2 <- DotPlot(mouse.unannotated,
+              features = canonical_markers,
+              cols = "RdYlBu",
+              assay = "RNA") +
+  coord_flip() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+d2
+```
+
+```{r save_unannotated_canonical_markers}
+pdf(paste0(out, "markers/unannotated_auto_top2_markers.pdf"), width = 10, height = 10)
+d1
+dev.off()
+
+pdf(paste0(out, "markers/unannotated_canonical_markers.pdf"), width = 10, height = 10)
+d2
+dev.off()
+```
+
+## Assign idetities
+```{r assign_identities}
+new_cluster_names <- c(
+  "0" = "Neurons 1",
+  "1" = "Neurons 1",
+  "2" = "Astrocytes",
+  "3" = "Neurons 1",
+  "4" = "Neurons 1",
+  "5" = "Neurons 1",
+  "6" = "Neurons 1",
+  "7" = "Neurons 1",
+  "8" = "Neurons 2",
+  "9" = "Neurons 1",
+  "10" = "Oligodendrocytes",
+  "11" = "Neurons 1",
+  "12" = "OPCs",
+  "13" = "Neurons 1",
+  "14" = "Neurons 3",
+  "15" = "Neurons 1",
+  "16" = "Neurons 1",
+  "17" = "Fibroblasts/Endothelial",
+  "18" = "Neurons 1",
+  "19" = "Fibroblasts",
+  "20" = "Neurons 1",
+  "21" = "Ependyma",
+  "22" = "Differentiating OPCs",
+  "23" = "Neurons 1",
+  "24" = "Neurons 1",
+  "25" = "Microglia",
+  "26" = "Neurons 1"
+)
+
+# set new idents
+mouse.annotated <- RenameIdents(mouse.unannotated, new_cluster_names)
+mouse.annotated$annotated_clusters <- Idents(mouse.annotated)
+
+# set level
+mouse.annotated$annotated_clusters <- factor(mouse.annotated$annotated_clusters,
+                                  levels = c("Astrocytes",
+                                             "Fibroblasts",
+                                             "Fibroblasts/Endothelial",
+                                             "Microglia",
+                                             "Neurons 1",
+                                             "Neurons 2",
+                                             "Neurons 3",
+                                             "OPCs",
+                                             "Differentiating OPCs",
+                                             "Oligodendrocytes",
+                                             "Ependyma"))
+Idents(mouse.annotated) <- "annotated_clusters"
+
+# save
+saveRDS(mouse.annotated, 
+        file = paste0( "../../rObjects/seurat_obj_annotated_", filtering_method, "_pass2.rds"),
+        compress = FALSE)
+```
+
+# Annotated
+## UMAP
+```{r annotated_umap}
+cluster_colors <- c("firebrick1","gold","gray","darkgreen","lightblue","cyan","blue",
+                    "pink","violet","purple","black")
+
+u1 <- DimPlot(mouse.annotated, 
+              group.by = "annotated_clusters", 
+              cols = cluster_colors,
+              shuffle = TRUE)
+u1
+
+u2 <- DimPlot(mouse.annotated, 
+              dims = c(2,3),
+              cols = cluster_colors,
+              group.by = "annotated_clusters", 
+              shuffle = TRUE)
+u2
+```
+
+```{r save_annotated_umap}
+pdf(paste0(out, "UMAP/annotated_umap.pdf"), width = 6, height = 4)
+u1
+dev.off()
+```
+
+## Auto markers
+```{r annotated_auto_find_markers}
+# find markers
+markers <- SeuratWrappers::RunPrestoAll(
+  object = mouse.annotated,
+  assay = "RNA",
+  slot = "counts",
+  only.pos = TRUE
+)
+
+# filter based on adjusted p-value
+markers <- markers[markers$p_val_adj < 0.01,]
+
+# get top 3 and top 20 per cluster
+top2 <- Reduce(rbind,
+               by(markers,
+                  markers["cluster"],
+                  head,
+                  n = 2))
+top20 <- Reduce(rbind,
+               by(markers,
+                  markers["cluster"],
+                  head,
+                  n = 20))
+
+# save
+write.table(markers, 
+            paste0(out, "markers/annotated_auto_find_markers_adjpval_0.01.tsv"),
+            sep = "\t",
+            quote = FALSE,
+            row.names = FALSE)
+```
+
+## Canonical markers
+```{r annotated_canonical_markers}
+# Auto markers
+d1 <- DotPlot(mouse.annotated,
+              features = unique(top2$gene),
+              cols = "RdYlBu",
+              assay = "RNA") +
+  coord_flip() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+d1
+
+canonical_markers <- c(
+  "Aldoc", "Aqp4", "Gja1", "Clu", "Apoe",             # Astrocytes
+  "Col1a1", "Col1a2", "Dcn",                          # Fibroblast
+  "Ptprb", "Cldn5", "Flt1",                           # Endothelial
+  "Aif1", "C1qa", "P2ry12", "Tmem119","Trem2","Mrc1", # Microglia
+  "Syt1", "Snap25","Gad1", "Rbfox3","Synpo2", "Prox1",# Neurons
+  "Pdgfra", "Cspg4", "Olig1", "Olig2", "Tnr",         # OPCs
+  "Mog", "Opalin", "Mal", "Mag", "Mbp",               # Oligodendrocytes
+  "Cfap44", "Spag16")                                 # Ependymal
+
+d2 <- DotPlot(mouse.annotated,
+              features = canonical_markers,
+              cols = "RdYlBu",
+              assay = "RNA") +
+  coord_flip() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+d2
+```
+
+```{r save_annotated_markers}
+pdf(paste0(out, "markers/annotated_auto_top2_markers.pdf"), width = 8, height = 10)
+d1
+dev.off()
+
+pdf(paste0(out, "markers/annotated_canonical_markers.pdf"), width = 8, height = 10)
+d2
+dev.off()
+```
+
+## Marker heatmap
+```{r marker_heatmaps}
+# Create DimPlot
+u <- DimPlot(mouse.unannotated, shuffle = TRUE, cols = cluster_colors) +
+  NoLegend()
+
+marker_genes <- c("Aqp4", "Gja1", "Col1a2", "Flt1", "P2ry12","Snap25", "Synpo2",
+                  "Rbfox3","Cspg4", "Mog", "Spag16")
+
+# Create 11 FeaturePlots
+fplots <- lapply(marker_genes, function(gene) {
+  FeaturePlot(mouse.unannotated,
+              reduction = "umap",
+              features = gene) +
+    scale_colour_gradientn(colours = c("blue", "lightblue", "yellow", "orange", "red")) +
+    ggtitle(gene) +
+    theme(legend.position = "none")
+})
+
+# Combine all plots (1 DimPlot + 11 FeaturePlots = 12 total)
+all_plots <- c(list(u), fplots)
+layout <- matrix(1:12, nrow = 3, ncol = 4, byrow = TRUE)
+```
+
+```{r save_marker_heatmap}
+# Save as PDF
+path <- paste0(out, "markers/umap_heatmap_canonical_markers.pdf")
+pdf(path, width = 14, height = 9)
+grid.arrange(grobs = all_plots, layout_matrix = layout)
+dev.off()
+```
+
+# QC
+## Heatmap UMAP
+```{r umap_heatmap, warning=FALSE, message=FALSE}
+# UMAP percent_mt
+f1 <- FeaturePlot(mouse.annotated, 
+            reduction = "umap", 
+            features = "percent_mt")  + 
+  scale_colour_gradientn(colours = c("blue","lightblue","yellow","orange","red"))
+f1
+
+# UMAP nCount
+f2 <- FeaturePlot(mouse.annotated, 
+            reduction = "umap",
+            features = "nCount_RNA") + 
+  scale_colour_gradientn(colours = c("blue","lightblue","yellow","orange","red"))
+f2
+
+# UMAP nFeature
+f3 <- FeaturePlot(mouse.annotated, 
+            reduction = "umap", 
+            features = "nFeature_RNA") + 
+  scale_colour_gradientn(colours = c("blue","lightblue","yellow","orange","red"))
+f3
+
+# UMAP percent_ribo
+f4 <- FeaturePlot(mouse.annotated, 
+            reduction = "umap", 
+            features = "percent_ribo") + 
+  scale_colour_gradientn(colours = c("blue","lightblue","yellow","orange","red"))
+f4
+
+# UMAP cell_complexity
+f5 <- FeaturePlot(mouse.annotated, 
+            reduction = "umap", 
+            features = "cell_complexity") + 
+  scale_colour_gradientn(colours = c("blue","lightblue","yellow","orange","red"))
+f5
+
+# UMAP percent_hb
+f6 <- FeaturePlot(mouse.annotated, 
+            reduction = "umap", 
+            features = "percent_hb") + 
+  scale_colour_gradientn(colours = c("blue","lightblue","yellow","orange","red"))
+f6
+```
+
+```{r save_umap_heatmap, echo=FALSE, eval=FALSE}
+path <- paste0(out, "clustering_QC/umap_heatmap_")
+pdf(paste0(path, "percent_mito.pdf"), width = 8, height = 6)
+f1
+dev.off()
+
+pdf(paste0(path, "nCount.pdf"), width = 8, height = 6)
+f2
+dev.off()
+
+pdf(paste0(path, "nFeature.pdf"), width = 8, height = 6)
+f3
+dev.off()
+
+pdf(paste0(path, "percent_ribo.pdf"), width = 8, height = 6)
+f4
+dev.off()
+
+pdf(paste0(path, "cell_complexity.pdf"), width = 8, height = 6)
+f5
+dev.off()
+
+pdf(paste0(path, "percent_hb.pdf"), width = 8, height = 6)
+f6
+dev.off()
+
+remove(f1,f2,f3,f4,f5,f6)
+```
+
+## Percent cells per cluster
+```{r percent_cells}
+# timepoint
+b1 <- mouse.annotated@meta.data %>%
+  group_by(annotated_clusters, timepoint) %>%
+  dplyr::count() %>%
+  group_by(annotated_clusters) %>%
+  dplyr::mutate(percent = 100*n/sum(n)) %>%
+  ungroup() %>%
+  ggplot(aes(x=annotated_clusters,y=percent, fill=timepoint)) +
+  theme_classic() +
+  geom_col() +
+  ggtitle("Percentage of timepoint per cluster") +
+  theme(axis.text.x = element_text(angle = 90,vjust = 0.5, hjust=1))
+b1
+
+# sex
+b2 <- mouse.annotated@meta.data %>%
+  group_by(annotated_clusters, sex) %>%
+  dplyr::count() %>%
+  group_by(annotated_clusters) %>%
+  dplyr::mutate(percent = 100*n/sum(n)) %>%
+  ungroup() %>%
+  ggplot(aes(x=annotated_clusters,y=percent, fill=sex)) +
+  theme_classic() +
+  geom_col() +
+  ggtitle("Percentage of sex per cluster") +
+  theme(axis.text.x = element_text(angle = 90,vjust = 0.5, hjust=1))
+b2
+
+# sample
+b3 <- mouse.annotated@meta.data %>%
+  group_by(annotated_clusters, sample_id) %>%
+  dplyr::count() %>%
+  group_by(annotated_clusters) %>%
+  dplyr::mutate(percent = 100*n/sum(n)) %>%
+  ungroup() %>%
+  ggplot(aes(x=annotated_clusters,y=percent, fill=sample_id)) +
+  theme_classic() +
+  geom_col() +
+  ggtitle("Percentage of sample per cluster") +
+  theme(axis.text.x = element_text(angle = 90,vjust = 0.5, hjust=1))
+b3
+
+# phase
+b4 <- mouse.annotated@meta.data %>%
+  group_by(annotated_clusters, phase) %>%
+  dplyr::count() %>%
+  group_by(annotated_clusters) %>%
+  dplyr::mutate(percent = 100*n/sum(n)) %>%
+  ungroup() %>%
+  ggplot(aes(x=annotated_clusters,y=percent, fill=phase)) +
+  theme_classic() +
+  geom_col() +
+  ggtitle("Percentage of phase per cluster") +
+  theme(axis.text.x = element_text(angle = 90,vjust = 0.5, hjust=1))
+b4
+
+# mito.factor
+b5 <- mouse.annotated@meta.data %>%
+  group_by(annotated_clusters, mito_factor) %>%
+  dplyr::count() %>%
+  group_by(annotated_clusters) %>%
+  dplyr::mutate(percent = 100*n/sum(n)) %>%
+  ungroup() %>%
+  ggplot(aes(x=annotated_clusters,y=percent, fill=mito_factor)) +
+  theme_classic() +
+  geom_col() +
+  ggtitle("Percentage of mito factor per cluster") +
+  theme(axis.text.x = element_text(angle = 90,vjust = 0.5, hjust=1))
+b5
+
+# group
+b6 <- mouse.annotated@meta.data %>%
+  group_by(annotated_clusters, group) %>%
+  dplyr::count() %>%
+  group_by(annotated_clusters) %>%
+  dplyr::mutate(percent = 100*n/sum(n)) %>%
+  ungroup() %>%
+  ggplot(aes(x=annotated_clusters,y=percent, fill=group)) +
+  theme_classic() +
+  geom_col() +
+  ggtitle("Percentage of group per cluster") +
+  theme(axis.text.x = element_text(angle = 90,vjust = 0.5, hjust=1))
+b6
+
+# group2
+b7 <- mouse.annotated@meta.data %>%
+  group_by(annotated_clusters, group2) %>%
+  dplyr::count() %>%
+  group_by(annotated_clusters) %>%
+  dplyr::mutate(percent = 100*n/sum(n)) %>%
+  ungroup() %>%
+  ggplot(aes(x=annotated_clusters,y=percent, fill=group2)) +
+  theme_classic() +
+  geom_col() +
+  ggtitle("Percentage of group2 per cluster") +
+  theme(axis.text.x = element_text(angle = 90,vjust = 0.5, hjust=1))
+b7
+
+# dose
+b8 <- mouse.annotated@meta.data %>%
+  group_by(annotated_clusters, dose) %>%
+  dplyr::count() %>%
+  group_by(annotated_clusters) %>%
+  dplyr::mutate(percent = 100*n/sum(n)) %>%
+  ungroup() %>%
+  ggplot(aes(x=annotated_clusters,y=percent, fill=dose)) +
+  theme_classic() +
+  geom_col() +
+  ggtitle("Percentage of dose per cluster") +
+  theme(axis.text.x = element_text(angle = 90,vjust = 0.5, hjust=1))
+b8
+```
+
+```{r save_percent_cells,echo=FALSE,eval=FALSE}
+# save
+path <- paste0(out, "clustering_QC/percent_")
+pdf(paste0(path, "timepoint_per_cluster.pdf"), width = 8, height = 6)
+b1
+dev.off()
+
+# save
+pdf(paste0(path, "sex_per_cluster.pdf"), width = 8, height = 6)
+b2
+dev.off()
+
+# save
+pdf(paste0(path, "sample_per_cluster.pdf"), width = 8, height = 8)
+b3
+dev.off()
+
+# save
+pdf(paste0(path, "phase_per_cluster.pdf"), width = 8, height = 6)
+b4
+dev.off()
+
+# save
+pdf(paste0(path, "mito_factor_per_cluster.pdf"), width = 8, height = 6)
+b5
+dev.off()
+
+# save
+pdf(paste0(path, "group_per_cluster.pdf"), width = 8, height = 6)
+b6
+dev.off()
+
+# save
+pdf(paste0(path, "group2_per_cluster.pdf"), width = 8, height = 6)
+b7
+dev.off()
+
+# save
+pdf(paste0(path, "age_dose_cluster.pdf"), width = 8, height = 6)
+b8
+dev.off()
+
+# cleanup
+remove(b1,b2,b3,b4,b5,b6,b7,b8)
+```
+
+## Cells per sample
+```{r cells_per_sample}
+data <- as.data.frame(table(mouse.annotated$sample_id))
+colnames(data) <- c("sample_id","frequency")
+
+ncells <- ggplot(data, aes(x = sample_id, y = frequency, fill = sample_id)) + 
+  geom_col() +
+  theme_classic() +
+  geom_text(aes(label = frequency), 
+            position=position_dodge(width=0.9), 
+            vjust=-0.25) +
+  scale_y_continuous(breaks = seq(0,40000, by = 10000), limits = c(0,40000)) +
+  ggtitle("Filtered: cells per sample") +
+  theme(legend.position =  "none") + 
+  theme(axis.text.x = element_text(angle = 45, hjust=1))
+ncells
+```
+
+```{r save_cells_per_sample, echo=FALSE, eval=FALSE}
+pdf(paste0(out, "clustering_QC/cells_per_sample.pdf"), width = 18, height = 4)
+ncells
+dev.off()
+```
+
+## Cells per cluster
+```{r cells_per_cluster}
+data <- as.data.frame(table(mouse.annotated$annotated_clusters))
+colnames(data) <- c("cluster","frequency")
+
+ncells <- ggplot(data, aes(x = cluster, y = frequency, fill = cluster)) + 
+  geom_col() +
+  theme_classic() +
+  geom_text(aes(label = frequency), 
+            position=position_dodge(width=0.9), 
+            vjust=-0.25) +
+  scale_y_continuous(breaks = seq(0,160000, by = 20000), limits = c(0,160000)) +
+  ggtitle("Cells per Cluster") +
+  scale_fill_manual(values = cluster_colors) +
+  theme(legend.position =  "none") + 
+  theme(axis.text.x = element_text(angle = 45, hjust=1))
+ncells
+```
+
+```{r save_cells_per_cluster, echo=FALSE, eval=FALSE}
+pdf(paste0(out, "clustering_QC/cells_per_cluster.pdf"), width = 8, height = 6)
+ncells
+dev.off()
+```
+
+## Cells per cluster per sample
+```{r cells_per_cluster_per_sample}
+# extract data
+data <- data.frame(cluster = mouse.annotated$annotated_clusters,
+                   sample = mouse.annotated$sample_id)
+data_summary <- data %>%
+  group_by(cluster, sample) %>%
+  summarise(count = n(), .groups = 'drop') %>%
+  ungroup()
+
+# Create the stacked bar plot
+ncells <- ggplot(data_summary, aes(x = cluster, y = count, fill = sample)) +
+  geom_bar(stat = "identity") +
+  labs(y = "Frequency", x = "Cluster", fill = "Sample") +
+  theme_minimal() +
+  ggtitle("Frequency of Cells in Each Cluster with Sample Distribution") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust=1)) +
+  ylim(c(0,160000))
+ncells
+
+# reformat for table output
+data_summary <- data_summary %>% pivot_wider(names_from = cluster, values_from = count)
+```
+
+```{r save_cells_per_cluster_per_sample, echo=FALSE, eval=FALSE}
+pdf(paste0(out, "clustering_QC/cells_per_cluster_with_sample_distribution.pdf"),
+    width = 12, height = 6)
+ncells
+dev.off()
+```
+
+## Cells per cluster per group
+```{r cells_per_cluster_per_group}
+# extract data
+data <- data.frame(cluster = mouse.annotated$annotated_clusters,
+                   group = mouse.annotated$group)
+data_summary <- data %>%
+  group_by(cluster, group) %>%
+  summarise(count = n(), .groups = 'drop') %>%
+  ungroup()
+
+# Create the stacked bar plot
+ncells <- ggplot(data_summary, aes(x = cluster, y = count, fill = group)) +
+  geom_bar(stat = "identity") +
+  labs(y = "Frequency", x = "Cluster", fill = "Group") +
+  theme_minimal() +
+  ggtitle("Frequency of Cells in Each Cluster with Group Distribution") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust=1)) +
+  ylim(c(0,160000))
+ncells
+
+# reformat for table output
+data_summary <- data_summary %>% pivot_wider(names_from = cluster, values_from = count)
+```
+
+```{r save_cells_per_cluster_per_group, echo=FALSE, eval=FALSE}
+pdf(paste0(out, "clustering_QC/cells_per_cluster_with_group_distribution.pdf"),
+    width = 8, height = 6)
+ncells
+dev.off()
+
+write.table(data_summary, 
+            file = paste0(out, "clustering_QC/cells_per_cluster_with_group_distribution.tsv"), 
+            sep = "\t",quote = FALSE, row.names = FALSE)
+```
+
+# Subcluster neurons
+## Subcluster neurons 1
+```{r subcluster_neurons}
+# subcluster neurons
+Idents(mouse.annotated) <- "annotated_clusters"
+mouse.annotated <- FindSubCluster(object = mouse.annotated,
+                                  graph.name = "SCT_snn",
+                                  cluster = "Neurons 1",
+                                  resolution = 0.8,
+                                  subcluster.name = "neurons1_subcluster")
+
+# reformat
+current_ids <- mouse.annotated$neurons1_subcluster
+new_ids <- ifelse(grepl("^Neurons 1", current_ids), current_ids, "other")
+new_ids <- gsub("Neurons 1_", "", new_ids)
+mouse.annotated$neurons1_subcluster <- new_ids
+Idents(mouse.annotated) <- "neurons1_subcluster"
+
+# plot
+u1 <- DimPlot(mouse.annotated,
+              group.by = "neurons1_subcluster",
+              label = TRUE)
+
+# extract colors
+plot_data <- ggplot_build(u1)$data[[1]]
+cluster_order <- levels(Idents(mouse.annotated))
+color_mapping <- unique(plot_data[, c("group", "colour")])
+color_mapping$group <- factor(color_mapping$group, levels = cluster_order)
+color_mapping <- color_mapping[order(color_mapping$group), ]
+color_df <- data.frame(Cluster = color_mapping$group, Color = color_mapping$colour)
+subcluster_colors <- color_df$Color
+subcluster_colors <- subcluster_colors[-length(subcluster_colors)]
+subcluster_colors <- c(subcluster_colors,"black")
+```
+
+## UMAP
+```{r}
+u2 <- DimPlot(mouse.annotated,
+              group.by = "neurons1_subcluster",
+              cols = subcluster_colors,
+              label = TRUE)
+u2
+
+mouse.annotated$cluster26 <- mouse.annotated$neurons1_subcluster == "26"
+u3 <- DimPlot(mouse.annotated,
+              group.by = "cluster26",
+              label = TRUE)
+u3
+
+mouse.annotated$cluster28 <- mouse.annotated$neurons1_subcluster == "28"
+u4 <- DimPlot(mouse.annotated,
+              group.by = "cluster28",
+              label = TRUE)
+u4
+```
+
+```{r save_annotated_umap}
+pdf(paste0(out, "UMAP/neurons1_subclustered_unannotated_umap.pdf"), width = 7, height = 5)
+u2
+dev.off()
+
+pdf(paste0(out, "UMAP/neurons1_subcluster_26_umap.pdf"), width = 6, height = 5)
+u3
+dev.off()
+
+pdf(paste0(out, "UMAP/neurons1_subcluster_28_umap.pdf"), width = 6, height = 5)
+u4
+dev.off()
+```
+
+## Extract barcodes
+```{r}
+barcodes <- rownames(mouse.annotated@meta.data)[mouse.annotated$neurons1_subcluster %in% c("26","28")]
+barcodes <- c(barcodes,
+              rownames(mouse.annotated@meta.data)[mouse.annotated$annotated_clusters %in% "Ependyma"])
+
+# plot barcodes to keep
+mouse.annotated$remove <- rownames(mouse.annotated@meta.data) %in% barcodes
+DimPlot(mouse.annotated, group.by = "remove")
+
+# save
+saveRDS(barcodes, "../../rObjects/pass2_barcodes_to_remove.rds")
+```
+
