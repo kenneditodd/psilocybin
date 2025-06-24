@@ -29,7 +29,7 @@ rownames(df) <- samples
 
 # rename columns
 df <- df %>%
-  rename(
+  dplyr::rename(
     estimated_cells = Estimated.Number.of.Cells,
     mean_reads_per_cell = Mean.Reads.per.Cell,
     median_genes_per_cell = Median.Genes.per.Cell,
