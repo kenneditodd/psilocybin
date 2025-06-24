@@ -28,7 +28,7 @@ if (file.exists(paste0("../../rObjects/cellbender_obj_merged.rds"))) {
     print(i)
     sample <- samples[i]
     
-    # Create Seurat object with PIPseeker output
+    # Create Seurat object with Cell Bender output
     obj <- CreateSeuratObject(
       Read_CellBender_h5_Mat(paste0(prefix, sample, "/outs/", sample, suffix))
     )
@@ -45,11 +45,10 @@ if (file.exists(paste0("../../rObjects/cellbender_obj_merged.rds"))) {
   }
   
   # Merge all Seurat objects
-  mouse <- merge(seurat_obj_list[[1]], 
-                 y = seurat_obj_list[-1])
+  mouse <- merge(seurat_obj_list[[1]], y = seurat_obj_list[-1])
   
   # Set project name
-  mouse@project.name <- "E.coli Mice scRNAseq"
+  mouse@project.name <- "Psi1 snRNAseq Cell Bender Output"
   
   # Join layers
   mouse$orig.ident <- colnames(mouse)
