@@ -1,7 +1,7 @@
 # Psilocybin snRNAseq
 # Create merged seurat object from cellranger output
 # Kennedi Todd
-# 05/21/2025
+# 06/24/2025
 
 # load libraries
 library(dotenv)      # load_dot_env()
@@ -34,7 +34,8 @@ meta <- readRDS("../../rObjects/meta.rds")
 
 # read counts and create seurat obj
 prefix <- "../../counts/"
-suffix <- "/outs/filtered_feature_bc_matrix.h5"
+middle <- "/per_sample_outs/"
+suffix <- "/count/sample_filtered_feature_bc_matrix.h5"
 
 # Initialize an empty list
 seurat_obj_list <- list()
@@ -46,7 +47,7 @@ for (i in 1:length(samples)) {
     
   # Create Seurat object with PIPseeker output
   obj <- CreateSeuratObject(
-    Read10X_h5(paste0(prefix, sample, suffix))
+    Read10X_h5(paste0(prefix, sample, middle, sample, suffix))
     )
   
   # Get sample ID
