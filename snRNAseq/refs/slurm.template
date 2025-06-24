@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+#SBATCH --job-name=__MRO_JOB_NAME__         # Placeholder for CellRanger stage name
+#SBATCH --export=ALL                        # Export all environment variables
+#SBATCH --nodes=1                           # Run on a single node
+#SBATCH --ntasks=1                          # One task per job
+#SBATCH --cpus-per-task=__MRO_THREADS__     # Threads allocated to each task (replaced by CellRanger)
+#SBATCH --signal=2                          # Send SIGINT before timeout for graceful exit
+#SBATCH --no-requeue                        # Do not requeue the job if it fails
+#SBATCH --time=2-00:00:00                   # Max runtime per CellRanger sub-job (2 days)
+#SBATCH --mem=__MRO_MEM_MB__                # Memory in MB (set by CellRanger)
+#SBATCH --output=__MRO_STDOUT__             # Standard output log path
+#SBATCH --error=__MRO_STDERR__              # Standard error log path
+
+__MRO_CMD__                                 # Command executed by CellRanger runtime
