@@ -34,7 +34,7 @@ meta <- readRDS("../../rObjects/meta.rds")
 
 # read counts and create seurat obj
 prefix <- "../../counts/"
-middle <- "/per_sample_outs/"
+middle <- "/outs/per_sample_outs/"
 suffix <- "/count/sample_filtered_feature_bc_matrix.h5"
 
 # Initialize an empty list
@@ -45,13 +45,13 @@ for (i in 1:length(samples)) {
   print(i)
   sample <- samples[i]
     
-  # Create Seurat object with PIPseeker output
+  # Create Seurat object with cellranger multi output
   obj <- CreateSeuratObject(
     Read10X_h5(paste0(prefix, sample, middle, sample, suffix))
     )
   
   # Get sample ID
-  id <- meta[meta$filename == sample,]
+  id <- meta[meta$tgen_subject_name == sample,]
   id <- id$sample_id
   
   # Add sample ID as prefix to cell names
@@ -96,7 +96,7 @@ gc()
 mouse
 
 # set idents
-Idents(mouse) <- "sample"
+Idents(mouse) <- "sample_id"
 
 # add meta columns
 # cell.complexity
