@@ -1,7 +1,7 @@
 # Psilocybin snRNAseq
-# Create merged seurat object from cellranger output
+# Create merged seurat object from Cell Ranger output
 # Kennedi Todd
-# 06/24/2025
+# July 29, 2025
 
 # load libraries
 library(dotenv)      # load_dot_env()
@@ -14,6 +14,7 @@ library(stringr)     # str_match()
 # load the environment variables
 load_dot_env(file = "../../refs/.env")
 ann_dir <- Sys.getenv("ANNOTATION_REFS")
+project_dir <- Sys.getenv("PROJECT_DIR")
 
 # get sample names
 samples <- readLines("../../refs/sample_list.tsv")
@@ -89,7 +90,7 @@ rownames(mouse@meta.data) <- mouse$orig.ident
 all.equal(colnames(mouse), rownames(mouse@meta.data))
   
 # cleanup
-remove(meta, seurat_obj_list)
+remove(seurat_obj_list)
 gc()
 
 # preview
@@ -124,7 +125,7 @@ hb.genes <- c("Hba-x","Hba-a1","Hba-a2","Hbb-bt","Hbb-bs","Hbb-bh2","Hbb-bh1","H
 mouse$percent_hb <- PercentageFeatureSet(mouse, features = hb.genes)
 hb.genes
 
-# set levels
+# set group and treatment levels
 mouse$group <- factor(mouse$group, levels = c("S.24h", "L.24h", "H.24h"))
 mouse$group2 <- factor(mouse$group2, levels = c("S.24h.F", "S.24h.M", 
                                                 "L.24h.F", "L.24h.M", 
@@ -137,6 +138,28 @@ new_order <- mouse@meta.data %>%
   select(sample_id)
 new_order <- unique(new_order$sample_id)
 mouse$sample_id <- factor(mouse$sample_id, levels = new_order)
+
+# get nuclear fraction info
+all.equal(meta$tgen_subject_name, samples)
+new_sample_names <- meta$sample_id
+nf <- data.frame()
+for (i in 1:length(samples)) {
+  df <- read.delim2(paste0(project_dir, "/counts/", samples[i], "/", samples[i], "_nuclear_fraction.tsv"),
+                    sep = " ", row.names = NULL)
+  df$barcode <- paste0(new_sample_names[i], "_", df$barcode)
+  nf <- rbind(nf, df)
+}
+nf$percent_nuclear <- round(100 * as.numeric(nf$nuclear_fraction), 4)
+rownames(nf) <- nf$barcode
+
+# check cells in seurat obj are in nf table
+keep <- colnames(mouse) %in% rownames(nf)
+table(keep)
+
+# add nuclear info to seruat obj
+nf <- nf[colnames(mouse),]
+all.equal(colnames(mouse), rownames(nf))
+mouse$percent_nuclear <- as.numeric(nf$percent_nuclear)
 
 # save with compression
 saveRDS(mouse, "../../rObjects/cellranger_filtered_seurat_obj.rds", compress = FALSE)

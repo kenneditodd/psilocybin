@@ -2,7 +2,7 @@
 title: "Psilocybin snRNAseq"
 subtitle: "Prefiltering QC"
 author: "Kennedi Todd"
-date: "05/21/2025"
+date: "07/29/2025"
 output:
   html_document:
     code_folding: hide
@@ -58,7 +58,7 @@ ncells1 <- ggplot(data, aes(x = sample_id, y = frequency, fill = sample_id)) +
   geom_text(aes(label = frequency), 
             position=position_dodge(width=0.9), 
             vjust=-0.25) +
-  scale_y_continuous(breaks = seq(0,40000, by = 10000), limits = c(0,40000)) +
+  scale_y_continuous(breaks = seq(0,50000, by = 10000), limits = c(0,50000)) +
   ggtitle("Raw: cells per sample_id") +
   theme(legend.position =  "none") + 
   theme(axis.text.x = element_text(angle = 45, hjust=1))
@@ -70,7 +70,7 @@ remove(data)
 ```{r save_prefiltering_ncells}
 # save
 pdf(paste0(out, "filtering_QC/ncells_raw.pdf"), 
-    width = 20, height = 4)
+    width = 8, height = 4)
 ncells1
 
 # cleanup
@@ -158,22 +158,21 @@ den5 <- ggplot(mouse@meta.data,
   ylab("Density") +
   theme(legend.key.size = unit(0.25, 'cm'), legend.title = element_text(size=9))
 
-# Visualize percent_hb
+# Visualize percent_nuclear
 den6 <- ggplot(mouse@meta.data,
        aes(color = sample_id,
-           x = percent_hb,
+           x = percent_nuclear,
            fill = sample_id)) +
   geom_density(alpha = 0.2) +
   theme_classic() +
   scale_x_log10() +
-  geom_vline(xintercept = hb.cutoff, lty = "dashed") +
   theme(legend.position =  "none") +
-  xlab("% Hemoglobin Genes") +
+  xlab("% Nuclear") +
   ylab("Density") +
-  geom_vline(xintercept = hb.cutoff, lty = "dashed") +
-  theme(legend.key.size = unit(0.25, 'cm'), legend.title = element_text(size=9)) +
-  annotate("text", x = hb.cutoff, y = 0.1, label = paste("Max:", hb.cutoff), 
+  geom_vline(xintercept = nuclear.cutoff, lty = "dashed") +
+  annotate("text", x = nuclear.cutoff, y = 0.1, label = paste("Min:", nuclear.cutoff), 
            angle = 0, vjust = -0.5, hjust = -0.1, size = 3)
+  theme(legend.key.size = unit(0.25, 'cm'), legend.title = element_text(size=9))
 
 # Arrange graphs in grid
 plots <- list(den1,den2,den3,den4,den5,den6)
@@ -183,7 +182,7 @@ grid <- grid.arrange(grobs = plots, layout_matrix = layout)
 
 ```{r save_prefiltering_density}
 # save
-pdf(paste0(out, "filtering_QC/density_curves_raw.pdf"), width = 8, height = 8)
+pdf(paste0(out, "filtering_QC/density_curves_raw.pdf"), width = 9, height = 8)
 grid <- grid.arrange(grobs = plots, layout_matrix = layout)
 dev.off()
 
@@ -204,7 +203,7 @@ v1
 
 #  percent violins
 v2 <- VlnPlot(mouse,
-              features = c("percent_mt","percent_ribo","percent_hb"),
+              features = c("percent_mt","percent_ribo","percent_nuclear"),
               ncol = 1,
               group.by = 'sample_id',
               raster = FALSE,
@@ -215,13 +214,13 @@ v2
 ```{r save_prefiltering_violins}
 # save v1
 pdf(paste0(out, "filtering_QC/violins_nFeature_nCount_complexity_raw.pdf"), 
-    width = 12, height = 12)
+    width = 8, height = 12)
 v1
 dev.off()
 
 # save v2
 pdf(paste0(out, "filtering_QC/violins_percent_raw.pdf"),
-    width = 12, height = 12)
+    width = 8, height = 12)
 v2
 dev.off()
 
@@ -259,34 +258,34 @@ s2
 
 s3 <- ggplot(
   mouse@meta.data,
-  aes(x = nCount_RNA, y = nFeature_RNA, color = percent_hb)) + 
+  aes(x = nCount_RNA, y = nFeature_RNA, color = percent_nuclear)) + 
   geom_point() + 
-  geom_smooth(method = "lm") +
+  geom_smooth(method = "lm", col = "black") +
 	scale_x_log10() +   	
   scale_y_log10() + 
   theme_classic() +
-  geom_vline(xintercept = nCount.min, lty = "dashed", col = "red") + 
-  geom_hline(yintercept = nFeature.min, lty = "dashed", col = "red") + 
+  geom_vline(xintercept = nCount.min, lty = "dashed", col = "black") + 
+  geom_hline(yintercept = nFeature.min, lty = "dashed", col = "black") + 
   facet_wrap(~sample_id) +
-  scale_colour_gradient(low = "gray90", high = "black", limits =c(0,100))
+  scale_colour_gradient2(low = "blue", mid = "gray90",high = "red", limits =c(0,100), midpoint = 50)
 s3
 ```
 
 ```{r save_prefiltering_scatter, warning=FALSE, message=FALSE}
 # save
 pdf(paste0(out, "filtering_QC/scatter_nFeature_vs_nCount_raw.pdf"),
-    width = 18, height = 18)
+    width = 10, height = 6)
 s1
 dev.off()
 
 pdf(paste0(out, "filtering_QC/scatter_percentMT_vs_nCount_raw.pdf"),
-    width = 10, height = 6)
+    width = 7, height = 6)
 s2
 dev.off()
 
 # save
 pdf(paste0(out, "filtering_QC/scatter_nFeature_vs_nCount_raw2.pdf"),
-    width = 18, height = 18)
+    width = 10, height = 6)
 s3
 dev.off()
 

@@ -1,6 +1,6 @@
 ---
 title: "Psi1 snRNAseq"
-subtitle: "Recluster Noise"
+subtitle: "Pass 2: Recluster Non-neuronal Cells"
 author: "Kennedi Todd"
 date: "05/15/2025"
 output:
@@ -38,7 +38,7 @@ library(stringr)        # str_match()
 ```{r set_variables_and_thresholds}
 # source thresholds and output paths
 source("../../refs/thresholds_and_outs.R")
-out <- paste0(out, "pass1/recluster_noise/")
+out <- paste0(out, "pass2/recluster_non_neuronal/")
 
 # single cell functions
 files <- list.files("../../functions", full.names = TRUE)
@@ -52,38 +52,36 @@ project_dir <- Sys.getenv("PROJECT_DIR")
 ## Load data
 ```{r load_data}
 mouse.annotated <- readRDS(
-  file = paste0( "../../rObjects/", filtering_method, "_pass1_annotated_seurat_obj.rds")
+  file = paste0( "../../rObjects/seurat_obj_annotated_", filtering_method, "_pass2.rds")
 )
 
-# cell type of interest to subcluster
-cell_types <- unique(mouse.annotated$individual_clusters)[unique(mouse.annotated$individual_clusters) %in% 
-                                                           c("OPCs1","OPCs2","OPCs3",
-                                                             "Neurons-Oligodendrocytes1",
-                                                             "Neurons-Oligodendrocytes2",
-                                                             "Neurons-Oligodendrocytes3",
-                                                             "Neurons-Astrocytes1",
-                                                             "Neurons-Astrocytes2",
-                                                             "Astrocytes-Fibroblasts",
-                                                             "Multiplets1",
-                                                             "Multiplets2",
-                                                             "Multiplets3",
-                                                             "Multiplets4")]
+# cell types of interest to subcluster
+cell_types <- unique(mouse.annotated$annotated_clusters)[!unique(mouse.annotated$annotated_clusters) %in% 
+                                                           c("Neurons 1", "Neurons 2", "Neurons 3","Ependyma")]
 ```
 
 ## UMAP
 ```{r annotated_umap}
+# set colors
+cluster_colors <- c("firebrick1","gold","gray","darkgreen","lightblue","cyan","blue",
+                    "pink","violet","purple","black")
+
 # annotated umap
-DimPlot(mouse.annotated, shuffle = TRUE)
+DimPlot(mouse.annotated,
+        cols = cluster_colors,
+        shuffle = TRUE)
 ```
 
 # Recluster non-neuronal
 ## Subset
 ```{r subset_seurat}
 # subset on cell types of interest
-sub <- subset(mouse.annotated, individual_clusters %in% cell_types)
+sub <- subset(mouse.annotated, annotated_clusters %in% cell_types)
 
 # check
-DimPlot(sub, shuffle = TRUE)
+cluster_colors <- c("firebrick1","gold","gray","darkgreen",
+                    "pink","violet","purple")
+DimPlot(sub, shuffle = TRUE, cols = cluster_colors)
 ```
 
 ## Filter genes
@@ -122,13 +120,13 @@ sub[["RNA"]] <- JoinLayers(sub[["RNA"]])
 
 # elbow plot
 ElbowPlot(sub,
-          ndims = 30,
+          ndims = 15,
           reduction = "pca") +
-  geom_vline(xintercept = 20, linetype = "dashed", color = "red")
+  geom_vline(xintercept = 8, linetype = "dashed", color = "red")
 
 # run UMAP
 sub2 <- RunUMAP(sub,
-               dims = 1:20,
+               dims = 1:10,
                reduction = "pca",
                n.components = 3)
 
@@ -136,12 +134,12 @@ sub2 <- RunUMAP(sub,
 sub2 <- FindNeighbors(object = sub2,
                      assay = "SCT",
                      reduction = "pca",
-                     dims = 1:20)
+                     dims = 1:10)
 
 # Determine the clusters for various resolutions
 sub2 <- FindClusters(object = sub2,
                     algorithm = 1,
-                    resolution = 0.3)
+                    resolution = 0.5)
 
 # Set default assay and normalize for visualization
 DefaultAssay(sub2) <- "RNA"
@@ -155,6 +153,9 @@ Idents(sub2) <- "seurat_clusters"
 
 u1 <- DimPlot(sub2, shuffle = TRUE, label = TRUE)
 u1
+
+u2 <- DimPlot(sub2, shuffle = TRUE, dims = c(2,3))
+u2
 ```
 
 ```{r save_unannotated_umap}
@@ -213,14 +214,14 @@ d1
 
 # Canonical
 canonical_markers <- c(
-  "Syt1", "Snap25", "Gad1", "Meg3", "Igfbpl1","Sox4", # Neurons
-  "Pdgfra", "Cspg4", "Olig1", "Olig2", "Tnr",         # OPCs
-  "Mog", "Opalin", "Mal", "Mag", "Mbp",               # Oligodendrocytes
   "Aldoc", "Aqp4", "Gja1", "Clu", "Apoe",             # Astrocytes
   "Ptprb", "Cldn5", "Flt1",                           # Endothelial
   "Col1a1", "Col1a2", "Dcn",                          # Fibroblast
+  "Cfap44", "Spag16",                                 # Ependymal
   "Aif1", "C1qa", "P2ry12", "Tmem119","Trem2","Mrc1", # Microglia
-  "Ttr","Folr1","Cfap44", "Spag16")                   # Chroid/Ependymal
+  "Syt1", "Snap25", "Gad1", "Rbfox3", "Synpo2",       # Neurons
+  "Mog", "Opalin", "Mal", "Mag", "Mbp",               # Oligodendrocytes
+  "Pdgfra", "Cspg4", "Olig1", "Olig2", "Tnr")         # OPCs
 
 d2 <- DotPlot(sub2,
               features = canonical_markers,
@@ -244,30 +245,25 @@ dev.off()
 ## Assign idetities
 ```{r assign_identities}
 new_cluster_names <- c(
-  "0" = "Noise",
-  "1" = "Noise",
-  "2" = "OPCs",
-  "3" = "Noise",
-  "4" = "Noise",
-  "5" = "Noise",
-  "6" = "Noise",
-  "7" = "Noise",
-  "8" = "Noise",
-  "9" = "Noise",
-  "10" = "Fibroblasts",
-  "11" = "Noise",
-  "12" = "Noise",
-  "13" = "Choroid",
+  "0" = "Astrocytes",
+  "1" = "Astrocytes",
+  "2" = "Astrocytes",
+  "3" = "Oligodendrocytes",
+  "4" = "OPCs",
+  "5" = "Oligodendrocytes",
+  "6" = "OPCs",
+  "7" = "Astrocytes",
+  "8" = "Astrocytes",
+  "9" = "Fibroblasts",
+  "10" = "Astrocytes",
+  "11" = "Oligodendrocytes",
+  "12" = "Fibroblasts",
+  "13" = "Differentiating OPCs",
   "14" = "Fibroblasts",
-  "15" = "Noise",
-  "16" = "Noise",
-  "17" = "Noise",
-  "18" = "Noise",
-  "19" = "Noise",
-  "20" = "Neurons",
-  "21" = "Noise",
-  "22" = "Astrocytes",
-  "23" = "Noise"
+  "15" = "Microglia",
+  "16" = "Endothelial",
+  "17" = "Astrocytes",
+  "18" = "Doublets"
 )
 
 # set new idents
@@ -277,19 +273,21 @@ sub2$annotated_clusters <- Idents(sub2)
 # set level
 sub2$annotated_clusters <- factor(sub2$annotated_clusters,
                                   levels = c("Astrocytes",
+                                             "Endothelial",
                                              "Fibroblasts",
+                                             "Microglia",
                                              "OPCs",
-                                             "Neurons",
-                                             "Choroid",
-                                             "Noise"))
+                                             "Differentiating OPCs",
+                                             "Oligodendrocytes",
+                                             "Doublets"))
 Idents(sub2) <- "annotated_clusters"
 ```
 
 # Annotated
 ## UMAP
 ```{r annotated_umap}
-cluster_colors <- c("firebrick1","blue","darkgreen","cyan","purple",
-                    "gold")
+cluster_colors <- c("firebrick1","orange","gold","green","darkgreen","cyan","cornflowerblue",
+                    "blue","pink","purple","gray","tan","chocolate4","#000000")
 
 u1 <- DimPlot(sub2, 
               group.by = "annotated_clusters", 
@@ -376,7 +374,7 @@ dev.off()
 # Extract barcodes
 ```{r extract_barcoes}
 # subset noisy clusters
-noise <- subset(sub2, annotated_clusters %in% c("Noise","Choroid"))
+noise <- subset(sub2, annotated_clusters %in% "Doublets")
 
 # check
 table(noise$annotated_clusters)
@@ -385,8 +383,7 @@ table(noise$annotated_clusters)
 barcodes <- colnames(noise)
 
 # save
-saveRDS(barcodes, file = paste0("../../rObjects/", filtering_method,
-                                "_pass1_recluster_noisy_barcodes_to_remove.rds"),
+saveRDS(barcodes, file = "../../rObjects/pass2_non_neuronal_barcodes_to_remove.rds",
         compress = FALSE)
 ```
 

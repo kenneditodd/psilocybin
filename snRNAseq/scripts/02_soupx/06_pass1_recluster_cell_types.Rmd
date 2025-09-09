@@ -1,0 +1,1035 @@
+---
+title: "Psi1 snRNAseq"
+subtitle: "Recluster Pass 1 Cell Types"
+author: "Kennedi Todd"
+date: "08/06/2025"
+output:
+  html_document:
+    code_folding: hide
+    theme: cerulean
+    toc: true
+    toc_float: true
+editor_options: 
+  chunk_output_type: inline
+---
+
+# Setup
+## Set working directory
+```{r working_directory}
+knitr::opts_knit$set(root.dir = ".")
+```
+
+## Load libraries
+```{r libraries, message=FALSE, warnings=FALSE}
+library(dplyr)          # %>%
+library(ggplot2)        # geom_vline()
+library(Seurat)         # DimPlot()
+library(SeuratWrappers) # RunPrestoAll()
+```
+
+## Variables and functions
+```{r set_variables_and_thresholds}
+# source thresholds and output paths
+source("../../refs/thresholds_and_outs.R")
+out <- paste0(out, "pass1/")
+```
+
+## Load data
+```{r}
+# save seurat object
+mouse.annotated <- readRDS(
+  file = paste0( "../../rObjects/", filtering_method, "_pass1_annotated_seurat_obj.rds"),
+)
+```
+
+## UMAP
+```{r}
+DimPlot(mouse.annotated, shuffle = TRUE)
+```
+
+# Neurons
+## Subset
+```{r}
+# source thresholds and output paths
+source("../../refs/thresholds_and_outs.R")
+out <- paste0(out, "pass1/recluster_neurons/")
+
+# subset neurons
+neurons <- subset(mouse.annotated, 
+                  individual_clusters == c("Neurons 1", "Neurons 2", 
+                                           "Neurons 3", "Neurons 4", 
+                                           "Neurons 5", "Neurons 6", 
+                                           "Neurons 7", "Neurons 8", 
+                                           "Neurons 9", "Neurons 10",
+                                           "Neurons 11", "Neurons 12", 
+                                           "Neurons 13"))
+
+# create new obj
+counts <- GetAssayData(object = neurons, layer = "counts")
+neurons <- CreateSeuratObject(counts, meta.data = neurons@meta.data[,c(1,4:27)])
+
+# cleanup data
+remove(counts)
+```
+
+## Recluster
+```{r recluster_neurons}
+# split
+neurons <- SplitObject(neurons, split.by = "sample_id")
+
+# transform
+options(future.globals.maxSize = 20000 * 1024^2)  # 20 GB
+neurons <- lapply(neurons, SCTransform)
+
+# get shared featured
+shared_features <- SelectIntegrationFeatures(neurons)
+
+# merge
+neurons <- merge(neurons[[1]], y = neurons[-1])
+
+# set default assay
+DefaultAssay(neurons) <- "SCT"
+
+# set variable features
+VariableFeatures(neurons) <- shared_features
+
+# PCA
+neurons <- RunPCA(object = neurons, assay = "SCT")
+DefaultAssay(neurons) <- "SCT"
+
+# re-join layers
+neurons[["RNA"]] <- JoinLayers(neurons[["RNA"]])
+
+# elbow plot
+ElbowPlot(neurons,
+          ndims = 30,
+          reduction = "pca") +
+  geom_vline(xintercept = 11, linetype = "dashed", color = "red")
+
+# run UMAP
+neurons.unannotated <- RunUMAP(neurons,
+                             dims = 1:11,
+                             reduction = "pca",
+                             n.components = 3)
+
+# Determine the K-nearest neighbor graph
+neurons.unannotated <- FindNeighbors(object = neurons.unannotated,
+                                   assay = "SCT",
+                                   reduction = "pca",
+                                   dims = 1:11)
+
+# Determine the clusters for various resolutions
+neurons.unannotated <- FindClusters(object = neurons.unannotated,
+                                  algorithm = 1,
+                                  resolution = 0.1)
+
+# Set default assay and normalize for visualization
+DefaultAssay(neurons.unannotated) <- "RNA"
+neurons.unannotated <- NormalizeData(neurons.unannotated)
+
+# save
+saveRDS(neurons.unannotated, 
+        file = paste0( "../../rObjects/", filtering_method, "_pass1_neurons_reclustered_unannotated.rds"),
+        compress = FALSE)
+```
+
+## UMAP
+```{r neurons_unannotated_umap}
+Idents(neurons.unannotated) <- "seurat_clusters"
+
+umap <- DimPlot(neurons.unannotated, shuffle = TRUE, label = TRUE)
+umap
+```
+
+```{r save_neurons_unannotated_umap}
+pdf(paste0(out, "unannotated_umap.pdf"), width = 6, height = 5)
+umap
+dev.off()
+remove(umap)
+```
+
+## Canonical markers
+```{r neurons_unannotated_canonical_markers}
+canonical_markers <- c(
+  "Aldoc", "Aqp4", "Gja1", "Clu", "Apoe", "Slc1a2",   # Astrocytes
+  "Aif1", "C1qa", "P2ry12", "Tmem119","Trem2","Mrc1", # Microglia
+  "Ptprb", "Cldn5", "Flt1",                           # Endothelial
+   "Ttr", "Folr1",                                    # Choroid
+  "Col1a1", "Col1a2", "Dcn",                          # Fibroblast
+  "Cfap44", "Spag16",                                 # Ependymal
+  "Mog", "Opalin", "Mal", "Mag", "Mbp",               # Oligodendrocytes
+  "Pdgfra", "Cspg4", "Olig1", "Olig2", "Tnr",         # OPCs
+  "Syt1", "Snap25", "Gad1", "Meg3", "Igfbpl1","Sox4", # Neurons
+  "Pdgfrb", "Rgs5", "Acta2", "Vtn",                   # Mural
+  "Cd3e","Itgax","S100a9"                             # Immune (T, DC, neutrophil)
+)
+
+dot <- DotPlot(neurons.unannotated,
+               features = canonical_markers,
+               cols = "RdYlBu",
+               assay = "RNA") +
+  coord_flip() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+dot
+```
+
+```{r save_neurons_unannotated_canonical_markers}
+pdf(paste0(out, "unannotated_canonical_markers_dot_plot.pdf"), width = 6, height = 9)
+dot
+dev.off()
+remove(dot)
+```
+
+## Auto markers
+```{r neurons_unannotated_auto_markers}
+auto_markers <- SeuratWrappers::RunPrestoAll(
+  object = neurons.unannotated,
+  assay = "RNA",
+  slot = "counts",
+  only.pos = TRUE
+)
+
+top5 <- auto_markers %>%
+  filter(p_val_adj < 0.01) %>%
+  group_by(cluster) %>%
+  slice_head(n = 5) %>%
+  ungroup()
+
+dot <- DotPlot(neurons.unannotated,
+               features = unique(top5$gene),
+               cols = "RdYlBu",
+               assay = "RNA") +
+  coord_flip() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+dot
+```
+
+```{r save_neurons_unannotated_auto_markers}
+pdf(paste0(out, "unannotated_auto_markers_dot_plot.pdf"), width = 7, height = 9)
+dot
+dev.off()
+remove(dot)
+```
+
+```{r}
+remove(neurons, neurons.unannotated, auto_markers, top5)
+gc()
+```
+
+
+# Astrocytes
+## Subset
+```{r}
+# source thresholds and output paths
+source("../../refs/thresholds_and_outs.R")
+out <- paste0(out, "pass1/recluster_astrocytes/")
+
+# subset astrocytes
+astrocytes <- subset(mouse.annotated, 
+                  individual_clusters == "Astrocytes")
+
+# create new obj
+counts <- GetAssayData(object = astrocytes, layer = "counts")
+astrocytes <- CreateSeuratObject(counts, meta.data = astrocytes@meta.data[,c(1,4:27)])
+
+# cleanup data
+remove(counts)
+```
+
+## Recluster
+```{r recluster_astrocytes}
+# split
+astrocytes <- SplitObject(astrocytes, split.by = "sample_id")
+
+# transform
+options(future.globals.maxSize = 20000 * 1024^2)  # 20 GB
+astrocytes <- lapply(astrocytes, SCTransform)
+
+# get shared featured
+shared_features <- SelectIntegrationFeatures(astrocytes)
+
+# merge
+astrocytes <- merge(astrocytes[[1]], y = astrocytes[-1])
+
+# set default assay
+DefaultAssay(astrocytes) <- "SCT"
+
+# set variable features
+VariableFeatures(astrocytes) <- shared_features
+
+# PCA
+astrocytes <- RunPCA(object = astrocytes, assay = "SCT")
+DefaultAssay(astrocytes) <- "SCT"
+
+# re-join layers
+astrocytes[["RNA"]] <- JoinLayers(astrocytes[["RNA"]])
+
+# elbow plot
+ElbowPlot(astrocytes,
+          ndims = 30,
+          reduction = "pca") +
+  geom_vline(xintercept = 11, linetype = "dashed", color = "red")
+
+# run UMAP
+astrocytes.unannotated <- RunUMAP(astrocytes,
+                             dims = 1:10,
+                             reduction = "pca",
+                             n.components = 3)
+
+# Determine the K-nearest neighbor graph
+astrocytes.unannotated <- FindNeighbors(object = astrocytes.unannotated,
+                                   assay = "SCT",
+                                   reduction = "pca",
+                                   dims = 1:10)
+
+# Determine the clusters for various resolutions
+astrocytes.unannotated <- FindClusters(object = astrocytes.unannotated,
+                                  algorithm = 1,
+                                  resolution = 0.1)
+
+# Set default assay and normalize for visualization
+DefaultAssay(astrocytes.unannotated) <- "RNA"
+astrocytes.unannotated <- NormalizeData(astrocytes.unannotated)
+
+# save
+saveRDS(astrocytes.unannotated, 
+        file = paste0( "../../rObjects/", filtering_method, "_pass1_astrocytes_reclustered_unannotated.rds"),
+        compress = FALSE)
+```
+
+## UMAP
+```{r astrocytes_unannotated_umap}
+Idents(astrocytes.unannotated) <- "seurat_clusters"
+
+umap <- DimPlot(astrocytes.unannotated, shuffle = TRUE, label = TRUE)
+umap
+```
+
+```{r save_astrocytes_unannotated_umap}
+pdf(paste0(out, "unannotated_umap.pdf"), width = 6, height = 5)
+umap
+dev.off()
+remove(umap)
+```
+
+## Canonical markers
+```{r astrocytes_unannotated_canonical_markers}
+canonical_markers <- c(
+  "Aldoc", "Aqp4", "Gja1", "Clu", "Apoe", "Slc1a2",   # Astrocytes
+  "Aif1", "C1qa", "P2ry12", "Tmem119","Trem2","Mrc1", # Microglia
+  "Ptprb", "Cldn5", "Flt1",                           # Endothelial
+   "Ttr", "Folr1",                                    # Choroid
+  "Col1a1", "Col1a2", "Dcn",                          # Fibroblast
+  "Cfap44", "Spag16",                                 # Ependymal
+  "Mog", "Opalin", "Mal", "Mag", "Mbp",               # Oligodendrocytes
+  "Pdgfra", "Cspg4", "Olig1", "Olig2", "Tnr",         # OPCs
+  "Syt1", "Snap25", "Gad1", "Meg3", "Igfbpl1","Sox4", # astrocytes
+  "Pdgfrb", "Rgs5", "Acta2", "Vtn",                   # Mural
+  "Cd3e","Itgax","S100a9"                             # Immune (T, DC, neutrophil)
+)
+
+dot <- DotPlot(astrocytes.unannotated,
+               features = canonical_markers,
+               cols = "RdYlBu",
+               assay = "RNA") +
+  coord_flip() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+dot
+```
+
+```{r save_astrocytes_unannotated_canonical_markers}
+pdf(paste0(out, "unannotated_canonical_markers_dot_plot.pdf"), width = 6, height = 9)
+dot
+dev.off()
+remove(dot)
+```
+
+## Auto markers
+```{r astrocytes_unannotated_auto_markers}
+auto_markers <- SeuratWrappers::RunPrestoAll(
+  object = astrocytes.unannotated,
+  assay = "RNA",
+  slot = "counts",
+  only.pos = TRUE
+)
+
+top5 <- auto_markers %>%
+  filter(p_val_adj < 0.01) %>%
+  group_by(cluster) %>%
+  slice_head(n = 5) %>%
+  ungroup()
+
+dot <- DotPlot(astrocytes.unannotated,
+               features = unique(top5$gene),
+               cols = "RdYlBu",
+               assay = "RNA") +
+  coord_flip() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+dot
+```
+
+```{r save_astrocytes_unannotated_auto_markers}
+pdf(paste0(out, "unannotated_auto_markers_dot_plot.pdf"), width = 7, height = 9)
+dot
+dev.off()
+remove(dot)
+```
+
+```{r astrocytes_neuronal_marker_heatmap}
+fplot <- FeaturePlot(
+  object = astrocytes.unannotated,
+  features = "Snap25"
+)  + 
+  scale_colour_gradientn(colours = c("blue","lightblue","yellow","orange","red"))
+fplot
+```
+
+```{r astrocytes_barcodes_to_remove}
+cluster3 <- subset(astrocytes.unannotated, seurat_clusters == "3")
+barcodes <- colnames(cluster3)
+saveRDS(object = barcodes,
+        file = paste0("../../rObjects/", filtering_method, "_recluster_astrocytes_barcodes_to_remove.rds"))
+remove(astrocytes, astrocytes.unannotated, auto_markers, cluster3, fplot, top5)
+```
+
+# OPCs and Oligodendrocytes
+## Subset
+```{r subset_oligos}
+# source thresholds and output paths
+source("../../refs/thresholds_and_outs.R")
+out <- paste0(out, "pass1/recluster_oligos_opcs/")
+
+# subset oligos
+oligos <- subset(mouse.annotated, 
+                  individual_clusters %in% 
+                   c("OPCs", "Differentiating OPCs", "Oligodendrocytes"))
+
+# create new obj
+counts <- GetAssayData(object = oligos, layer = "counts")
+oligos <- CreateSeuratObject(counts, meta.data = oligos@meta.data[,c(1,4:27)])
+
+# cleanup data
+remove(counts)
+```
+
+## Recluster
+```{r recluster_oligos}
+# split
+oligos <- SplitObject(oligos, split.by = "sample_id")
+
+# transform
+options(future.globals.maxSize = 20000 * 1024^2)  # 20 GB
+oligos <- lapply(oligos, SCTransform)
+
+# get shared featured
+shared_features <- SelectIntegrationFeatures(oligos)
+
+# merge
+oligos <- merge(oligos[[1]], y = oligos[-1])
+
+# set default assay
+DefaultAssay(oligos) <- "SCT"
+
+# set variable features
+VariableFeatures(oligos) <- shared_features
+
+# PCA
+oligos <- RunPCA(object = oligos, assay = "SCT")
+DefaultAssay(oligos) <- "SCT"
+
+# re-join layers
+oligos[["RNA"]] <- JoinLayers(oligos[["RNA"]])
+
+# elbow plot
+ElbowPlot(oligos,
+          ndims = 30,
+          reduction = "pca") +
+  geom_vline(xintercept = 7, linetype = "dashed", color = "red")
+
+# run UMAP
+oligos.unannotated <- RunUMAP(oligos,
+                             dims = 1:7,
+                             reduction = "pca",
+                             n.components = 3)
+
+# Determine the K-nearest neighbor graph
+oligos.unannotated <- FindNeighbors(object = oligos.unannotated,
+                                   assay = "SCT",
+                                   reduction = "pca",
+                                   dims = 1:7)
+
+# Determine the clusters for various resolutions
+oligos.unannotated <- FindClusters(object = oligos.unannotated,
+                                  algorithm = 1,
+                                  resolution = 0.1)
+
+# Set default assay and normalize for visualization
+DefaultAssay(oligos.unannotated) <- "RNA"
+oligos.unannotated <- NormalizeData(oligos.unannotated)
+
+# save
+saveRDS(oligos.unannotated, 
+        file = paste0( "../../rObjects/", filtering_method, "_pass1_oligos_reclustered_unannotated.rds"),
+        compress = FALSE)
+```
+
+## UMAP
+```{r oligos_unannotated_umap}
+Idents(oligos.unannotated) <- "seurat_clusters"
+
+umap <- DimPlot(oligos.unannotated, shuffle = TRUE, label = TRUE)
+umap
+```
+
+```{r save_oligos_unannotated_umap}
+pdf(paste0(out, "unannotated_umap.pdf"), width = 6, height = 5)
+umap
+dev.off()
+remove(umap)
+```
+
+## Canonical markers
+```{r oligos_unannotated_canonical_markers}
+canonical_markers <- c(
+  "Aldoc", "Aqp4", "Gja1", "Clu", "Apoe", "Slc1a2",   # Astrocytes
+  "Aif1", "C1qa", "P2ry12", "Tmem119","Trem2","Mrc1", # Microglia
+  "Ptprb", "Cldn5", "Flt1",                           # Endothelial
+   "Ttr", "Folr1",                                    # Choroid
+  "Col1a1", "Col1a2", "Dcn",                          # Fibroblast
+  "Cfap44", "Spag16",                                 # Ependymal
+  "Mog", "Opalin", "Mal", "Mag", "Mbp",               # Oligodendrocytes
+  "Pdgfra", "Cspg4", "Olig1", "Olig2", "Tnr",         # OPCs
+  "Syt1", "Snap25", "Gad1", "Meg3", "Igfbpl1","Sox4", # oligos
+  "Pdgfrb", "Rgs5", "Acta2", "Vtn",                   # Mural
+  "Cd3e","Itgax","S100a9"                             # Immune (T, DC, neutrophil)
+)
+
+dot <- DotPlot(oligos.unannotated,
+               features = canonical_markers,
+               cols = "RdYlBu",
+               assay = "RNA") +
+  coord_flip() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+dot
+```
+
+```{r save_oligos_unannotated_canonical_markers}
+pdf(paste0(out, "unannotated_canonical_markers_dot_plot.pdf"), width = 6, height = 9)
+dot
+dev.off()
+remove(dot)
+```
+
+## Auto markers
+```{r oligos_unannotated_auto_markers}
+auto_markers <- SeuratWrappers::RunPrestoAll(
+  object = oligos.unannotated,
+  assay = "RNA",
+  slot = "counts",
+  only.pos = TRUE
+)
+
+top5 <- auto_markers %>%
+  filter(p_val_adj < 0.01) %>%
+  group_by(cluster) %>%
+  slice_head(n = 5) %>%
+  ungroup()
+
+dot <- DotPlot(oligos.unannotated,
+               features = unique(top5$gene),
+               cols = "RdYlBu",
+               assay = "RNA") +
+  coord_flip() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+dot
+```
+
+```{r save_oligos_unannotated_auto_markers}
+pdf(paste0(out, "unannotated_auto_markers_dot_plot.pdf"), width = 7, height = 9)
+dot
+dev.off()
+remove(dot)
+```
+
+```{r oligos_neuronal_marker_heatmap}
+fplot <- FeaturePlot(
+  object = oligos.unannotated,
+  features = "Cspg4"
+)  + 
+  scale_colour_gradientn(colours = c("blue","lightblue","yellow","orange","red"))
+fplot
+```
+
+```{r oligos_barcodes_to_remove}
+cluster5 <- subset(oligos.unannotated, seurat_clusters == "5")
+barcodes <- colnames(cluster5)
+saveRDS(object = barcodes,
+        file = paste0("../../rObjects/", filtering_method, "_recluster_oligos_barcodes_to_remove.rds"))
+remove(auto_markers, cluster5, fplot, oligos, oligos.unannotated, top5)
+```
+
+
+# Fibroblasts
+## Subset
+```{r subset_fibro}
+# source thresholds and output paths
+source("../../refs/thresholds_and_outs.R")
+out <- paste0(out, "pass1/recluster_fibroblasts/")
+
+# subset fibro
+fibro <- subset(mouse.annotated, 
+                  individual_clusters == "Fibroblasts")
+
+# create new obj
+counts <- GetAssayData(object = fibro, layer = "counts")
+fibro <- CreateSeuratObject(counts, meta.data = fibro@meta.data[,c(1,4:27)])
+
+# cleanup data
+remove(counts)
+```
+
+## Recluster
+```{r recluster_fibro}
+# split
+fibro <- SplitObject(fibro, split.by = "sample_id")
+
+# transform
+options(future.globals.maxSize = 20000 * 1024^2)  # 20 GB
+fibro <- lapply(fibro, SCTransform)
+
+# get shared featured
+shared_features <- SelectIntegrationFeatures(fibro)
+
+# merge
+fibro <- merge(fibro[[1]], y = fibro[-1])
+
+# set default assay
+DefaultAssay(fibro) <- "SCT"
+
+# set variable features
+VariableFeatures(fibro) <- shared_features
+
+# PCA
+fibro <- RunPCA(object = fibro, assay = "SCT")
+DefaultAssay(fibro) <- "SCT"
+
+# re-join layers
+fibro[["RNA"]] <- JoinLayers(fibro[["RNA"]])
+
+# elbow plot
+ElbowPlot(fibro,
+          ndims = 30,
+          reduction = "pca") +
+  geom_vline(xintercept = 7, linetype = "dashed", color = "red")
+
+# run UMAP
+fibro.unannotated <- RunUMAP(fibro,
+                             dims = 1:7,
+                             reduction = "pca",
+                             n.components = 3)
+
+# Determine the K-nearest neighbor graph
+fibro.unannotated <- FindNeighbors(object = fibro.unannotated,
+                                   assay = "SCT",
+                                   reduction = "pca",
+                                   dims = 1:7)
+
+# Determine the clusters for various resolutions
+fibro.unannotated <- FindClusters(object = fibro.unannotated,
+                                  algorithm = 1,
+                                  resolution = 0.1)
+
+# Set default assay and normalize for visualization
+DefaultAssay(fibro.unannotated) <- "RNA"
+fibro.unannotated <- NormalizeData(fibro.unannotated)
+
+# save
+saveRDS(fibro.unannotated, 
+        file = paste0( "../../rObjects/", filtering_method, "_pass1_fibro_reclustered_unannotated.rds"),
+        compress = FALSE)
+```
+
+## UMAP
+```{r fibro_unannotated_umap}
+Idents(fibro.unannotated) <- "seurat_clusters"
+
+umap <- DimPlot(fibro.unannotated, shuffle = TRUE, label = TRUE)
+umap
+```
+
+```{r save_fibro_unannotated_umap}
+pdf(paste0(out, "unannotated_umap.pdf"), width = 6, height = 5)
+umap
+dev.off()
+remove(umap)
+```
+
+
+# Choroid
+## Subset
+```{r subset_choroid}
+# source thresholds and output paths
+source("../../refs/thresholds_and_outs.R")
+out <- paste0(out, "pass1/recluster_choroid/")
+
+# subset choroid
+choroid <- subset(mouse.annotated, 
+                  individual_clusters == "Choroid")
+
+# create new obj
+counts <- GetAssayData(object = choroid, layer = "counts")
+choroid <- CreateSeuratObject(counts, meta.data = choroid@meta.data[,c(1,4:27)])
+
+# cleanup data
+remove(counts)
+```
+
+## Recluster
+```{r recluster_choroid}
+# split
+choroid <- SplitObject(choroid, split.by = "sample_id")
+
+# transform
+options(future.globals.maxSize = 20000 * 1024^2)  # 20 GB
+choroid <- lapply(choroid, SCTransform)
+
+# get shared featured
+shared_features <- SelectIntegrationFeatures(choroid)
+
+# merge
+choroid <- merge(choroid[[1]], y = choroid[-1])
+
+# set default assay
+DefaultAssay(choroid) <- "SCT"
+
+# set variable features
+VariableFeatures(choroid) <- shared_features
+
+# PCA
+choroid <- RunPCA(object = choroid, assay = "SCT")
+DefaultAssay(choroid) <- "SCT"
+
+# re-join layers
+choroid[["RNA"]] <- JoinLayers(choroid[["RNA"]])
+
+# elbow plot
+ElbowPlot(choroid,
+          ndims = 30,
+          reduction = "pca") +
+  geom_vline(xintercept = 6, linetype = "dashed", color = "red")
+
+# run UMAP
+choroid.unannotated <- RunUMAP(choroid,
+                             dims = 1:6,
+                             reduction = "pca",
+                             n.components = 3)
+
+# Determine the K-nearest neighbor graph
+choroid.unannotated <- FindNeighbors(object = choroid.unannotated,
+                                   assay = "SCT",
+                                   reduction = "pca",
+                                   dims = 1:6)
+
+# Determine the clusters for various resolutions
+choroid.unannotated <- FindClusters(object = choroid.unannotated,
+                                  algorithm = 1,
+                                  resolution = 0.1)
+
+# Set default assay and normalize for visualization
+DefaultAssay(choroid.unannotated) <- "RNA"
+choroid.unannotated <- NormalizeData(choroid.unannotated)
+
+# save
+saveRDS(choroid.unannotated, 
+        file = paste0( "../../rObjects/", filtering_method, "_pass1_choroid_reclustered_unannotated.rds"),
+        compress = FALSE)
+```
+
+## UMAP
+```{r choroid_unannotated_umap}
+Idents(choroid.unannotated) <- "seurat_clusters"
+
+umap <- DimPlot(choroid.unannotated, shuffle = TRUE, label = TRUE)
+umap
+```
+
+```{r save_choroid_unannotated_umap}
+pdf(paste0(out, "unannotated_umap.pdf"), width = 6, height = 5)
+umap
+dev.off()
+remove(umap)
+```
+
+## Canonical markers
+```{r choroid_unannotated_canonical_markers}
+canonical_markers <- c(
+  "Aldoc", "Aqp4", "Gja1", "Clu", "Apoe", "Slc1a2",   # Astrocytes
+  "Aif1", "C1qa", "P2ry12", "Tmem119","Trem2","Mrc1", # Microglia
+  "Ptprb", "Cldn5", "Flt1",                           # Endothelial
+   "Ttr", "Folr1",                                    # Choroid
+  "Col1a1", "Col1a2", "Dcn",                          # Fibroblasts
+  "Cfap44", "Spag16",                                 # Ependymal
+  "Mog", "Opalin", "Mal", "Mag", "Mbp",               # Oligodendrocytes
+  "Pdgfra", "Cspg4", "Olig1", "Olig2", "Tnr",         # OPCs
+  "Syt1", "Snap25", "Gad1", "Meg3", "Igfbpl1","Sox4", # Neurons
+  "Pdgfrb", "Rgs5", "Acta2", "Vtn",                   # Mural
+  "Cd3e","Itgax","S100a9"                             # Immune (T, DC, neutrophil)
+)
+
+dot <- DotPlot(choroid.unannotated,
+               features = canonical_markers,
+               cols = "RdYlBu",
+               assay = "RNA") +
+  coord_flip() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+dot
+```
+
+```{r save_choroid_unannotated_canonical_markers}
+pdf(paste0(out, "unannotated_canonical_markers_dot_plot.pdf"), width = 6, height = 9)
+dot
+dev.off()
+remove(dot)
+```
+
+## Auto markers
+```{r choroid_unannotated_auto_markers}
+auto_markers <- SeuratWrappers::RunPrestoAll(
+  object = choroid.unannotated,
+  assay = "RNA",
+  slot = "counts",
+  only.pos = TRUE
+)
+
+top5 <- auto_markers %>%
+  filter(p_val_adj < 0.01) %>%
+  group_by(cluster) %>%
+  slice_head(n = 5) %>%
+  ungroup()
+
+dot <- DotPlot(choroid.unannotated,
+               features = unique(top5$gene),
+               cols = "RdYlBu",
+               assay = "RNA") +
+  coord_flip() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+dot
+```
+
+```{r save_choroid_unannotated_auto_markers}
+pdf(paste0(out, "unannotated_auto_markers_dot_plot.pdf"), width = 7, height = 9)
+dot
+dev.off()
+remove(dot)
+```
+
+```{r choroid_neuronal_marker_heatmap}
+fplot <- FeaturePlot(
+  object = choroid.unannotated,
+  features = "Cfap44"
+)  + 
+  scale_colour_gradientn(colours = c("blue","lightblue","yellow","orange","red"))
+fplot
+```
+
+```{r choroid_barcodes_to_remove}
+cluster0 <- subset(choroid.unannotated, seurat_clusters == "0")
+barcodes <- colnames(cluster0)
+saveRDS(object = barcodes,
+        file = paste0("../../rObjects/", filtering_method, "_recluster_choroid_barcodes_to_remove.rds"))
+remove(auto_markers, cluster0, fplot, choroid, choroid.unannotated, top5)
+gc()
+```
+
+
+# Multiplets
+## Subset
+```{r subset_multiplets}
+# source thresholds and output paths
+source("../../refs/thresholds_and_outs.R")
+out <- paste0(out, "pass1/recluster_multiplets/")
+
+# subset multiplets
+multiplets <- subset(mouse.annotated, 
+                    individual_clusters %in% c("Multiplets 1", "Multiplets 2", 
+                                               "Multiplets 3", "Multiplets 4", 
+                                               "Multiplets 5", "Multiplets 6", 
+                                               "Multiplets 7", "Multiplets 8", 
+                                               "Multiplets 9"))
+
+# create new obj
+counts <- GetAssayData(object = multiplets, layer = "counts")
+multiplets <- CreateSeuratObject(counts, meta.data = multiplets@meta.data[,c(1,4:27)])
+
+# cleanup data
+remove(counts)
+```
+
+## Recluster
+```{r recluster_multiplets}
+# split
+multiplets <- SplitObject(multiplets, split.by = "sample_id")
+
+# transform
+options(future.globals.maxSize = 20000 * 1024^2)  # 20 GB
+multiplets <- lapply(multiplets, SCTransform)
+
+# get shared featured
+shared_features <- SelectIntegrationFeatures(multiplets)
+
+# merge
+multiplets <- merge(multiplets[[1]], y = multiplets[-1])
+
+# set default assay
+DefaultAssay(multiplets) <- "SCT"
+
+# set variable features
+VariableFeatures(multiplets) <- shared_features
+
+# PCA
+multiplets <- RunPCA(object = multiplets, assay = "SCT")
+DefaultAssay(multiplets) <- "SCT"
+
+# re-join layers
+multiplets[["RNA"]] <- JoinLayers(multiplets[["RNA"]])
+
+# elbow plot
+ElbowPlot(multiplets,
+          ndims = 30,
+          reduction = "pca") +
+  geom_vline(xintercept = 11, linetype = "dashed", color = "red")
+
+# run UMAP
+multiplets.unannotated <- RunUMAP(multiplets,
+                             dims = 1:11,
+                             reduction = "pca",
+                             n.components = 3)
+
+# Determine the K-nearest neighbor graph
+multiplets.unannotated <- FindNeighbors(object = multiplets.unannotated,
+                                   assay = "SCT",
+                                   reduction = "pca",
+                                   dims = 1:11)
+
+# Determine the clusters for various resolutions
+multiplets.unannotated <- FindClusters(object = multiplets.unannotated,
+                                  algorithm = 1,
+                                  resolution = 0.2)
+
+# Set default assay and normalize for visualization
+DefaultAssay(multiplets.unannotated) <- "RNA"
+multiplets.unannotated <- NormalizeData(multiplets.unannotated)
+
+# save
+saveRDS(multiplets.unannotated, 
+        file = paste0( "../../rObjects/", filtering_method, "_pass1_multiplets_reclustered_unannotated.rds"),
+        compress = FALSE)
+```
+
+## UMAP
+```{r multiplets_unannotated_umap}
+Idents(multiplets.unannotated) <- "seurat_clusters"
+
+umap1 <- DimPlot(multiplets.unannotated, shuffle = TRUE, label = TRUE)
+umap1
+
+umap2 <- DimPlot(multiplets.unannotated, shuffle = TRUE, label = TRUE, dims = c(2,3))
+umap2
+```
+
+```{r save_multiplets_unannotated_umap}
+pdf(paste0(out, "unannotated_umap_dim1&2.pdf"), width = 6, height = 5)
+umap1
+dev.off()
+
+pdf(paste0(out, "unannotated_umap_dim2&3.pdf"), width = 6, height = 5)
+umap2
+dev.off()
+
+remove(umap1,umap2)
+```
+
+## Canonical markers
+```{r multiplets_unannotated_canonical_markers}
+canonical_markers <- c(
+  "Aldoc", "Aqp4", "Gja1", "Clu", "Apoe", "Slc1a2",   # Astrocytes
+  "Aif1", "C1qa", "P2ry12", "Tmem119","Trem2","Mrc1", # Microglia
+  "Ptprb", "Cldn5", "Flt1",                           # Endothelial
+   "Ttr", "Folr1",                                    # multiplets
+  "Col1a1", "Col1a2", "Dcn",                          # Fibroblasts
+  "Cfap44", "Spag16",                                 # Ependymal
+  "Mog", "Opalin", "Mal", "Mag", "Mbp",               # Oligodendrocytes
+  "Pdgfra", "Cspg4", "Olig1", "Olig2", "Tnr",         # OPCs
+  "Syt1", "Snap25", "Gad1", "Meg3", "Igfbpl1","Sox4", # Neurons
+  "Pdgfrb", "Rgs5", "Acta2", "Vtn",                   # Mural
+  "Cd3e","Itgax","S100a9"                             # Immune (T, DC, neutrophil)
+)
+
+dot <- DotPlot(multiplets.unannotated,
+               features = canonical_markers,
+               cols = "RdYlBu",
+               assay = "RNA") +
+  coord_flip() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+dot
+```
+
+```{r save_multiplets_unannotated_canonical_markers}
+pdf(paste0(out, "unannotated_canonical_markers_dot_plot.pdf"), width = 8, height = 9)
+dot
+dev.off()
+remove(dot)
+```
+
+## Auto markers
+```{r multiplets_unannotated_auto_markers}
+auto_markers <- SeuratWrappers::RunPrestoAll(
+  object = multiplets.unannotated,
+  assay = "RNA",
+  slot = "counts",
+  only.pos = TRUE
+)
+
+top3 <- auto_markers %>%
+  filter(p_val_adj < 0.01) %>%
+  group_by(cluster) %>%
+  slice_head(n = 3) %>%
+  ungroup()
+
+dot <- DotPlot(multiplets.unannotated,
+               features = unique(top5$gene),
+               cols = "RdYlBu",
+               assay = "RNA") +
+  coord_flip() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+dot
+```
+
+```{r save_multiplets_unannotated_auto_markers}
+pdf(paste0(out, "unannotated_auto_markers_dot_plot.pdf"), width = 8, height = 10)
+dot
+dev.off()
+remove(dot)
+```
+
+```{r multiplets_neuronal_marker_heatmap}
+fplot <- FeaturePlot(
+  object = multiplets.unannotated,
+  features = "Acta2",
+  dims = c(2,3)
+)  + 
+  scale_colour_gradientn(colours = c("blue","lightblue","yellow","orange","red"))
+fplot
+```
+
+```{r multiplets_barcodes_to_remove}
+multiplets.unannotated$remove <- !multiplets.unannotated$seurat_clusters %in% c("8","13","16")
+table(multiplets.unannotated$remove)
+cluster <- subset(multiplets.unannotated, remove == TRUE)
+barcodes <- colnames(cluster)
+saveRDS(object = barcodes,
+        file = paste0("../../rObjects/", filtering_method, "_recluster_multiplets_barcodes_to_remove.rds"))
+remove(auto_markers, cluster, fplot, multiplets, multiplets.unannotated, top5)
+gc()
+```
+

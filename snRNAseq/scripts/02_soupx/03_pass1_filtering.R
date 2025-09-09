@@ -1,7 +1,7 @@
 # Psilocybin snRNAseq
-# Filter low qualtiy cells. Remove lowly expressed genes.
+# Filter low quality cells. Remove lowly expressed or noisy genes.
 # Kennedi Todd
-# 05/21/2025
+# July 29, 2025
 
 # load libraries
 library(dotenv)
@@ -36,7 +36,8 @@ mouse.filtered <- subset(mouse, subset = (nCount_RNA > nCount.min) &
                            (nFeature_RNA > nFeature.min) &
                            (cell_complexity > complexity.cutoff) &
                            (percent_mt < mt.cutoff) &
-                           (percent_hb < hb.cutoff))
+                           (percent_hb < hb.cutoff) &
+                           (percent_nuclear > nuclear.cutoff))
 
 # print cells removed
 print(paste0(dim(mouse)[2] - dim(mouse.filtered)[2]," cells removed"))
@@ -77,5 +78,5 @@ remove(mouse,counts,counts.filtered,nonzero)
 
 # save
 saveRDS(object = mouse.filtered, 
-        file = paste0( "../../rObjects/", filtering_method, "_pass1_quality_filtered_seurat_obj.rds"), 
+        file = paste0( "../../rObjects/", filtering_method, "_pass1_filtered_seurat_obj.rds"), 
         compress = FALSE)
