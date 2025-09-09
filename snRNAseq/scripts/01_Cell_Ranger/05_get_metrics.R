@@ -53,6 +53,8 @@ rownames(df) <- df$sample_id
 colnames(df) <- gsub(" ", "_", tolower(colnames(df)))
 df <- df[,c(18,17,2,11:16,3:10)]
 
+# sort by ascending # of cells
+df <- df[order(df$cells),]
 
 write.table(df, 
             paste0(project_dir, "/counts/web_summaries/overall_metrics.tsv"),

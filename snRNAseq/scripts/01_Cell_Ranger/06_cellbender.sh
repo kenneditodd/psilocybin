@@ -5,7 +5,7 @@
 #SBATCH --gres=gpu:1                # Requests 1 GPU
 #SBATCH --time=8:00:00              # Maximum time the job is allowed to run, HH:MM:SS
 #SBATCH --job-name=cellbender       # Name of the job
-#SBATCH --mem=100G                  # Memory allocation
+#SBATCH --mem=200G                  # Memory allocation
 #SBATCH --output=logs/%x.%j.stdout  # Stdout log file
 #SBATCH --error=logs/%x.%j.stderr   # Stderr log file
 
@@ -27,7 +27,7 @@ SAMPLE=$1
 echo "sample: $SAMPLE"
 
 # in order for ckpt.tar.gz in cellbender to save correctly, go to where data is located
-cd ${PROJECT_DIR}/counts/${SAMPLE}/outs
+cd ${PROJECT_DIR}/counts/${SAMPLE}/outs/multi/count
 
 # run cellbender remove-background
 cellbender remove-background \

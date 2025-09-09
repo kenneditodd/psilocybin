@@ -1,5 +1,5 @@
 #!/bin/sh
-#SBATCH --job-name=cellranger_multi_part1 # Name of the job
+#SBATCH --job-name=cellranger_multi       # Name of the job
 #SBATCH --mem=8G                          # Amount of memory allocated for the job
 #SBATCH --cpus-per-task=1                 # Number of tasks (or CPU cores)
 #SBATCH --output=logs/%x.%j.stdout        # File for standard output
