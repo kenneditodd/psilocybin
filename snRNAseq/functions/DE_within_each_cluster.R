@@ -8,7 +8,7 @@
 #' @export
 #'
 #' @examples
-DE_within_each_cluster <- function(obj, outDir, clusterCol = "annotated_clusters", groupCol = "group", group1, group2, method = "DESeq2") {
+DE_within_each_cluster <- function(obj, outDir, clusterCol = "annotated_clusters", groupCol = "group", group1, group2, method = "MAST", pct = 0.1, latentVars) {
   
   # add column
   obj$clusterCol <- obj[[clusterCol]]
@@ -36,7 +36,8 @@ DE_within_each_cluster <- function(obj, outDir, clusterCol = "annotated_clusters
                            ident.1 = group1,
                            ident.2 = group2,
                            only.pos = FALSE, # default
-                           min.pct = 0.10,
+                           min.pct = pct,
+                           latent.vars = latent_vars,
                            test.use = method,
                            verbose = TRUE,
                            assay = "RNA")
