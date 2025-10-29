@@ -19,10 +19,10 @@ setwd(".")
 
 # Source thresholds and output paths
 source("../../refs/thresholds_and_outs.R")
-out <- paste0(out, "pass3/recluster_neurons/")
+out <- paste0(out, "pass3/")
 
 # Load Seurat object
-mouse.merged <- readRDS(paste0("../../rObjects/", filtering_method, "_pass3_recluster_neurons_pca_seurat_obj.rds"))
+mouse.merged <- readRDS(paste0("../../rObjects/pass3_harmony_seurat_obj.rds"))
 
 # Parse SLURM-passed arguments
 args <- commandArgs(trailingOnly = TRUE)
@@ -30,15 +30,11 @@ dm <- as.numeric(args[1])       # Number of dimensions
 md <- as.numeric(args[2])       # min.dist
 nn <- as.numeric(args[3])       # n.neighbors
 
-# FeaturePlot markers
-marker_genes <- c("Syt1", "Snap25", "Gad1", "Gad2", "Prox1", "Tle4", "Foxp2",
-                  "Lamp5", "Lhx6", "Rorb", "Bcl6")
-
 # Run UMAP with specified parameters
 mouse.merged <- RunUMAP(
   object = mouse.merged,
   dims = 1:dm,
-  reduction = "pca",
+  reduction = "harmony",
   min.dist = md,
   n.neighbors = nn,
   n.components = 3,
@@ -47,11 +43,17 @@ mouse.merged <- RunUMAP(
 )
 
 # Create DimPlot
-u <- DimPlot(mouse.merged, shuffle = TRUE) +
-  NoLegend() +
-  ggtitle(paste0("Dims: 1-", dm, ", Min.dist: ", md, ", nn: ", nn))
+#u <- DimPlot(mouse.merged, shuffle = TRUE) +
+#  NoLegend() +
+#  ggtitle(paste0("Dims: 1-", dm, ", Min.dist: ", md, ", nn: ", nn))
 
-# Create 11 FeaturePlots
+# FeaturePlot markers
+marker_genes <- c("Aqp4","Cspg4","Mog",
+                  "P2ry12", "Col1a2", "Ttr", 
+                  "Snap25", "Gad1", "Slc17a7",
+                  "Slc17a6", "Pvalb", "Sst")
+
+# Create 12 FeaturePlots
 fplots <- lapply(marker_genes, function(gene) {
   FeaturePlot(mouse.merged,
               reduction = "umap",
@@ -62,7 +64,8 @@ fplots <- lapply(marker_genes, function(gene) {
 })
 
 # Combine all plots (1 DimPlot + 11 FeaturePlots = 12 total)
-all_plots <- c(list(u), fplots)
+#all_plots <- c(list(u), fplots)
+all_plots <- fplots
 layout <- matrix(1:12, nrow = 3, ncol = 4, byrow = TRUE)
 
 # Save as PDF

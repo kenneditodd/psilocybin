@@ -38,7 +38,7 @@ out <- paste0(out, "pass1/")
 ```{r}
 # save seurat object
 mouse.annotated <- readRDS(
-  file = paste0( "../../rObjects/", filtering_method, "_pass1_annotated_seurat_obj.rds"),
+  file = paste0( "../../rObjects/pass1_annotated_seurat_obj.rds"),
 )
 ```
 
@@ -56,17 +56,21 @@ out <- paste0(out, "pass1/recluster_neurons/")
 
 # subset neurons
 neurons <- subset(mouse.annotated, 
-                  individual_clusters == c("Neurons 1", "Neurons 2", 
-                                           "Neurons 3", "Neurons 4", 
-                                           "Neurons 5", "Neurons 6", 
-                                           "Neurons 7", "Neurons 8", 
-                                           "Neurons 9", "Neurons 10",
-                                           "Neurons 11", "Neurons 12", 
-                                           "Neurons 13"))
+                  individual_clusters %in% c("Neurons 1", "Neurons 2",
+                                             "Neurons 3", "Neurons 4",
+                                             "Neurons 5", "Neurons 6", 
+                                             "Neurons 7", "Neurons 8",
+                                             "Neurons 9", "Neurons 10",
+                                             "Neurons 11", "Neurons 12", 
+                                             "Neurons 13"))
+table(neurons$individual_clusters)
 
 # create new obj
+options(Seurat.object.assay.calcn = TRUE)
 counts <- GetAssayData(object = neurons, layer = "counts")
-neurons <- CreateSeuratObject(counts, meta.data = neurons@meta.data[,c(1,4:27)])
+neurons <- CreateSeuratObject(counts)
+neurons <- AddMetaData(neurons, 
+                       metadata = mouse.annotated@meta.data[colnames(neurons), c(4:27)])
 
 # cleanup data
 remove(counts)
@@ -104,11 +108,11 @@ neurons[["RNA"]] <- JoinLayers(neurons[["RNA"]])
 ElbowPlot(neurons,
           ndims = 30,
           reduction = "pca") +
-  geom_vline(xintercept = 11, linetype = "dashed", color = "red")
+  geom_vline(xintercept = 20, linetype = "dashed", color = "red")
 
 # run UMAP
 neurons.unannotated <- RunUMAP(neurons,
-                             dims = 1:11,
+                             dims = 1:20,
                              reduction = "pca",
                              n.components = 3)
 
@@ -116,12 +120,12 @@ neurons.unannotated <- RunUMAP(neurons,
 neurons.unannotated <- FindNeighbors(object = neurons.unannotated,
                                    assay = "SCT",
                                    reduction = "pca",
-                                   dims = 1:11)
+                                   dims = 1:20)
 
 # Determine the clusters for various resolutions
 neurons.unannotated <- FindClusters(object = neurons.unannotated,
                                   algorithm = 1,
-                                  resolution = 0.1)
+                                  resolution = 0.5)
 
 # Set default assay and normalize for visualization
 DefaultAssay(neurons.unannotated) <- "RNA"
@@ -129,7 +133,7 @@ neurons.unannotated <- NormalizeData(neurons.unannotated)
 
 # save
 saveRDS(neurons.unannotated, 
-        file = paste0( "../../rObjects/", filtering_method, "_pass1_neurons_reclustered_unannotated.rds"),
+        file = paste0( "../../rObjects/pass1_neurons_reclustered_unannotated.rds"),
         compress = FALSE)
 ```
 
@@ -148,24 +152,19 @@ dev.off()
 remove(umap)
 ```
 
-## Canonical markers
+## Markers
 ```{r neurons_unannotated_canonical_markers}
-canonical_markers <- c(
-  "Aldoc", "Aqp4", "Gja1", "Clu", "Apoe", "Slc1a2",   # Astrocytes
-  "Aif1", "C1qa", "P2ry12", "Tmem119","Trem2","Mrc1", # Microglia
-  "Ptprb", "Cldn5", "Flt1",                           # Endothelial
-   "Ttr", "Folr1",                                    # Choroid
-  "Col1a1", "Col1a2", "Dcn",                          # Fibroblast
-  "Cfap44", "Spag16",                                 # Ependymal
-  "Mog", "Opalin", "Mal", "Mag", "Mbp",               # Oligodendrocytes
-  "Pdgfra", "Cspg4", "Olig1", "Olig2", "Tnr",         # OPCs
-  "Syt1", "Snap25", "Gad1", "Meg3", "Igfbpl1","Sox4", # Neurons
-  "Pdgfrb", "Rgs5", "Acta2", "Vtn",                   # Mural
-  "Cd3e","Itgax","S100a9"                             # Immune (T, DC, neutrophil)
+markers <- c(
+  "Gja1", "P2ry12", "Flt1", "Ttr", "Col1a2", "Cfap44",      # non-neuronal
+  "Spag16", "Mag", "Olig2", "Vtn", "Cd3e","Itgax","S100a9", # non-neuronal
+  "Rbfox3", "Snap25",                                       # pan-neuronal
+  "Gad1", "Gad2", "Sst", "Vip", "Pvalb", "Lamp5",           # GABAergic
+  "Slc17a7", "Slc17a6", "Bcl11b", "Satb2", "Cux1",          # Glutamatergic
+  "Cux2", "Foxp2", "Tle4", "Pcpr", "Rorb"                   # Glutamatergic
 )
 
 dot <- DotPlot(neurons.unannotated,
-               features = canonical_markers,
+               features = markers,
                cols = "RdYlBu",
                assay = "RNA") +
   coord_flip() +
@@ -174,48 +173,98 @@ dot
 ```
 
 ```{r save_neurons_unannotated_canonical_markers}
-pdf(paste0(out, "unannotated_canonical_markers_dot_plot.pdf"), width = 6, height = 9)
+pdf(paste0(out, "unannotated_markers_dot_plot.pdf"), width = 12, height = 8)
 dot
 dev.off()
 remove(dot)
 ```
 
-## Auto markers
-```{r neurons_unannotated_auto_markers}
-auto_markers <- SeuratWrappers::RunPrestoAll(
-  object = neurons.unannotated,
-  assay = "RNA",
-  slot = "counts",
-  only.pos = TRUE
+
+## Assign
+```{r assign_glut_gaba_identities}
+new_cluster_names <- c(
+  "0" = "Doublets",                   # Gad1, Gad2, Slc17a6
+  "1" = "GABA Lamp5",                 # Gad1, Gad2, Lamp5
+  "2" = "Glut",                       # Slc17a7, Rorb+++
+  "3" = "Glut",                       # Slc17a7, Cux1+++, Cux2+++, Satb2+++
+  "4" = "Glut",                       # Slc17a7,Foxp2+++, Tle4+++
+  "5" = "Glut",                       # Slc17a7, Satb2+++
+  "6" = "Glut",                       # Slc17a6, Rorb
+  "7" = "Glut",                       # Slc17a7
+  "8" = "GABA Pvalb",                 # Gad1, Gad2, Valb
+  "9" = "Glut",                       # Slc17a7, Bcl11b
+  "10" = "Doublets",                  # Gad1, Slc17a7
+  "11" = "GABA Sst",                  # Gad1, Gad2, Sst
+  "12" = "Glut",                      # Slc17a7, Tle4+++
+  "13" = "GABA Lamp5",                # Gad1, Gad2, Lamp5+
+  "14" = "GABA Vip",                  # Gad1, Gad2, Vip
+  "15" = "Glut",                      # Slc17a7, Tle4+
+  "16" = "Doublets",                  # Gad1, Gad2, Slc17a7
+  "17" = "Glut",                      # Slc17a7, Slc17a6, Tle4+++
+  "18" = "Glut",                      # Slc17a7, Bcl11b++, Satb2++
+  "19" = "Glut",                      # Slc17a76, Slc17a7, Satb2+++
+  "20" = "Glut",                      # Slc17a7, Slc17a6, Cux1+++, Cux2+++, Satb2+++
+  "21" = "GABA Lamp5",                # Gad1, Gad1, Lamp5
+  "22" = "Glut",                      # Slc17a7, Cux1, Cux2, Satb2
+  "23" = "GABA",                      # Gad1, Gad2
+  "24" = "Glut",                      # Slc17a7, Cux1, Cux2, Satb2
+  "25" = "Doublets",                  # Gad1, Gad2, Slc17a7
+  "26" = "Doublets",                  # Slc17a6, Cfap44
+  "27" = "Glut",                      # Slc17a7, Cux1, Cux2, Satb2
+  "28" = "Glut",                      # Slc17a7, Satb2
+  "29" = "Glut",                      # Slc17a6, Rorb
+  "30" = "Glut",                      # Sl17a7, Bcl11b, Rorb
+  "31" = "GABA Pvalb",                # Gad1, Gad2, Pvalb
+  "32" = "GABA Lamp5",                # Gad1, Gad2, Lamp5
+  "33" = "GABA Pvalb",                # Gad1, Gad2, Pvalb
+  "34" = "Glut",                      # Slc16a6, Cux1, Cux2
+  "35" = "Doublets",                  # Gad2, Slc17a6
+  "36" = "GABA",                      # Slc16a6, Gad1, Gad2
+  "37" = "Glut",                      # Slc16a7, Satb2
+  "38" = "Glut",                      # Slc16a6, Rorb
+  "39" = "Doublets",                  # Gad1, Gad2, Slc17a7
+  "40" = "GABA",                      # Gad1, Gad2
+  "41" = "GABA Pvalb"                 # Gad1, Gad2, Pvalb
 )
 
-top5 <- auto_markers %>%
-  filter(p_val_adj < 0.01) %>%
-  group_by(cluster) %>%
-  slice_head(n = 5) %>%
-  ungroup()
+# set new idents
+Idents(neurons.unannotated) <- "seurat_clusters"
+neurons.annotated <- RenameIdents(neurons.unannotated, new_cluster_names)
+neurons.annotated$neuron_class <- Idents(neurons.annotated)
 
-dot <- DotPlot(neurons.unannotated,
-               features = unique(top5$gene),
-               cols = "RdYlBu",
-               assay = "RNA") +
-  coord_flip() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
-dot
-```
-
-```{r save_neurons_unannotated_auto_markers}
-pdf(paste0(out, "unannotated_auto_markers_dot_plot.pdf"), width = 7, height = 9)
-dot
-dev.off()
-remove(dot)
+# set level
+neurons.annotated$neuron_class <- factor(neurons.annotated$neuron_class,
+                                  levels = c("GABA",
+                                             "GABA Lamp5",
+                                             "GABA Pvalb",
+                                             "GABA Sst",
+                                             "GABA Vip",
+                                             "Glut",
+                                             "Doublets"))
+Idents(neurons.annotated) <- "neuron_class"
 ```
 
 ```{r}
-remove(neurons, neurons.unannotated, auto_markers, top5)
-gc()
+cluster_colors <- c("cyan","blue","yellow","purple","green","red","gray70")
+
+
+# plot
+u <- DimPlot(
+  object = neurons.annotated,
+  cols = cluster_colors,
+  group.by = "neuron_class"
+)
+u
 ```
 
+```{r astrocytes_barcodes_to_remove}
+doublets <- subset(neurons.annotated, neuron_class == "Doublets")
+barcodes <- colnames(doublets)
+saveRDS(object = barcodes,
+        file = "../../rObjects/pass1_recluster_neurons_barcodes_to_remove.rds",
+        compress = FALSE)
+remove(neurons, neurons.unannotated, neurons.annotated, doublets)
+```
 
 # Astrocytes
 ## Subset
@@ -225,8 +274,7 @@ source("../../refs/thresholds_and_outs.R")
 out <- paste0(out, "pass1/recluster_astrocytes/")
 
 # subset astrocytes
-astrocytes <- subset(mouse.annotated, 
-                  individual_clusters == "Astrocytes")
+astrocytes <- subset(mouse.annotated, individual_clusters == "Astrocytes")
 
 # create new obj
 counts <- GetAssayData(object = astrocytes, layer = "counts")
@@ -293,7 +341,7 @@ astrocytes.unannotated <- NormalizeData(astrocytes.unannotated)
 
 # save
 saveRDS(astrocytes.unannotated, 
-        file = paste0( "../../rObjects/", filtering_method, "_pass1_astrocytes_reclustered_unannotated.rds"),
+        file = "../../rObjects/pass1_astrocytes_reclustered_unannotated.rds",
         compress = FALSE)
 ```
 
@@ -388,7 +436,8 @@ fplot
 cluster3 <- subset(astrocytes.unannotated, seurat_clusters == "3")
 barcodes <- colnames(cluster3)
 saveRDS(object = barcodes,
-        file = paste0("../../rObjects/", filtering_method, "_recluster_astrocytes_barcodes_to_remove.rds"))
+        file = "../../rObjects/pass1_recluster_astrocytes_barcodes_to_remove.rds",
+        compress = FALSE)
 remove(astrocytes, astrocytes.unannotated, auto_markers, cluster3, fplot, top5)
 ```
 

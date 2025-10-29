@@ -1,6 +1,6 @@
 ---
 title: "Psi1 snRNAseq"
-subtitle: "Pass 2: Remove Multiplets and Recluster"
+subtitle: "Pass 3: Remove Multiplets and Recluster"
 author: "Kennedi Todd"
 date: "10/29/2025"
 output:
@@ -32,7 +32,7 @@ library(SeuratWrappers) # RunPrestoAll()
 ```{r set_variables_and_thresholds}
 # source thresholds and output paths
 source("../../refs/thresholds_and_outs.R")
-out <- paste0(out, "pass2/")
+out <- paste0(out, "pass3/")
 
 # single cell functions
 files <- list.files("../../functions", full.names = TRUE)
@@ -42,34 +42,25 @@ invisible(lapply(files, source))
 ## Load data
 ```{r load_data}
 # save seurat object
-mouse_annotated <- readRDS("../../rObjects/pass1_annotated_seurat_obj.rds")
+mouse_annotated <- readRDS("../../rObjects/pass2_annotated_seurat_obj.rds")
 ```
 
 ## UMAP
 ```{r pass1_annotated_umap}
-DimPlot(mouse_annotated, shuffle = TRUE)
+cluster_colors <- get_cluster_colors(
+  num_clusters = length(unique(mouse_annotated$annotated_clusters)))
+
+DimPlot(mouse_annotated, shuffle = TRUE, cols = cluster_colors)
 ```
 
-# Recluster pass 2
+# Recluster pass 3
 ## Subset
 ```{r subset_seurat}
-# multiplet barcodes
-barcodes1 <- readRDS("../../rObjects/pass1_recluster_astrocytes_barcodes_to_remove.rds")
-barcodes2 <- readRDS("../../rObjects/pass1_recluster_oligos_barcodes_to_remove.rds")
-barcodes3 <- readRDS("../../rObjects/pass1_recluster_fibro_barcodes_to_remove.rds")
-barcodes4 <- readRDS("../../rObjects/pass1_recluster_choroid_barcodes_to_remove.rds")
-barcodes5 <- readRDS("../../rObjects/pass1_recluster_multiplets_barcodes_to_remove.rds")
-barcodes6 <- readRDS("../../rObjects/pass1_recluster_neurons_barcodes_to_remove.rds")
-barcodes <- c(barcodes1, barcodes2, barcodes3, barcodes4, barcodes5, barcodes6)
-length(barcodes)
-
-# create keep column
-mouse_annotated$keep <- !colnames(mouse_annotated) %in% barcodes
-table(mouse_annotated$keep)
-DimPlot(mouse_annotated, shuffle = TRUE, group.by = "keep")
-
-# subset on cell types of interest
+# remove doublets
+mouse_annotated$keep <- !mouse_annotated$annotated_clusters %in% c("Doublets 1",
+                                                                   "Doublets 2")
 sub <- subset(mouse_annotated, keep == TRUE)
+table(sub$annotated_clusters)
 ```
 
 ## Filter genes
@@ -117,7 +108,7 @@ VariableFeatures(mouse_merged) <- shared_features
 
 # save
 saveRDS(mouse_merged, 
-        file = "../../rObjects/pass2_sct_seurat_obj.rds",
+        file = "../../rObjects/pass3_sct_seurat_obj.rds",
         compress = FALSE)
 remove(mouse, mouse_split)
 gc()
@@ -236,7 +227,7 @@ mouse_integrated <- IntegrateLayers(object = mouse_merged,
 
 # save
 saveRDS(mouse_integrated, 
-        file = paste0( "../../rObjects/pass2_harmony_seurat_obj.rds"),
+        file = paste0( "../../rObjects/pass3_harmony_seurat_obj.rds"),
         compress = FALSE)
 remove(mouse_merged)
 gc()
@@ -358,7 +349,7 @@ mouse_unannotated <- NormalizeData(mouse_unannotated)
 
 # save
 saveRDS(mouse_unannotated, 
-        file = paste0("../../rObjects/pass2_unannotated_seurat_obj.rds"),
+        file = paste0("../../rObjects/pass3_unannotated_seurat_obj.rds"),
         compress = FALSE)
 ```
 
@@ -413,6 +404,37 @@ pdf(paste0(out, "markers/unannotated_canonical_markers.pdf"), width = 10, height
 d2
 dev.off()
 remove(d2)
+```
+
+## Auto markers
+```{r unannotated_auto_markers}
+auto_markers <- SeuratWrappers::RunPrestoAll(
+  object = mouse_unannotated,
+  assay = "RNA",
+  slot = "counts",
+  only.pos = TRUE
+)
+
+top2 <- auto_markers %>%
+  filter(p_val_adj < 0.01) %>%
+  group_by(cluster) %>%
+  slice_head(n = 2) %>%
+  ungroup()
+
+dot <- DotPlot(mouse_unannotated,
+               features = unique(top2$gene),
+               cols = "RdYlBu",
+               assay = "RNA") +
+  coord_flip() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+dot
+```
+
+```{r save_unannotated_auto_markers}
+pdf(paste0(out, "markers/unannotated_auto_markers.pdf"), width = 10, height = 10)
+dot
+dev.off()
+remove(dot, top2)
 ```
 
 ## Assign idetities
@@ -470,7 +492,7 @@ Idents(mouse_annotated) <- "annotated_clusters"
 
 # save
 saveRDS(mouse_annotated, 
-        file = paste0( "../../rObjects/pass2_annotated_seurat_obj.rds"),
+        file = paste0( "../../rObjects/pass3_annotated_seurat_obj.rds"),
         compress = FALSE)
 ```
 
@@ -533,3 +555,67 @@ d2
 dev.off()
 remove(d2)
 ```
+
+## Auto markers
+```{r annotated_auto_markers}
+auto_markers <- SeuratWrappers::RunPrestoAll(
+  object = mouse_annotated,
+  assay = "RNA",
+  slot = "counts",
+  only.pos = TRUE
+)
+
+top3 <- auto_markers %>%
+  filter(p_val_adj < 0.01) %>%
+  group_by(cluster) %>%
+  slice_head(n = 3) %>%
+  ungroup()
+
+dot <- DotPlot(mouse_annotated,
+               features = unique(top3$gene),
+               cols = "RdYlBu",
+               assay = "RNA") +
+  coord_flip() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+dot
+```
+
+```{r save_annotated_auto_markers}
+pdf(paste0(out, "markers/annotated_auto_markers.pdf"), width = 10, height = 10)
+dot
+dev.off()
+remove(dot, top3)
+```
+
+## Marker heatmap
+```{r marker_heatmaps}
+# Create DimPlot
+u <- DimPlot(mouse_annotated, shuffle = TRUE, cols = cluster_colors) +
+  NoLegend()
+
+marker_genes <- c("Aqp4", "Cfap44", "Ttr", "Flt1", "Rgs5", "Acta2", "Col1a2", 
+                  "P2ry12", "Snap25", "Cspg4", "Mog")
+
+# Create 11 FeaturePlots
+fplots <- lapply(marker_genes, function(gene) {
+  FeaturePlot(mouse_annotated,
+              reduction = "umap",
+              features = gene) +
+    scale_colour_gradientn(colours = c("blue", "lightblue", "yellow", "orange", "red")) +
+    ggtitle(gene) +
+    theme(legend.position = "none")
+})
+
+# Combine all plots (1 DimPlot + 11 FeaturePlots = 12 total)
+all_plots <- c(list(u), fplots)
+layout <- matrix(1:12, nrow = 3, ncol = 4, byrow = TRUE)
+```
+
+```{r save_marker_heatmap}
+# Save as PDF
+path <- paste0(out, "markers/umap_heatmap_canonical_markers.pdf")
+pdf(path, width = 14, height = 9)
+grid.arrange(grobs = all_plots, layout_matrix = layout)
+dev.off()
+```
+

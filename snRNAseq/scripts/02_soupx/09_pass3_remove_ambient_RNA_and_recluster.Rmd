@@ -537,8 +537,8 @@ remove(umap1,umap2,umap3,umap4,umap5,umap6,umap7)
 ```
 
 
-# Unannotated pass 3
-## UMAP
+# Pass 3
+## Unannotated UMAP
 ```{r unannotated_umap}
 Idents(mouse.unannotated) <- "seurat_clusters"
 
@@ -554,6 +554,17 @@ pdf(paste0(out, "UMAP/unannotated_umap.pdf"), width = 6, height = 5)
 u1
 dev.off()
 remove(u1,u2)
+```
+
+## Heatmap
+```{r}
+d <- DotPlot(mouse.unannotated,
+              features = c("Pvalb","Sst","Gad1","Gad2"),
+              cols = "RdYlBu",
+              assay = "RNA") +
+  coord_flip() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+d
 ```
 
 ## Canonical markers
@@ -619,6 +630,7 @@ dot
 dev.off()
 remove(dot, top2)
 ```
+
 
 ## Assign idetities
 ```{r assign_identities}
@@ -793,6 +805,10 @@ dev.off()
 # Downsample
 ## Sample
 ```{r}
+# source thresholds and output paths
+source("../../refs/thresholds_and_outs.R")
+out <- paste0(out, "pass3_downsampled/")
+
 # preview number of cells per sample
 table(mouse.annotated$sample_id)
 
@@ -815,3 +831,38 @@ saveRDS(mouse.annotated,
         compress = FALSE)
 ```
 
+## Shiny app
+```{r shiny_app, eval=FALSE}
+# create new object
+library(ShinyCell)
+shiny.obj <- mouse.annotated
+VariableFeatures(shiny.obj) <- shiny.obj@assays$SCT@var.features
+
+# set default params
+DefaultAssay(shiny.obj) <- "RNA"
+
+# create config
+names <- colnames(shiny.obj@meta.data)
+names <- names[c(31,32,2:27)]
+sc.config <- createConfig(obj = shiny.obj,
+                          meta.to.include = names)
+
+# change wd
+setwd(out)
+
+# output shiny app folder
+makeShinyApp(obj = shiny.obj, 
+             scConf = sc.config, 
+             gene.mapping = TRUE,
+             shiny.title = "Psi1 snRNAseq Pass 3 Downsampled")
+
+# manual config edits
+setwd(out)
+sc1conf <- readRDS("shinyApp/sc1conf.rds")
+cluster_hex <- "#fa4e3e|#fabf3e|#55f531|#08780c|#78f3fa|#2966f2|#b186f7|#fa78e9"
+sc1conf[2,4] <- cluster_hex
+saveRDS(sc1conf, "shinyApp/sc1conf.rds")
+
+# cleanup
+remove(sc.config,sc1conf,shiny.obj)
+```

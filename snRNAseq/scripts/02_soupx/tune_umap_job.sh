@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=tune_umap_pass1_harmony
+#SBATCH --job-name=tune_umap
 #SBATCH --ntasks=1
 #SBATCH --mem=60GB
 #SBATCH --time=1:00:00

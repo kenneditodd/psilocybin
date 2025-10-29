@@ -1,0 +1,1100 @@
+---
+title: "Psi1 snRNAseq"
+subtitle: "Recluster Neurons Pass 1"
+author: "Kennedi Todd"
+date: "08/23/2025"
+output:
+  html_document:
+    code_folding: hide
+    theme: cerulean
+    toc: true
+    toc_float: true
+editor_options: 
+  chunk_output_type: inline
+---
+
+
+# Setup
+## Set working directory
+```{r working_directory}
+knitr::opts_knit$set(root.dir = ".")
+```
+
+## Load libraries
+```{r libraries, message=FALSE, warnings=FALSE}
+library(Azimuth)
+library(dotenv)         # load_dot_env()
+library(dplyr)          # %>%
+library(ggplot2)        # geom_vline()
+library(gridExtra)      # grid.arrange()
+library(Seurat)         # DimPlot()
+library(SoupX)          # SoupChannel()
+```
+
+## Variables and functions
+```{r set_variables_and_thresholds}
+# source thresholds and output paths
+source("../../refs/thresholds_and_outs.R")
+out <- paste0(out, "pass2_recluster_neurons_pass1/")
+
+# single cell functions
+files <- list.files("../../functions", full.names = TRUE)
+invisible(lapply(files, source))
+
+# load the environment variables
+load_dot_env(file = "../../refs/.env")
+project_dir <- Sys.getenv("PROJECT_DIR")
+```
+
+## Load data
+```{r load_data}
+mouse_annotated <- readRDS(
+  file = paste0("../../rObjects/pass2_annotated_seurat_obj.rds"),
+)
+```
+
+## UMAP
+```{r pass3_annotated_umap}
+cluster_colors <- get_cluster_colors(
+  num_clusters = length(unique(mouse_annotated$annotated_clusters))
+)
+
+DimPlot(mouse_annotated, 
+        shuffle = TRUE,
+        cols = cluster_colors)
+```
+
+# Recluster neurons
+## Subset neurons
+```{r subset_neurons}
+# subset neurons
+sub <- subset(mouse_annotated, annotated_clusters == "Neurons")
+DimPlot(sub)
+
+# create new obj
+counts <- GetAssayData(object = sub, layer = "counts", assay = "RNA")
+
+# filter lowly expressed genes
+nonzero <- counts > 0  # produces logical
+keep <- Matrix::rowSums(nonzero) >= 10  # sum the true/false
+counts_filtered <- counts[keep,]  # keep certain genes
+
+# create new Seurat object with corrected counts
+options(Seurat.object.assay.calcn = TRUE)
+neurons <- CreateSeuratObject(counts = counts_filtered)
+
+# add metadata
+neurons <- AddMetaData(neurons, metadata = sub@meta.data[colnames(neurons), c(1,4:27)])
+
+# print features removed
+print(paste0(dim(counts)[1] - dim(counts_filtered)[1], " features removed"))
+
+# cleanup
+remove(counts, counts_filtered, mouse_annotated, nonzero, sub)
+```
+
+## SCTransform
+```{r sctransform}
+# split
+neurons_split <- SplitObject(neurons, split.by = "sample_id")
+
+# transform
+options(future.globals.maxSize = 60000 * 1024^2)  # 60 GB
+neurons_split <- lapply(neurons_split, SCTransform)
+
+# get shared featured
+shared_features <- SelectIntegrationFeatures(neurons_split)
+
+# merge
+neurons_merged <- merge(neurons_split[[1]], y = neurons_split[-1])
+remove(neurons_split, neurons)
+
+# set default assay
+DefaultAssay(neurons_merged) <- "SCT"
+
+# set variable features
+VariableFeatures(neurons_merged) <- shared_features
+```
+
+## PCA
+```{r run_pca, warning=FALSE, message=FALSE}
+# run PCA
+neurons_merged <- RunPCA(object = neurons_merged, assay = "SCT")
+```
+
+```{r plot_pca}
+pca1 <- DimPlot(neurons_merged,
+                reduction = "pca",
+                group.by = "treatment",
+                shuffle = TRUE)
+pca1
+
+pca2 <- DimPlot(neurons_merged,
+                reduction = "pca",
+                group.by = "sample_id",
+                shuffle = TRUE)
+pca2
+
+pca3 <- DimPlot(neurons_merged,
+                reduction = "pca",
+                group.by = "group",
+                shuffle = TRUE)
+pca3
+
+pca4 <- DimPlot(neurons_merged,
+                reduction = "pca",
+                group.by = "group2",
+                shuffle = TRUE)
+pca4
+
+pca5 <- DimPlot(neurons_merged,
+                reduction = "pca",
+                group.by = "dose",
+                shuffle = TRUE)
+pca5
+
+pca6 <- DimPlot(neurons_merged,
+                reduction = "pca",
+                group.by = "timepoint",
+                shuffle = TRUE)
+pca6
+
+pca7 <- DimPlot(neurons_merged,
+                reduction = "pca",
+                group.by = "sex",
+                shuffle = TRUE)
+pca7
+
+# PC elbow
+e1 <- ElbowPlot(neurons_merged,
+                ndims = 40,
+                reduction = "pca") +
+  geom_vline(xintercept = 22, linetype = "dashed", color = "red")
+e1
+
+# save
+saveRDS(neurons_merged, 
+        file = paste0("../../rObjects/", filtering_method, 
+                      "_recluster_neurons_pass1_pca_seurat_obj.rds"),
+        compress = FALSE)
+gc()
+```
+
+
+```{r save_pca, message=FALSE, warning=FALSE}
+path <- paste0(out, "clustering_QC/PCA_colored_by_treatment.pdf")
+pdf(path, width = 6, height = 4)
+pca1
+dev.off()
+
+path <- paste0(out, "clustering_QC/PCA_colored_by_sample.pdf")
+pdf(path, width = 8, height = 4)
+pca2
+dev.off()
+
+path <- paste0(out, "clustering_QC/PCA_colored_by_group.pdf")
+pdf(path, width = 6, height = 4)
+pca3
+dev.off()
+
+path <- paste0(out, "clustering_QC/PCA_colored_by_group2.pdf")
+pdf(path, width = 6, height = 4)
+pca4
+dev.off()
+
+path <- paste0(out, "clustering_QC/PCA_colored_by_dose.pdf")
+pdf(path, width = 6, height = 4)
+pca5
+dev.off()
+
+path <- paste0(out, "clustering_QC/PCA_colored_by_timepoint.pdf")
+pdf(path, width = 6, height = 4)
+pca6
+dev.off()
+
+path <- paste0(out, "clustering_QC/PCA_colored_by_sex.pdf")
+pdf(path, width = 6, height = 4)
+pca7
+dev.off()
+
+# save elbow
+path <- paste0(out, "clustering_QC/PCA_elbow.pdf")
+pdf(path, width = 6, height = 6)
+e1
+dev.off()
+
+# cleanup
+remove(pca1,pca2,pca3,pca4,pca5,pca6,pca7,e1)
+```
+
+## UMAP and Cluster
+```{r umap_and_cluster, message=FALSE, warning=FALSE}
+# run UMAP
+neurons_unannotated <- RunUMAP(neurons_merged,
+                               dims = 1:22,
+                               seed.use = 42,
+                               reduction = "pca",
+                               n.components = 3)
+
+# Determine the K-nearest neighbor graph
+neurons_unannotated <- FindNeighbors(object = neurons_unannotated,
+                                     assay = "SCT",
+                                     reduction = "pca",
+                                     dims = 1:22)
+
+# Determine the clusters for various resolutions
+neurons_unannotated <- FindClusters(object = neurons_unannotated,
+                                    algorithm = 1,
+                                    resolution = 0.5)
+
+# Set default assay and normalize for visualization
+neurons_unannotated <- JoinLayers(neurons_unannotated, assay = "RNA")
+DefaultAssay(neurons_unannotated) <- "RNA"
+neurons_unannotated <- NormalizeData(neurons_unannotated)
+
+# save
+saveRDS(neurons_unannotated, 
+        file = "../../rObjects/pass2_recluster_neurons_pass1_unannotated_seurat_obj.rds",
+        compress = FALSE)
+remove(neurons_merged)
+```
+
+```{r grouped_umaps}
+# group
+umap1 <- DimPlot(object = neurons_unannotated,
+                 reduction = "umap",
+                 group.by = "group",
+                 raster = FALSE,
+                 shuffle = TRUE)
+umap1
+
+# group2
+umap2 <- DimPlot(object = neurons_unannotated,
+                 reduction = "umap",
+                 group.by = "group2",
+                 raster = FALSE,
+                 shuffle = TRUE)
+umap2
+
+# sex
+umap3 <- DimPlot(object = neurons_unannotated,
+                 reduction = "umap",
+                 group.by = "sex",
+                 raster = FALSE,
+                 shuffle = TRUE)
+umap3
+
+# dose
+umap4 <- DimPlot(object = neurons_unannotated, 
+                 reduction = "umap",
+                 group.by = "dose",
+                 raster = FALSE,
+                 shuffle = TRUE)
+umap4
+
+# mito_factor
+umap5 <- DimPlot(object = neurons_unannotated, 
+                 group.by = "mito_factor",
+                 reduction = "umap",
+                 raster = FALSE,
+                 shuffle = TRUE)
+umap5
+
+# phase
+umap6 <- DimPlot(object = neurons_unannotated, 
+                 reduction = "umap",
+                 group.by = "phase",
+                 raster = FALSE,
+                 shuffle = TRUE)
+umap6
+
+# sample
+umap7 <- DimPlot(object = neurons_unannotated, 
+                 reduction = "umap",
+                 group.by = "sample_id",
+                 raster = FALSE,
+                 shuffle = TRUE)
+umap7
+```
+
+```{r save_grouped_umap, echo=FALSE, eval=FALSE}
+path <- paste0(out, "clustering_QC/umap_colored_by_")
+pdf(paste0(path, "group.pdf"), width = 6, height = 4)
+umap1
+dev.off()
+
+pdf(paste0(path, "group2.pdf"), width = 6, height = 4)
+umap2
+dev.off()
+
+pdf(paste0(path, "sex.pdf"), width = 6, height = 4)
+umap3
+dev.off()
+
+pdf(paste0(path, "dose.pdf"), width = 6, height = 4)
+umap4
+dev.off()
+
+pdf(paste0(path, "mito_factor.pdf"), width = 6, height = 4)
+umap5
+dev.off()
+
+pdf(paste0(path, "cell_cycle_phase.pdf"), width = 6, height = 4)
+umap6
+dev.off()
+
+pdf(paste0(path, "sample.pdf"), width = 6, height = 4)
+umap7
+dev.off()
+
+remove(umap1,umap2,umap3,umap4,umap5,umap6,umap7)
+```
+
+# Unannotated neurons
+## Clusters
+```{r unannotated_umap}
+Idents(neurons_unannotated) <- "seurat_clusters"
+
+u1 <- DimPlot(neurons_unannotated, 
+              shuffle = TRUE, 
+              label = TRUE)
+u1
+```
+
+```{r save_unannotated_umap}
+pdf(paste0(out, "UMAP/unannotated_umap.pdf"), width = 6, height = 5)
+u1
+dev.off()
+remove(u1)
+```
+
+## Azimuth
+### Run
+```{r run_azimuth}
+result <- RunAzimuth(query = neurons_unannotated, reference = "../../refs/")
+```
+
+### Save
+```{r save_azimuth_predictions}
+all.equal(colnames(result), colnames(neurons_unannotated))
+
+# azimuth class
+neurons_unannotated$azimuth_class_score <- result$predicted.class.score
+neurons_unannotated$azimuth_class <- result$predicted.class
+class_filt <- neurons_unannotated$azimuth_class
+class_filt[neurons_unannotated$azimuth_class_score < 0.9] <- "did_not_pass"
+neurons_unannotated$azimuth_class_filtered <- class_filt
+
+# azimuth subclass
+neurons_unannotated$azimuth_subclass_score <- result$predicted.subclass.score
+neurons_unannotated$azimuth_subclass <- result$predicted.subclass
+subclass_filt <- neurons_unannotated$azimuth_subclass
+subclass_filt[neurons_unannotated$azimuth_subclass_score < 0.9] <- "did_not_pass"
+neurons_unannotated$azimuth_subclass_filtered <- subclass_filt
+
+remove(result)
+```
+
+### Plot
+```{r plot_azimuth_predictions}
+# Azimuth class
+colors <- get_cluster_colors(
+  num_clusters = length(unique(neurons_unannotated$azimuth_class))
+)
+u2 <- DimPlot(neurons_unannotated,
+              group.by = "azimuth_class",
+              reduction = "umap",
+              shuffle = TRUE,
+              raster = FALSE,
+              cols = colors)
+u2
+
+# Azimuth class filtered
+colors <- get_cluster_colors(
+  num_clusters = length(unique(neurons_unannotated$azimuth_class_filtered))
+)
+u3 <- DimPlot(neurons_unannotated,
+              group.by = "azimuth_class_filtered",
+              reduction = "umap",
+              shuffle = TRUE,
+              raster = FALSE,
+              cols = c("gray","#fa4e3e", "#fabf3e", "#30d150"))
+u3
+
+# Azimuth subclass
+colors <- get_cluster_colors(
+  num_clusters = length(unique(neurons_unannotated$azimuth_subclass))
+)
+u4 <- DimPlot(neurons_unannotated,
+              group.by = "azimuth_subclass",
+              reduction = "umap",
+              shuffle = TRUE,
+              raster = FALSE,
+              cols = colors)
+u4
+
+# Azimuth subclass filtered
+u5 <- DimPlot(neurons_unannotated,
+              group.by = "azimuth_subclass_filtered",
+              reduction = "umap",
+              shuffle = TRUE,
+              raster = FALSE,
+              cols = c("#fc4a0f","gray","#fca50f", "yellow","gold", "#85fa3c","#3f940a", 
+                        "#1b5212", "#0ffcf8", "#117ea6", "#072be3", "#d996fa", 
+                        "#a916f2", "#ffa1ef", "#fc1cd7", "black", "tan", 
+                        "chocolate4"))
+u5
+```
+
+```{r save_azimuth_predictions}
+pdf(paste0(out, "UMAP/azimuth_class_umap.pdf"), 
+    width = 7, height = 6)
+u2
+dev.off()
+
+pdf(paste0(out, "UMAP/azimuth_class_filtered_umap.pdf"), 
+    width = 7, height = 6)
+u3
+dev.off()
+
+pdf(paste0(out, "UMAP/azimuth_subclass_umap.pdf"), 
+    width = 8, height = 6)
+u4
+dev.off()
+remove(u1,u2,u3)
+
+pdf(paste0(out, "UMAP/azimuth_subclass_filtered_umap.pdf"), 
+    width = 8, height = 6)
+u5
+dev.off()
+remove(u2,u3,u4,u5)
+```
+
+## Heatmap
+### Gaba or glut
+```{r gaba_or_glut_heatmap, warning=FALSE, message=FALSE}
+gaba_or_glut <- c("Rbfox3", "Snap25",       # pan neuronal
+                  "Slc17a7", "Slc17a6",     # glutamatergic
+                  "Gad1", "Gad2")           # GABAergic
+
+# Create FeaturePlots
+fplots <- lapply(gaba_or_glut, function(gene) {
+  FeaturePlot(neurons_unannotated,
+              reduction = "umap",
+              features = gene) +
+    scale_colour_gradientn(colours = c("blue", "lightblue", "yellow", "orange", "red")) +
+    ggtitle(gene) +
+    theme(legend.position = "none")
+})
+
+# Combine all plots
+all_plots <- c(fplots)
+layout <- matrix(c(1:6), nrow = 3, ncol = 2, byrow = TRUE)
+```
+
+```{r save_gaba_or_glut_heatmap}
+# Save as PDF
+path <- paste0(out, "markers/gaba_or_glut_heatmap_umap.pdf")
+pdf(path, width = 6, height = 8)
+grid.arrange(grobs = all_plots, layout_matrix = layout)
+dev.off()
+remove(all_plots, fplots, layout)
+```
+
+### GABA subtypes
+```{r gaba_subtypes_heatmap, warning=FALSE, message=FALSE}
+gaba_subtypes <- c("Gad1", "Gad2", "Slc32a1",  # GABA
+                   "Lamp5", "Ndnf", "Reln",    # GABA Lamp5
+                   "Pvalb", "Kcnc1", "Erbb4",  # GABA Pvalb
+                   "Sst", "Npy",               # GABA Sst
+                   "Vip")                      # GABA Vip
+
+# Create FeaturePlots
+fplots <- lapply(gaba_subtypes, function(gene) {
+  FeaturePlot(neurons_unannotated,
+              reduction = "umap",
+              features = gene) +
+    scale_colour_gradientn(colours = c("blue", "lightblue", "yellow", "orange", "red")) +
+    ggtitle(gene) +
+    theme(legend.position = "none")
+})
+
+# Combine all plots
+all_plots <- c(fplots)
+layout <- matrix(c(1:12), nrow = 3, ncol = 4, byrow = TRUE)
+```
+
+```{r save_gaba_subtypes_heatmap}
+# Save as PDF
+path <- paste0(out, "markers/gaba_subtypes_heatmap_umap.pdf")
+pdf(path, width = 8, height = 6)
+grid.arrange(grobs = all_plots, layout_matrix = layout)
+dev.off()
+remove(all_plots, fplots, layout)
+```
+
+
+### Glut subtypes
+```{r glut_subtypes_heatmap, warning=FALSE, message=FALSE}
+glut_subtypes <- c("Slc17a7", "Slc17a6",       # Glut
+                   "Cux1", "Satb2",            # Glut L2/3 IT
+                   "Rorb",                     # Glut L4 IT
+                   "Bcl11b", "Tle4",           # Glut L5 PT
+                   "Tbr1", "Foxp2", "Pcp4",    # Glut L6 CT
+                   "Htr2c",                    # Glut non-specific (also Tle4)
+                   "Ccn2")                     # Glut subplate
+
+# Create FeaturePlots
+fplots <- lapply(glut_subtypes, function(gene) {
+  FeaturePlot(neurons_unannotated,    
+              reduction = "umap",
+              features = gene) +
+    scale_colour_gradientn(colours = c("blue", "lightblue", "yellow", "orange", "red")) +
+    ggtitle(gene) +
+    theme(legend.position = "none")
+})
+
+# Combine all plots
+all_plots <- c(fplots)
+layout <- matrix(c(1:12), nrow = 3, ncol = 4, byrow = TRUE)
+```
+
+```{r save_glut_subtypes_heatmap}
+# Save as PDF
+path <- paste0(out, "markers/glut_subtypes_heatmap_umap.pdf")
+pdf(path, width = 8, height = 6)
+grid.arrange(grobs = all_plots, layout_matrix = layout)
+dev.off()
+remove(all_plots, fplots, layout)
+```
+
+## Dot plot
+```{r gaba_glut_dot_plot}
+d1 <- DotPlot(neurons_unannotated,
+              features = c("Gad1", "Gad2", "Slc32a1",  # GABA
+                           "Lamp5", "Ndnf", "Reln",    # GABA Lamp5
+                           "Pvalb", "Kcnc1", "Erbb4",  # GABA Pvalb
+                           "Sst", "Npy", "Crh",        # GABA Sst
+                           "Vip", "Calb2", "Chat",     # GABA Vip
+                           "Slc17a7", "Slc17a6",       # Glut
+                           "Cux1", "Cux2", "Satb2",    # Glut L2/3 IT
+                           "Rorb", "Scnn1a", "Rspo1",  # Glut L4 IT
+                           "Fezf2", "Bcl11b", "Tle4",  # Glut L5 PT
+                           "Tbr1", "Foxp2", "Pcp4",    # Glut L6 CT
+                           "Htr2c", "Crym",            # Glut non-specific (also Tle4)
+                           "Ccn2"),                    # Glut sublate (also Tle4, Tbr1),
+              cols = "RdYlBu",
+              assay = "RNA") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  +
+  coord_flip()
+d1
+```
+
+```{r save_gaba_glut_dot_plot}
+pdf(paste0(out, "markers/unannotated_gaba_glut_subytpes_dot_plot.pdf"), 
+    width = 12, height = 8)
+d1
+dev.off()
+remove(d1)
+```
+
+
+## Assign
+```{r assign_glut_gaba_identities}
+new_cluster_names <- c(
+  "0" = "Doublets 1",                         # Slc17a6, Gad1, Gad2, Slc32a1
+  "1" = "Glut L2/3 IT",                       # Slc17a7, Cux1, Cux2, Satb2
+  "2" = "GABA Lamp5",                         # Gad1, Gad2, Slc32a1, Lamp5
+  "3" = "Glut L2/3-L4 IT",                    # Slc17a6, Slc17a7, Cux1, Cux2, Satb2, Rorb
+  "4" = "Glut L2/3 IT",                       # Slc17a7, Satb2
+  "5" = "Glut L6 CT",                         # Slc17a7, Tle4 high, Foxp2 high, Fezf2 low
+  "6" = "Glut L4 IT",                         # Slc17a6, Rorb
+  "7" = "Glut NP",                            # Slc17a7, Cux1 low, non-specific
+  "8" = "Glut NP",                            # Slc17a7, Crym high, non-specific
+  "9" = "Glut NP",                            # Slc17a7, non-specific
+  "10" = "GABA Pvalb",                        # Gad1, Gad2, Slc32a1, Pvalb
+  "11" = "GABA Sst",                          # Gad1, Gad2, Slc32a1, Sst
+  "12" = "Doublets 2",                        # Gad1, Gad2, Slc32a1, Slc17a7 low
+  "13" = "Glut L6b / L6 CT",                  # Slc17a7, Tle4, Tbr1, Ccn2
+  "14" = "GABA Vip",                          # Gad1, Gad2, Slc32a1, Vip
+  "15" = "Glut NP",                           # Slc17a7, Crym low
+  "16" = "Glut NP",                           # Slc17a7, Crym high
+  "17" = "Glut L5 PT",                        # Slc17a7, Tle4, Fezf2, Foxp2
+  "18" = "Doublets 3",                        # Gad1, Gad2, Slc32a1 (no subytpe marker)
+  "19" = "Glut L5 IT",                        # Slc17a7, Fezf2
+  "20" = "GABA Lamp5",                        # Gad1, Gad2, Slc32a1, Lamp5
+  "21" = "Glut L2/3 IT",                      # Slc17a6, Slc17a7, Satb2,
+  "22" = "Glut L2/3 IT",                      # Slc17a6, Slc17a7, Satb2, Cux1, Cux2
+  "23" = "Doublets 4",                        # Gad1, Gad2, Slc32a1 (no subtype marker)
+  "24" = "Glut L2/3 IT",                      # Slc17a6, Slc17a7, Satb2, Cux1, Cux2
+  "25" = "Glut L2/3 IT",                      # Slc17a7, Satb2, Cux1, Cux2
+  "26" = "Doublets 5",                        # Gad1, Gad2, Slc17a6, Slc17a7, Slc32a1
+  "27" = "Doublets 6",                        # Slc17a6, Cux1
+  "28" = "Glut L2/3 IT",                      # Slc17a7, Satb2
+  "29" = "Glut L2/3 IT",                      # Slc17a6, Slc17a7, Satb2
+  "30" = "GABA Pvalb",                        # Gad1, Gad2, Slc32a1, Pvalb
+  "31" = "Glut L5 IT",                        # Slc17a7, Rorb, Bcl11b
+  "32" = "GABA Lamp5",                        # Gad1, Gad2, Slc32a1, Lamp5
+  "33" = "GABA Lamp5",                        # Gad1, Gad2, Slc32a1, Lamp5
+  "34" = "GABA Pvalb",                        # Gad1, Gad2, Slc32a1, Pvalb
+  "35" = "Glut L6 PT",                        # Slc17a6, Slc17a7, Pcp4
+  "36" = "Doublets 7",                        # Slc16a6, Gad1, Gad2
+  "37" = "Doublets 8",                        # Slc16a6, Gad1, Gad2
+  "38" = "Glut L6 CT",                        # Slc16a6, Pcp4
+  "39" = "Doublets 9",                        # Gad2, Slc17a6
+  "40" = "Glut L4 IT",                        # Slc17a7, Scnn1a
+  "41" = "Doublets 10",                       # Slc17a6, Rorb, Cux1, Cux2
+  "42" = "Glut L6 CT",                        # Slc17a6, Foxp2, Bc11b
+  "43" = "Doublets 11"                        # Slc17a6, Gad1, Gad2
+)
+
+# set new idents
+Idents(neurons_unannotated) <- "seurat_clusters"
+neurons_annotated <- RenameIdents(neurons_unannotated, new_cluster_names)
+neurons_annotated$neuron_class <- Idents(neurons_annotated)
+
+# set level
+neurons_annotated$neuron_class <- factor(neurons_annotated$neuron_class,
+                                  levels = c("GABA Lamp5",
+                                             "GABA Pvalb",
+                                             "GABA Sst",
+                                             "GABA Vip",
+                                             "Glut L2/3 IT",
+                                             "Glut L2/3-L4 IT",
+                                             "Glut L4 IT",
+                                             "Glut L5 IT",
+                                             "Glut L5 PT",
+                                             "Glut L6 CT",
+                                             "Glut L6b / L6 CT",
+                                             "Glut L6 PT",
+                                             "Glut NP",
+                                             "Doublets 1",
+                                             "Doublets 2",
+                                             "Doublets 3",
+                                             "Doublets 4",
+                                             "Doublets 5",
+                                             "Doublets 6",
+                                             "Doublets 7",
+                                             "Doublets 8",
+                                             "Doublets 9",
+                                             "Doublets 10",
+                                             "Doublets 11"))
+Idents(neurons_annotated) <- "neuron_class"
+
+cluster_colors <- c("cyan","steelblue","blue","navy",
+                    "yellow","gold2","orange2",
+                    "pink","purple",
+                    "green","chartreuse3","forestgreen",
+                    "red",
+                    "gray90",
+                    "gray80",
+                    "gray70",
+                    "gray60",
+                    "gray55",
+                    "gray50",
+                    "gray40",
+                    "gray30",
+                    "gray20",
+                    "gray10",
+                    "black")
+
+
+# plot
+u6 <- DimPlot(
+  object = neurons_annotated,
+  cols = cluster_colors,
+  group.by = "neuron_class"
+)
+u6
+```
+
+```{r save_annotated_umap}
+pdf(paste0(out, "UMAP/annotated_umap.pdf"), width = 8, height = 5)
+u6
+dev.off()
+remove(u6)
+```
+
+## Save
+```{r save_glut_gaba_seurat_obj}
+saveRDS(neurons_annotated, 
+        file = paste0("../../rObjects/pass2_recluster_neurons_pass1_annotated_seurat_obj.rds"),
+        compress = FALSE)
+```
+
+# Annotated neurons
+## Dot plot
+```{r annotated_gaba_glut_dot_plot}
+d2 <- DotPlot(neurons_annotated,
+              features = c("Gad1", "Gad2", "Slc32a1",  # GABA
+                           "Lamp5", "Ndnf", "Reln",    # GABA Lamp5
+                           "Pvalb", "Kcnc1", "Erbb4",  # GABA Pvalb
+                           "Sst", "Npy", "Crh",        # GABA Sst
+                           "Vip", "Calb2", "Chat",     # GABA Vip
+                           "Slc17a7", "Slc17a6",       # Glut
+                           "Cux1", "Cux2", "Satb2",    # Glut L2/3 IT
+                           "Rorb", "Scnn1a", "Rspo1",  # Glut L4 IT
+                           "Fezf2", "Bcl11b", "Tle4",  # Glut L5 IT/PT
+                           "Tbr1", "Foxp2", "Pcp4",    # Glut L6 CT
+                           "Htr2c", "Crym",            # Glut non-specific (also Tle4)
+                           "Ccn2"),                    # Glut sublate (also Tle4, Tbr1),
+              cols = "RdYlBu",
+              assay = "RNA") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  +
+  coord_flip()
+d2
+```
+
+```{r save_annotated_gaba_glut_dot_plot}
+pdf(paste0(out, "markers/annotated_gaba_glut_subytpes_dot_plot.pdf"), 
+    width = 10, height = 8)
+d2
+dev.off()
+remove(d1)
+```
+
+# Recluster glutamatergic
+## Glut clusters
+```{r}
+glut_clusters <- c("Glut L2/3 IT", "Glut L2/3-L4 IT", "Glut L4 IT", "Glut L5 IT",
+                   "Glut L5 PT", "Glut L6 CT", "Glut L6b / L6 CT", "Glut L6 PT",
+                   "Glut NP")
+
+neurons_annotated$glut_clusters <- 
+  neurons_annotated$neuron_class %in% glut_clusters
+
+DimPlot(neurons_annotated, group.by = "glut_clusters")
+```
+
+## Subset glut
+```{r subset_neurons}
+# subset tangled neurons
+sub <- subset(neurons_annotated, glut_clusters == TRUE)
+DimPlot(sub)
+
+# create new obj
+counts <- GetAssayData(object = sub, layer = "counts", assay = "RNA")
+
+# filter lowly expressed genes
+nonzero <- counts > 0  # produces logical
+keep <- Matrix::rowSums(nonzero) >= 10  # sum the true/false
+counts_filtered <- counts[keep,]  # keep certain genes
+
+# create new Seurat object with corrected counts
+options(Seurat.object.assay.calcn = TRUE)
+glut <- CreateSeuratObject(counts = counts_filtered)
+
+# add metadata
+glut <- AddMetaData(glut, metadata = sub@meta.data[colnames(glut), c(4:27,38)])
+
+# rename column
+glut$previous_neuron_annotations <- glut$neuron_class
+glut$neuron_class <- NULL
+
+# print features removed
+print(paste0(dim(counts)[1] - dim(counts_filtered)[1], " features removed"))
+
+# cleanup
+remove(counts, counts_filtered, nonzero, sub)
+```
+
+## SCTransform
+```{r sctransform}
+# split
+glut_split <- SplitObject(glut, split.by = "sample_id")
+
+# transform
+options(future.globals.maxSize = 60000 * 1024^2)  # 60 GB
+glut_split <- lapply(glut_split, SCTransform)
+
+# get shared featured
+shared_features <- SelectIntegrationFeatures(glut_split)
+
+# merge
+glut_merged <- merge(glut_split[[1]], y = glut_split[-1])
+remove(glut_split, glut)
+
+# set default assay
+DefaultAssay(glut_merged) <- "SCT"
+
+# set variable features
+VariableFeatures(glut_merged) <- shared_features
+```
+
+## PCA
+```{r run_pca, warning=FALSE, message=FALSE}
+# run PCA
+glut_merged <- RunPCA(object = glut_merged, assay = "SCT")
+
+# PC elbow
+ElbowPlot(glut_merged,
+          ndims = 40,
+          reduction = "pca") +
+  geom_vline(xintercept = 20, linetype = "dashed", color = "red")
+```
+
+
+## UMAP and Cluster
+```{r umap_and_cluster, message=FALSE, warning=FALSE}
+# run UMAP
+glut_unannotated <- RunUMAP(glut_merged,
+                            dims = 1:20,
+                            seed.use = 42,
+                            reduction = "pca",
+                            n.components = 3)
+
+# Determine the K-nearest neighbor graph
+glut_unannotated <- FindNeighbors(object = glut_unannotated,
+                                  assay = "SCT",
+                                  reduction = "pca",
+                                  dims = 1:20)
+
+# Determine the clusters for various resolutions
+glut_unannotated <- FindClusters(object = glut_unannotated,
+                                 algorithm = 1,
+                                 resolution = 0.3)
+
+# Set default assay and normalize for visualization
+glut_unannotated <- JoinLayers(glut_unannotated, assay = "RNA")
+DefaultAssay(glut_unannotated) <- "RNA"
+glut_unannotated <- NormalizeData(glut_unannotated)
+```
+
+## Unannotated UMAP
+```{r unannotated_umap}
+Idents(glut_unannotated) <- "seurat_clusters"
+
+DimPlot(glut_unannotated, 
+        shuffle = TRUE, 
+        label = TRUE)
+```
+
+## Dot plot
+```{r glut_dot_plot}
+d1 <- DotPlot(glut_unannotated,
+              features = c(
+                "Gad1", "Gad2", "Slc32a1",          # GABA (doublet check)
+                "Slc17a7", "Slc17a6",               # Glut IT vs corticofugal
+                "Cux1", "Cux2", "Satb2", "Calb1",   # L2/3 IT (upper IT)
+                "Rorb", "Scnn1a", "Rspo1",          # L4 IT
+                "Fezf2", "Bcl11b", "Ctip2",         # L5 PT (pyramidal tract)
+                "Tle4", "Tbr1", "Foxp2", "Pcp4",    # Deep corticofugal / L6 CT-ish
+                "Tcf7l2", "Syt6",                   # L6 CT / deep IT discriminators
+                "Htr2c", "Crym",                    # broad glut / nonspecific excitatory
+                "Ccn2", "Ctgf", "Nxph1", "Trp73",   # L6b / subplate
+                "Reln"),                            # GABA-like contamination / L2 IT fringe
+              cols = "RdYlBu",
+              assay = "RNA") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  +
+  coord_flip()
+d1
+```
+
+
+## Subtype heatmap
+```{r glut_subtypes_heatmap, warning=FALSE, message=FALSE}
+glut_subtypes <- c("Slc17a7", "Slc17a6",       # Glut
+                   "Cux1", "Satb2",            # Glut L2/3 IT
+                   "Rorb",                     # Glut L4 IT
+                   "Bcl11b", "Tle4",           # Glut L5 PT
+                   "Tbr1", "Foxp2", "Pcp4",    # Glut L6 CT
+                   "Htr2c",                    # Glut non-specific (also Tle4)
+                   "Ccn2")                     # Glut subplate
+
+# Create FeaturePlots
+fplots <- lapply(glut_subtypes, function(gene) {
+  FeaturePlot(neurons_unannotated,    
+              reduction = "umap",
+              features = gene) +
+    scale_colour_gradientn(colours = c("blue", "lightblue", "yellow", "orange", "red")) +
+    ggtitle(gene) +
+    theme(legend.position = "none")
+})
+
+# Combine all plots
+all_plots <- c(fplots)
+layout <- matrix(c(1:12), nrow = 3, ncol = 4, byrow = TRUE)
+```
+
+```{r save_glut_subtypes_heatmap}
+# Save as PDF
+path <- paste0(out, "markers/glut_subtypes_heatmap_umap.pdf")
+pdf(path, width = 8, height = 6)
+grid.arrange(grobs = all_plots, layout_matrix = layout)
+dev.off()
+remove(all_plots, fplots, layout)
+```
+
+
+## Assign
+```{r assign_glut_gaba_identities}
+new_cluster_names <- c(
+  "0" = "L2/3 IT",                     # Slc17a7, Cux1, Cux2, Satb2, Calb1
+  "1" = "L4 IT",                       # Slc17a7, Cux1, Cux2, Satb2, Rorb high, Rspo1
+  "2" = "L6 IT",                       # Slc17a7, Satb2, Tle4, Foxp2
+  "3" = "L5 IT",                       # Slc17a7, Satb2, Cux1-, Cux2-, Rorb low
+  "4" = "L5/6",                        # Slc17a6, Rorb, Tcf7l2
+  "5" = "L5 IT",                       # Slc17a7, Cux1, Bcl11b
+  "6" = "Doublets",                    # Gad1, Slc17a7
+  "7" = "L5 PT",                       # Slc17a7, Bcl11b, Crym2
+  "8" = "L5 PT",                       # Slc17a7, Fezf2, Bcl11b
+  "9" = "L6b / L6 CT",                 # Slc17a7, Ccn2, Tle4, Tbr1, Foxp2
+  "10" = "L5 IT",                      # Slc17a7, Bcl11b, Crym
+  "11" = "L5 IT",                      # Slc17a7, Tle4
+  "12" = "L5 PT",                      # Slc17a7, Tle4, Bcl11b, Fezf2
+  "13" = "L6 IT",                      # Slc17a6/7, Satb2, Cux1, Cux2, Rorb-
+  "14" = "L2/3 IT",                    # Slc17a6/7, Cux1, Cux2, Rorb, Satb2
+  "15" = "L2/3 IT",                    # Slc17a7, Cux1/2, Satb2
+  "16" = "L2/3 IT",                    # Slc17a7, Cux1/2, Satb2
+  "17" = "L6 IT",                      # Slc17a7, Satb2, Fezf2, Foxp2, Pcp4
+  "18" = "Doublets",                   # Gad1, Gad2, Slc32a1
+  "19" = "L2/3 IT",                    # Slc17a7, Cux1/2, Satb2
+  "20" = "L6 CT",                      # Slc17a7, Syt6, Tcf7l2
+  "21" = "L4 IT",                      # Slc17a7, Scnn1a, Rspo1
+  "22" = "Doublets",                   # Gad1/2
+  "23" = "L6 CT"                       # Slc17a6, Htr2c, Foxp2, Nxph1
+)
+
+# set new idents
+Idents(glut_unannotated) <- "seurat_clusters"
+glut_annotated <- RenameIdents(glut_unannotated, new_cluster_names)
+glut_annotated$neuron_class <- Idents(glut_annotated)
+
+# set level
+glut_annotated$neuron_class <- factor(glut_annotated$neuron_class,
+                                  levels = c("L2/3 IT",
+                                             "L4 IT",
+                                             "L5 IT",
+                                             "L5 PT",
+                                             "L5/6",
+                                             "L6b / L6 CT",
+                                             "L6 IT",
+                                             "L6 CT",
+                                             "Doublets"))
+```
+
+```{r}
+Idents(glut_annotated) <- "neuron_class"
+cluster_colors <- c("cyan","blue","gold","pink","purple","green","forestgreen", 
+                    "red", "gray70")
+
+u1 <- DimPlot(
+  object = glut_annotated,
+  cols = cluster_colors,
+  group.by = "neuron_class"
+)
+u1
+
+u2 <- DimPlot(
+  object = glut_annotated,
+  cols = cluster_colors,
+  group.by = "previous_neuron_annotations"
+)
+u2
+```
+
+
+# Recluster gabaergic
+## Gaba clusters
+```{r}
+gaba_clusters <- c("GABA Lamp5", "GABA Pvalb", "GABA Sst", "GABA")
+
+neurons_annotated$gaba_clusters <- 
+  neurons_annotated$neuron_class %in% gaba_clusters
+
+DimPlot(neurons_annotated, group.by = "gaba_clusters")
+```
+
+## Subset gaba
+```{r subset_neurons}
+# subset tangled neurons
+sub <- subset(neurons_annotated, gaba_clusters == TRUE)
+DimPlot(sub)
+
+# create new obj
+counts <- GetAssayData(object = sub, layer = "counts", assay = "RNA")
+
+# filter lowly expressed genes
+nonzero <- counts > 0  # produces logical
+keep <- Matrix::rowSums(nonzero) >= 10  # sum the true/false
+counts_filtered <- counts[keep,]  # keep certain genes
+
+# create new Seurat object with corrected counts
+options(Seurat.object.assay.calcn = TRUE)
+gaba <- CreateSeuratObject(counts = counts_filtered)
+
+# add metadata
+gaba <- AddMetaData(gaba, metadata = sub@meta.data[colnames(gaba), c(4:27,38)])
+
+# rename column
+gaba$previous_neuron_annotations <- gaba$neuron_class
+gaba$neuron_class <- NULL
+
+# print features removed
+print(paste0(dim(counts)[1] - dim(counts_filtered)[1], " features removed"))
+
+# cleanup
+remove(counts, counts_filtered, nonzero, sub)
+```
+
+## SCTransform
+```{r sctransform}
+# split
+gaba_split <- SplitObject(gaba, split.by = "sample_id")
+
+# transform
+options(future.globals.maxSize = 60000 * 1024^2)  # 60 GB
+gaba_split <- lapply(gaba_split, SCTransform)
+
+# get shared featured
+shared_features <- SelectIntegrationFeatures(gaba_split)
+
+# merge
+gaba_merged <- merge(gaba_split[[1]], y = gaba_split[-1])
+remove(gaba_split, gaba)
+
+# set default assay
+DefaultAssay(gaba_merged) <- "SCT"
+
+# set variable features
+VariableFeatures(gaba_merged) <- shared_features
+```
+
+## PCA
+```{r run_pca, warning=FALSE, message=FALSE}
+# run PCA
+gaba_merged <- RunPCA(object = gaba_merged, assay = "SCT")
+
+# PC elbow
+ElbowPlot(gaba_merged,
+          ndims = 40,
+          reduction = "pca") +
+  geom_vline(xintercept = 20, linetype = "dashed", color = "red")
+```
+
+
+## UMAP and Cluster
+```{r umap_and_cluster, message=FALSE, warning=FALSE}
+# run UMAP
+gaba_unannotated <- RunUMAP(gaba_merged,
+                            dims = 1:20,
+                            seed.use = 42,
+                            reduction = "pca",
+                            n.components = 3)
+
+# Determine the K-nearest neighbor graph
+gaba_unannotated <- FindNeighbors(object = gaba_unannotated,
+                                  assay = "SCT",
+                                  reduction = "pca",
+                                  dims = 1:20)
+
+# Determine the clusters for various resolutions
+gaba_unannotated <- FindClusters(object = gaba_unannotated,
+                                 algorithm = 1,
+                                 resolution = 0.3)
+
+# Set default assay and normalize for visualization
+gaba_unannotated <- JoinLayers(gaba_unannotated, assay = "RNA")
+DefaultAssay(gaba_unannotated) <- "RNA"
+gaba_unannotated <- NormalizeData(gaba_unannotated)
+```
