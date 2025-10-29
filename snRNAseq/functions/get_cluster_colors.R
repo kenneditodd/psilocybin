@@ -7,7 +7,13 @@ get_cluster_colors <- function(num_clusters) {
   
   cluster_colors <- vector()
   
-  if (num_clusters == 6) {
+  if (num_clusters == 3) {
+    cluster_colors <- c("#fa4e3e", "#fabf3e", "#30d150")
+  } else if (num_clusters == 4) {
+    cluster_colors <- c("#fa4e3e", "#fabf3e", "#30d150", "#2966f2")
+  } else if (num_clusters == 5) {
+    cluster_colors <- c("#fa4e3e", "#fabf3e", "#30d150", "#b186f7", "#2966f2")
+  } else if (num_clusters == 6) {
     cluster_colors <- c("#fa4e3e", "#fabf3e", "#30d150", "#3086d1", "#b186f7", 
                         "#fa78e9")
   } else if (num_clusters == 7) {
@@ -52,7 +58,32 @@ get_cluster_colors <- function(num_clusters) {
                         "#1b5212", "#0ffcf8", "#117ea6", "#072be3", "#d996fa", 
                         "#a916f2", "#ffa1ef", "#fc1cd7", "gray", "tan", 
                         "chocolate4", "black")
-  } 
+  } else if (num_clusters == 18) {
+    cluster_colors <- c("#fc4a0f", "#fca50f", "yellow", "gold", "#85fa3c","#3f940a", 
+                        "#1b5212", "#0ffcf8", "#117ea6", "#072be3", "#d996fa", 
+                        "#a916f2", "#ffa1ef", "#fc1cd7", "gray", "tan", 
+                        "chocolate4", "black")
+  } else if (num_clusters == 19) {
+    cluster_colors <- c("#fc4a0f", "#fca50f", "yellow", "gold", "#85fa3c","#3f940a", 
+                        "#1b5212", "#0ffcf8", "#117ea6", "#072be3", "#d996fa", 
+                        "#a916f2", "#ffa1ef", "#fc1cd7", "lightgray", "darkgray", "tan", 
+                        "chocolate4", "black")
+  } else if (num_clusters == 20) {
+    cluster_colors <- c("#fc4a0f", "#fca50f", "yellow", "gold", "#85fa3c","#3f940a", 
+                        "#1b5212", "aquamarine", "#0ffcf8", "#117ea6", "#072be3", "#d996fa", 
+                        "#a916f2", "#ffa1ef", "#fc1cd7", "lightgray", "darkgray", "tan", 
+                        "chocolate4", "black")
+  } else if (num_clusters == 21) {
+    cluster_colors <- c("maroon","#fc4a0f", "#fca50f", "yellow", "gold", "#85fa3c","#3f940a", 
+                        "#1b5212", "aquamarine", "#0ffcf8", "#117ea6", "#072be3", "#d996fa", 
+                        "#a916f2", "#ffa1ef", "#fc1cd7", "lightgray", "darkgray", "tan", 
+                        "chocolate4", "black")
+  } else if (num_clusters == 22) {
+    cluster_colors <- c("maroon","#fc4a0f", "#fca50f", "yellow", "gold", "#85fa3c","#3f940a", 
+                        "#1b5212", "aquamarine", "#0ffcf8", "#117ea6", "#072be3", "navy", "#d996fa", 
+                        "#a916f2", "#ffa1ef", "#fc1cd7", "lightgray", "darkgray", "tan", 
+                        "chocolate4", "black")
+  }
   
   return(cluster_colors)
   
