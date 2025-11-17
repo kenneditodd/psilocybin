@@ -1,7 +1,6 @@
 # .gitignore
 
 # init files/folders
-.git
 .Rhistory
 .Rproj.user
 psi1.Rproj
