@@ -1,0 +1,948 @@
+---
+title: "Psi1 snRNAseq"
+subtitle: "Pass 6: SoupX and Recluster"
+author: "Kennedi Todd"
+date: "11/13/2025"
+output:
+  html_document:
+    code_folding: hide
+    theme: cerulean
+    toc: true
+    toc_float: true
+editor_options: 
+  chunk_output_type: inline
+---
+
+
+# Setup
+## Set working directory
+```{r working_directory}
+knitr::opts_knit$set(root.dir = ".")
+```
+
+## Load libraries
+```{r libraries, message=FALSE, warnings=FALSE}
+library(Azimuth)
+library(dotenv)         # load_dot_env()
+library(dplyr)          # %>%
+library(ggplot2)        # geom_vline()
+library(gridExtra)      # grid.arrange()
+library(Seurat)         # DimPlot()
+library(SoupX)          # SoupChannel()
+```
+
+## Variables and functions
+```{r set_variables_and_thresholds}
+# source thresholds and output paths
+source("../../refs/thresholds_and_outs.R")
+out <- paste0(out, "pass3/")
+
+# single cell functions
+files <- list.files("../../functions", full.names = TRUE)
+invisible(lapply(files, source))
+
+# load the environment variables
+load_dot_env(file = "../../refs/.env")
+project_dir <- Sys.getenv("PROJECT_DIR")
+```
+
+## Load data
+```{r load_data}
+mouse_annotated <- readRDS(
+  file = paste0( "../../rObjects/pass3_annotated_seurat_obj.rds"),
+)
+```
+
+## UMAP
+```{r pass1_annotated_umap}
+cluster_colors <- get_cluster_colors(
+  num_clusters = length(unique(mouse_annotated$annotated_clusters))
+)
+
+DimPlot(mouse_annotated, 
+        shuffle = TRUE,
+        cols = cluster_colors)
+```
+
+# SoupX 
+## rhoPrior 0.2
+```{r soupx_auto_default}
+# store the corrected counts for each sample
+corrected_list <- list()
+seq_ids <- unique(mouse_annotated$tgen_subject_name)
+sample_ids <- unique(mouse_annotated$sample_id)
+rho_estimates <- setNames(numeric(length(sample_ids)), sample_ids)
+
+for (i in seq_along(seq_ids)) {
+
+  cat("\nProcessing sample:", sample_ids[i], "\n")
+  
+  # get table of droplets (tod) from Cell Ranger output
+  # genes as rows, cells as columns
+  cellranger_out_dir <- 
+    paste0(project_dir, "/counts/", seq_ids[i], "/outs/multi/count/raw_feature_bc_matrix")
+  tod <- Seurat::Read10X(cellranger_out_dir)
+  colnames(tod) <- paste0(sample_ids[i], "_", colnames(tod))
+  
+  # get table of counts (toc) from filtered Seurat object
+  # cells are a subset of tod
+  toc <- mouse_annotated@assays$RNA$counts[, mouse_annotated$sample_id == sample_ids[i]]
+  
+  # subset tod genes to match genes in toc
+  genes_to_keep <- rownames(toc)
+  tod <- tod[genes_to_keep, ]
+  stopifnot(all(rownames(tod) == rownames(toc)))
+  
+  # build SoupChannel manually
+  cat("\n\t Building SoupChannel \n")
+  sc <- SoupChannel(tod, toc)
+
+  # get cluster labels for toc
+  all.equal(colnames(toc), rownames(sc$metaData))
+  toc_clusters <- mouse_annotated$annotated_clusters[colnames(toc)]
+  
+  # add to SoupChannel
+  sc <- setClusters(sc, toc_clusters)
+  sc <- setDR(sc, mouse_annotated@reductions$umap@cell.embeddings[colnames(toc), ])
+  
+  # estimate
+  cat("\t Estimating rho \n")
+  sc <- autoEstCont(sc, priorRho = 0.2)
+  
+  # save top contaminators
+  cat("\t Saving top 200 contaminators \n")
+  top_contam <- sc$soupProfile[order(sc$soupProfile$est, decreasing = TRUE),]
+  top_contam$est <- round(top_contam$est, digits = 4)
+  top_contam <- top_contam[1:200,]
+  top_contam$gene <- rownames(top_contam)
+  write.table(x = top_contam,
+              file = paste0(out, "soupx/", sample_ids[i], "_top200_contaminators.tsv"),
+              sep = "\t",
+              quote = FALSE,
+              row.names = FALSE)
+  
+  # adjust (auto mode with rounding)
+  cat("\t Adjusting counts \n")
+  sc.cleaned <- adjustCounts(sc, roundToInt = TRUE)
+
+  # save corrected counts
+  corrected_list[[sample_ids[i]]] <- sc.cleaned
+  cat("Done:", sample_ids[i], "\n")
+  
+  # save rho estimate
+  rho_estimates[sample_ids[i]] <- sc$fit$rhoEst
+}
+
+cat("\nAll samples processed & merged!\n")
+
+# save the corrected list
+saveRDS(corrected_list,
+        paste0("../../rObjects/pass3_soupx.rds"),
+        compress = FALSE)
+
+# merge corrected counts
+corrected_counts <- do.call(cbind, corrected_list)
+
+# save rho estimates
+write.table(
+  x = data.frame(Sample = names(rho_estimates), Rho = rho_estimates),
+  file = paste0(out, "soupx/rho_estimates.tsv"),
+  sep = "\t",
+  quote = FALSE,
+  row.names = FALSE
+)
+```
+
+## Non-expressed list
+```{r}
+# define marker genes
+Astrocyte <- c("Aldoc","Aqp4","Clu")
+Choroid <- c("Ttr","Folr1","Spag16")
+Microglia <- c("Aif1","C1qa","P2ry12","Tmem119")
+Oligodendrocyte <- c("Mbp","Mal","Mog","Mag","Opalin")
+OPCs <- c("Olig1","Olig2","Pdgfra")
+Non_neurons <- c(Astrocyte, Choroid, Microglia, Oligodendrocyte, OPCs)
+Neurons_pan <- c("Snap25","Syt1","Meg3","Rbfox3")
+Neurons_gaba <- c("Gad1", "Gad2", "Slc32a1")
+Neurons_glut <- c("Slc17a6", "Slc17a7")
+Neurons_all <- c(Neurons_pan, Neurons_gaba, Neurons_glut)
+
+# non-expressed gene list for every cluster
+nonExpressedGeneList <- list(
+  `Astrocytes` = c(Neurons_all, Choroid, Microglia, Oligodendrocyte, OPCs),
+  `Choroid` = c(Neurons_all, Astrocyte, Microglia, Oligodendrocyte, OPCs),
+  `Microglia` = c(Neurons_all, Astrocyte, Choroid, Oligodendrocyte, OPCs),
+  `Oligodendrocytes` = c(Neurons_all, Astrocyte, Choroid, Microglia, OPCs),
+  `Differentiating OPCs` = c(Neurons_all, Astrocyte, Choroid, Microglia),
+  `OPCs` = c(Neurons_all, Astrocyte, Choroid, Microglia, Oligodendrocyte),
+  `Gad 1` = c(Non_neurons, Neurons_glut),
+  `Gad 2` = c(Non_neurons, Neurons_glut),
+  `Gad 3` = c(Non_neurons, Neurons_glut),
+  `Slc17a6` = c(Non_neurons, Neurons_gaba, "Slc17a7"),
+  `Slc17a6 Slc17a7 1` = c(Non_neurons, Neurons_gaba),
+  `Slc17a6 Slc17a7 2` = c(Non_neurons, Neurons_gaba),
+  `Slc17a6 Slc17a7 3` = c(Non_neurons, Neurons_gaba),
+  `Slc17a7 1` = c(Non_neurons, Neurons_gaba, "Slc17a6"),
+  `Slc17a7 2` = c(Non_neurons, Neurons_gaba, "Slc17a6")
+)
+```
+
+## Loop
+```{r}
+# store the corrected counts for each sample
+corrected_list <- list()
+seq_ids <- unique(mouse_annotated$tgen_subject_name)
+sample_ids <- unique(mouse_annotated$sample_id)
+rho_estimates <- setNames(numeric(length(sample_ids)), sample_ids)
+
+for (i in seq_along(seq_ids)) {
+
+  cat("\nProcessing sample:", sample_ids[i], "\n")
+  
+  # get table of droplets (tod) from Cell Ranger output
+  # genes as rows, droplets (empty + cells) as columns
+  cellranger_out_dir <- paste0(project_dir, "/counts/", seq_ids[i], "/outs/multi/count/raw_feature_bc_matrix")
+  tod <- Seurat::Read10X(cellranger_out_dir)
+  colnames(tod) <- paste0(sample_ids[i], "_", colnames(tod))
+  
+  # get table of counts (toc) from filtered Seurat object
+  # cells are a subset of tod
+  toc <- mouse_annotated@assays$RNA$counts[, mouse_annotated$sample_id == sample_ids[i], drop = FALSE]
+  
+  # align genes
+  genes_to_keep <- intersect(rownames(tod), rownames(toc))
+  tod <- tod[genes_to_keep, , drop = FALSE]
+  toc <- toc[genes_to_keep, , drop = FALSE]
+  
+  # build SoupChannel manually
+  cat("\n\t Building SoupChannel \n")
+  sc <- SoupChannel(tod, toc, calcSoupProfile = FALSE)
+  
+  # get cluster labels
+  all.equal(colnames(toc), rownames(sc$metaData))
+  toc_clusters <- mouse_annotated$annotated_clusters[colnames(toc)]
+  sc <- setClusters(sc, toc_clusters)
+  
+  # add dimensional reduction
+  sc <- setDR(sc, mouse_annotated@reductions$umap@cell.embeddings[colnames(toc), ])
+  
+  # Estimate contamination using your manual gene lists
+  sc <- estimateSoup(sc = sc, 
+                     soupRange = c(0, 100), 
+                     keepDroplets = FALSE)
+  useToEst <- estimateNonExpressingCells(sc,
+                                         nonExpressedGeneList = nonExpressedGeneList,
+                                         clusters = toc_clusters)
+  sc <- calculateContaminationFraction(sc,
+                                       nonExpressedGeneList = nonExpressedGeneList,
+                                       useToEst = useToEst)
+
+  # save top contaminators
+  cat("\t Saving top 200 contaminators \n")
+  top_contam <- sc$soupProfile[order(sc$soupProfile$est, decreasing = TRUE),]
+  top_contam$est <- round(top_contam$est, digits = 4)
+  top_contam <- top_contam[1:200,]
+  top_contam$gene <- rownames(top_contam)
+  write.table(x = top_contam,
+              file = paste0(out, "soupx/", sample_ids[i], "_top200_contaminators.tsv"),
+              sep = "\t",
+              quote = FALSE,
+              row.names = FALSE)
+  
+  # adjust counts
+  cat("\t Adjusting counts \n")
+  sc.cleaned <- adjustCounts(sc, roundToInt = TRUE)
+
+  # save corrected counts
+  corrected_list[[sample_ids[i]]] <- sc.cleaned
+  cat("Done:", sample_ids[i], "\n")
+  
+  # save rho estimate
+  rho_estimates[sample_ids[i]] <- unique(sc$metaData$rho)
+}
+
+cat("\nAll samples processed & merged!\n")
+
+# save the corrected list
+saveRDS(corrected_list,
+        paste0("../../rObjects/pass3_soupx.rds"),
+        compress = FALSE)
+
+# merge corrected counts
+corrected_counts <- do.call(cbind, corrected_list)
+
+# save rho estimates
+write.table(
+  x = data.frame(Sample = names(rho_estimates), Rho = rho_estimates),
+  file = paste0(out, "soupx/rho_estimates.tsv"),
+  sep = "\t",
+  quote = FALSE,
+  row.names = FALSE
+)
+```
+
+# Recluster pass 4
+## Create seurat obj
+```{r}
+# source thresholds and output paths
+source("../../refs/thresholds_and_outs.R")
+out <- paste0(out, "pass4/")
+
+# filter lowly expressed genes
+nonzero <- corrected_counts > 0  # produces logical
+keep <- Matrix::rowSums(nonzero) >= 10  # sum the true/false
+counts_filtered <- corrected_counts[keep,]  # keep certain genes
+
+# create new Seurat object with corrected counts
+options(Seurat.object.assay.calcn = TRUE)
+mouse <- CreateSeuratObject(counts = counts_filtered)
+
+# add metadata
+mouse <- AddMetaData(mouse, metadata = mouse_annotated@meta.data[colnames(mouse), 4:27])
+
+# print features removed
+print(paste0(dim(corrected_counts)[1] - dim(counts_filtered)[1], " features removed"))
+
+# cleanup data
+remove(corrected_counts, counts_filtered, nonzero, mouse_annotated, corrected_list)
+```
+
+## SCTransform
+```{r sctransform}
+# split
+mouse_split <- SplitObject(mouse, split.by = "sample_id")
+
+# transform
+options(future.globals.maxSize = 20000 * 1024^2)  # 20 GB
+mouse_split <- lapply(mouse_split, SCTransform)
+
+# get shared featured
+shared_features <- SelectIntegrationFeatures(mouse_split)
+
+# merge
+mouse_merged <- merge(mouse_split[[1]], y = mouse_split[-1])
+
+# set default assay
+DefaultAssay(mouse_merged) <- "SCT"
+
+# set variable features
+VariableFeatures(mouse_merged) <- shared_features
+
+# save
+saveRDS(mouse_merged, 
+        file = paste0( "../../rObjects/pass4_sct_seurat_obj.rds"),
+        compress = FALSE)
+remove(mouse, mouse_split)
+gc()
+```
+
+## PCA
+```{r run_pca, warning=FALSE, message=FALSE}
+# run PCA
+mouse_merged <- RunPCA(object = mouse_merged, assay = "SCT")
+```
+
+```{r plot_pca}
+pca1 <- DimPlot(mouse_merged,
+                reduction = "pca",
+                group.by = "treatment",
+                shuffle = TRUE)
+pca1
+
+pca2 <- DimPlot(mouse_merged,
+                reduction = "pca",
+                group.by = "sample_id",
+                shuffle = TRUE)
+pca2
+
+pca3 <- DimPlot(mouse_merged,
+                reduction = "pca",
+                group.by = "group",
+                shuffle = TRUE)
+pca3
+
+pca4 <- DimPlot(mouse_merged,
+                reduction = "pca",
+                group.by = "group2",
+                shuffle = TRUE)
+pca4
+
+pca5 <- DimPlot(mouse_merged,
+                reduction = "pca",
+                group.by = "dose",
+                shuffle = TRUE)
+pca5
+
+pca6 <- DimPlot(mouse_merged,
+                reduction = "pca",
+                group.by = "timepoint",
+                shuffle = TRUE)
+pca6
+
+pca7 <- DimPlot(mouse_merged,
+                reduction = "pca",
+                group.by = "sex",
+                shuffle = TRUE)
+pca7
+
+# PC elbow
+e1 <- ElbowPlot(mouse_merged,
+                ndims = 40,
+                reduction = "pca") +
+  geom_vline(xintercept = 12, linetype = "dashed", color = "red")
+e1
+```
+
+
+```{r save_pca, message=FALSE, warning=FALSE}
+path <- paste0(out, "clustering_QC/PCA_colored_by_treatment.pdf")
+pdf(path, width = 6, height = 4)
+pca1
+dev.off()
+
+path <- paste0(out, "clustering_QC/PCA_colored_by_sample.pdf")
+pdf(path, width = 8, height = 4)
+pca2
+dev.off()
+
+path <- paste0(out, "clustering_QC/PCA_colored_by_group.pdf")
+pdf(path, width = 6, height = 4)
+pca3
+dev.off()
+
+path <- paste0(out, "clustering_QC/PCA_colored_by_group2.pdf")
+pdf(path, width = 6, height = 4)
+pca4
+dev.off()
+
+path <- paste0(out, "clustering_QC/PCA_colored_by_dose.pdf")
+pdf(path, width = 6, height = 4)
+pca5
+dev.off()
+
+path <- paste0(out, "clustering_QC/PCA_colored_by_timepoint.pdf")
+pdf(path, width = 6, height = 4)
+pca6
+dev.off()
+
+path <- paste0(out, "clustering_QC/PCA_colored_by_sex.pdf")
+pdf(path, width = 6, height = 4)
+pca7
+dev.off()
+
+# save elbow
+path <- paste0(out, "clustering_QC/PCA_elbow.pdf")
+pdf(path, width = 6, height = 6)
+e1
+dev.off()
+
+# cleanup
+remove(pca1,pca2,pca3,pca4,pca5,pca6,pca7,e1)
+```
+
+## Harmony
+```{r harmony}
+# Integrate
+Idents(mouse_merged) <- "sample_id"
+mouse_integrated <- IntegrateLayers(object = mouse_merged,
+                                    method = "HarmonyIntegration",
+                                    assay = "SCT")
+
+# save
+saveRDS(mouse_integrated, 
+        file = paste0( "../../rObjects/pass4_harmony_seurat_obj.rds"),
+        compress = FALSE)
+remove(mouse_merged)
+gc()
+```
+
+```{r plot_harmony}
+# Plot harmony
+harmony1 <- DimPlot(mouse_integrated,
+                reduction = "harmony",
+                group.by = "treatment",
+                shuffle = TRUE)
+harmony1
+
+harmony2 <- DimPlot(mouse_integrated,
+                reduction = "harmony",
+                group.by = "sample_id",
+                shuffle = TRUE)
+harmony2
+
+harmony3 <- DimPlot(mouse_integrated,
+                    reduction = "harmony",
+                    group.by = "group",
+                    shuffle = TRUE)
+harmony3
+
+harmony4 <- DimPlot(mouse_integrated,
+                    reduction = "harmony",
+                    group.by = "group2",
+                    shuffle = TRUE)
+harmony4
+
+harmony5 <- DimPlot(mouse_integrated,
+                    reduction = "harmony",
+                    group.by = "dose",
+                    shuffle = TRUE)
+harmony5
+
+harmony6 <- DimPlot(mouse_integrated,
+                    reduction = "harmony",
+                    group.by = "timepoint",
+                    shuffle = TRUE)
+harmony6
+
+harmony7 <- DimPlot(mouse_integrated,
+                    reduction = "harmony",
+                    group.by = "sex",
+                    shuffle = TRUE)
+harmony7
+```
+
+
+```{r save_harmony, message=FALSE, warning=FALSE}
+path <- paste0(out, "clustering_QC/harmony_colored_by_treatment.pdf")
+pdf(path, width = 6, height = 4)
+harmony1
+dev.off()
+
+path <- paste0(out, "clustering_QC/harmony_colored_by_sample.pdf")
+pdf(path, width = 8, height = 4)
+harmony2
+dev.off()
+
+path <- paste0(out, "clustering_QC/harmony_colored_by_group.pdf")
+pdf(path, width = 6, height = 4)
+harmony3
+dev.off()
+
+path <- paste0(out, "clustering_QC/harmony_colored_by_group2.pdf")
+pdf(path, width = 6, height = 4)
+harmony4
+dev.off()
+
+path <- paste0(out, "clustering_QC/harmony_colored_by_dose.pdf")
+pdf(path, width = 6, height = 4)
+harmony5
+dev.off()
+
+path <- paste0(out, "clustering_QC/harmony_colored_by_timepoint.pdf")
+pdf(path, width = 6, height = 4)
+harmony6
+dev.off()
+
+path <- paste0(out, "clustering_QC/harmony_colored_by_sex.pdf")
+pdf(path, width = 6, height = 4)
+harmony7
+dev.off()
+
+# cleanup
+remove(harmony1,harmony2,harmony3,harmony4,harmony5,harmony6,harmony7)
+```
+
+## UMAP and Cluster
+```{r umap_and_cluster, message=FALSE, warning=FALSE}
+# run UMAP
+mouse_unannotated <- RunUMAP(mouse_integrated,
+                             dims = 1:11,
+                             min.dist = 0.3,
+                             n.neighbors = 70,
+                             reduction = "harmony",
+                             n.components = 3)
+
+# Determine the K-nearest neighbor graph
+mouse_unannotated <- FindNeighbors(object = mouse_unannotated,
+                                   assay = "SCT",
+                                   reduction = "harmony",
+                                   dims = 1:11)
+
+# Determine the clusters for various resolutions
+mouse_unannotated <- FindClusters(object = mouse_unannotated,
+                                  algorithm = 1,
+                                  resolution = 0.2)
+
+# Set default assay and normalize for visualization
+mouse_unannotated <- JoinLayers(mouse_unannotated, assay = "RNA")
+DefaultAssay(mouse_unannotated) <- "RNA"
+mouse_unannotated <- NormalizeData(mouse_unannotated)
+
+# save
+saveRDS(mouse_unannotated, 
+        file = "../../rObjects/pass4_unannotated_seurat_obj.rds",
+        compress = FALSE)
+```
+
+```{r grouped_umaps}
+# group
+umap1 <- DimPlot(object = mouse_unannotated,
+                 reduction = "umap",
+                 group.by = "group",
+                 raster = FALSE,
+                 shuffle = TRUE)
+umap1
+
+# group2
+umap2 <- DimPlot(object = mouse_unannotated,
+                 reduction = "umap",
+                 group.by = "group2",
+                 raster = FALSE,
+                 shuffle = TRUE)
+umap2
+
+# sex
+umap3 <- DimPlot(object = mouse_unannotated,
+                 reduction = "umap",
+                 group.by = "sex",
+                 raster = FALSE,
+                 shuffle = TRUE)
+umap3
+
+# dose
+umap4 <- DimPlot(object = mouse_unannotated, 
+                 reduction = "umap",
+                 group.by = "dose",
+                 raster = FALSE,
+                 shuffle = TRUE)
+umap4
+
+# mito_factor
+umap5 <- DimPlot(object = mouse_unannotated, 
+                 group.by = "mito_factor",
+                 reduction = "umap",
+                 raster = FALSE,
+                 shuffle = TRUE)
+umap5
+
+# phase
+umap6 <- DimPlot(object = mouse_unannotated, 
+                 reduction = "umap",
+                 group.by = "phase",
+                 raster = FALSE,
+                 shuffle = TRUE)
+umap6
+
+# sample
+umap7 <- DimPlot(object = mouse_unannotated, 
+                 reduction = "umap",
+                 group.by = "sample_id",
+                 raster = FALSE,
+                 shuffle = TRUE)
+umap7
+```
+
+```{r save_split_umap, echo=FALSE, eval=FALSE}
+path <- paste0(out, "clustering_QC/umap_colored_by_")
+pdf(paste0(path, "group.pdf"), width = 6, height = 4)
+umap1
+dev.off()
+
+pdf(paste0(path, "group2.pdf"), width = 6, height = 4)
+umap2
+dev.off()
+
+pdf(paste0(path, "sex.pdf"), width = 6, height = 4)
+umap3
+dev.off()
+
+pdf(paste0(path, "dose.pdf"), width = 6, height = 4)
+umap4
+dev.off()
+
+pdf(paste0(path, "mito_factor.pdf"), width = 6, height = 4)
+umap5
+dev.off()
+
+pdf(paste0(path, "cell_cycle_phase.pdf"), width = 6, height = 4)
+umap6
+dev.off()
+
+pdf(paste0(path, "sample.pdf"), width = 6, height = 4)
+umap7
+dev.off()
+
+remove(umap1,umap2,umap3,umap4,umap5,umap6,umap7)
+```
+
+# Unannotated pass 4
+## Unannotated UMAP
+```{r unannotated_umap}
+Idents(mouse_unannotated) <- "seurat_clusters"
+cluster_colors <- get_cluster_colors(
+  num_clusters = length(unique(mouse_unannotated$seurat_clusters))
+)
+
+u1 <- DimPlot(mouse_unannotated, 
+              shuffle = TRUE, 
+              label = TRUE, 
+              cols = cluster_colors)
+u1
+
+u2 <- DimPlot(mouse_unannotated, 
+              shuffle = TRUE, 
+              label = TRUE, 
+              dims = c(2,3),
+              cols = cluster_colors)
+u2
+```
+
+```{r save_unannotated_umap}
+pdf(paste0(out, "UMAP/unannotated_umap.pdf"), width = 6, height = 5)
+u1
+dev.off()
+remove(u1,u2)
+```
+
+
+## Canonical markers
+```{r unannotated_canonical_markers}
+# Canonical
+canonical_markers <- c(
+  "Aldoc", "Aqp4",                                    # Astrocytes
+  "Ttr", "Cfap44",                                    # Choroid-Ependyma
+  "Col1a2", "Dcn", "Flt1",                            # Fibroblast-Endothelial
+  "Pdgfrb", "Rgs5", "Acta2", "Vtn",                   # Mural
+  "P2ry12", "Tmem119",                                # Microglia
+  "Syt1", "Snap25",                                   # Pan-neuron
+  "Gad1", "Gad2", "Slc32a1", "Vip", "Sst", "Pvalb",   # Neuron subtypes
+  "Lamp5", "Reln", "Slc17a7", "Slc17a6",              # Neuron subtypes
+  "Cspg4", "Tnr",                                     # OPCs
+  "Mag", "Mbp"                                        # Oligodendrocytes
+)
+
+d <- DotPlot(mouse_unannotated,
+              features = canonical_markers,
+              cols = "RdYlBu",
+              assay = "RNA") +
+  coord_flip() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+d
+```
+
+```{r save_unannotated_canonical_markers}
+pdf(paste0(out, "markers/unannotated_canonical_markers.pdf"), width = 10, height = 10)
+d
+dev.off()
+remove(d)
+```
+
+## Assign idetities
+```{r assign_identities}
+new_cluster_names <- c(
+  "0" = "Neurons-Slc17a7",
+  "1" = "Neurons-Gad2",
+  "2" = "Astrocytes",
+  "3" = "Neurons-Slc17a7",
+  "4" = "Neurons-Slc17a7",
+  "5" = "Neurons-Gad2",
+  "6" = "Neurons-Slc17a7",
+  "7" = "Neurons-Slc17a7",
+  "8" = "Oligodendrocytes",
+  "9" = "Neurons-Slc17a6",
+  "10" = "OPCs",
+  "11" = "Astrocytes",
+  "12" = "Neurons-Gad2",
+  "13" = "Neurons-Slc17a7",
+  "14" = "Neurons-Slc17a7",
+  "15" = "Neurons-Slc17a7",
+  "16" = "Neurons-Gad2",
+  "17" = "Choroid",
+  "18" = "Neurons-Slc17a7",
+  "19" = "Microglia"
+)
+
+# set new idents
+mouse_annotated <- RenameIdents(mouse_unannotated, new_cluster_names)
+mouse_annotated$annotated_clusters <- Idents(mouse_annotated)
+
+# set level
+mouse_annotated$annotated_clusters <- factor(mouse_annotated$annotated_clusters,
+                                  levels = c("Astrocytes",
+                                             "Choroid",
+                                             "Microglia",
+                                             "Neurons-Gad2",
+                                             "Neurons-Slc17a6",
+                                             "Neurons-Slc17a7",
+                                             "Oligodendrocytes",
+                                             "OPCs"))
+Idents(mouse_annotated) <- "annotated_clusters"
+
+# save
+saveRDS(mouse_annotated, 
+        file = paste0( "../../rObjects/pass4_annotated_seurat_obj.rds"),
+        compress = FALSE)
+```
+
+# Annotated pass 4
+## UMAP
+```{r annotated_umap}
+cluster_colors <- c("#cc79a7","#d55c00","#000","#0072b2","#009e73","#56b4df",
+                    "#e69f00", "#f0e442")
+
+u1 <- DimPlot(mouse_annotated, 
+              group.by = "annotated_clusters", 
+              cols = cluster_colors,
+              shuffle = TRUE)
+u1
+```
+
+```{r save_annotated_umap}
+pdf(paste0(out, "UMAP/annotated_umap.pdf"), width = 7, height = 5)
+u1
+dev.off()
+remove(u1)
+```
+
+## Canonical markers
+```{r annotated_canonical_markers}
+# Canonical
+canonical_markers <- c(
+  "Aldoc", "Aqp4",                                    # Astrocytes
+  "Ttr", "Folr1",                                     # Choroid
+  "P2ry12", "Tmem119",                                # Microglia
+  "Syt1", "Snap25",                                   # Pan-neuron
+  "Gad1", "Gad2", "Slc32a1",                          # GABA
+  "Slc17a6", "Slc17a7",                               # Glut
+  "Mag", "Mog",                                       # Oligodendrocytes
+  "Cspg4", "Pdgfra"                                   # OPCs
+)
+
+d2 <- DotPlot(mouse_annotated,
+              features = canonical_markers,
+              cols = "RdYlBu",
+              assay = "RNA") +
+  coord_flip() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+d2
+```
+
+```{r save_annotated_markers}
+pdf(paste0(out, "markers/annotated_canonical_markers.pdf"), width = 8, height = 10)
+d2
+dev.off()
+remove(d2)
+```
+
+## Auto markers
+```{r annotated_auto_markers}
+Idents(mouse_annotated) <- "annotated_clusters"
+auto_markers <- SeuratWrappers::RunPrestoAll(
+  object = mouse_annotated,
+  assay = "RNA",
+  slot = "counts",
+  only.pos = TRUE
+)
+
+top3 <- auto_markers %>%
+  filter(p_val_adj < 0.01) %>%
+  group_by(cluster) %>%
+  slice_head(n = 3) %>%
+  ungroup()
+
+dot <- DotPlot(mouse_annotated,
+               features = unique(top3$gene),
+               cols = "RdYlBu",
+               assay = "RNA") +
+  coord_flip() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+dot
+```
+
+```{r save_annotated_auto_markers}
+pdf(paste0(out, "markers/annotated_auto_markers.pdf"), width = 10, height = 10)
+dot
+dev.off()
+remove(dot, top3)
+```
+
+## Marker heatmap
+```{r marker_heatmaps}
+marker_genes <- c("Aqp4", "Ttr", "P2ry12", "Snap25", "Rbfox3", "Slc17a6", "Slc17a7", 
+                  "Gad1", "Gad2", "Slc32a1", "Cspg4", "Mog")
+
+# Create 12 FeaturePlots
+fplots <- lapply(marker_genes, function(gene) {
+  FeaturePlot(mouse_annotated,
+              reduction = "umap",
+              features = gene) +
+    scale_colour_gradientn(colours = c("blue", "lightblue", "yellow", "orange", "red")) +
+    ggtitle(gene) +
+    theme(legend.position = "none")
+})
+
+# Plot together
+all_plots <- c(fplots)
+layout <- matrix(1:12, nrow = 3, ncol = 4, byrow = TRUE)
+```
+
+```{r save_marker_heatmap}
+# Save as PDF
+path <- paste0(out, "markers/umap_heatmap_canonical_markers.pdf")
+pdf(path, width = 12, height = 8)
+grid.arrange(grobs = all_plots, layout_matrix = layout)
+dev.off()
+```
+
+# Downsample
+## Sample
+```{r}
+# source thresholds and output paths
+source("../../refs/thresholds_and_outs.R")
+out <- paste0(out, "pass4_downsampled/")
+
+# preview number of cells per sample
+table(mouse_annotated$sample_id)
+
+# Downsample the number of cells per identity class
+set.seed(8)
+Idents(mouse_annotated) <- "sample_id"
+mouse_downsample <- subset(x = mouse_annotated, downsample = 5000)
+
+# preview number of cells per sample
+table(mouse_downsample$sample_id)
+
+# overwrite existing object
+Idents(mouse_downsample) <- "annotated_clusters"
+
+# save
+saveRDS(mouse_downsample, 
+        file = "../../rObjects/pass4_downsampled_annotated_seurat_obj.rds",
+        compress = FALSE)
+```
+
+## Shiny app
+```{r shiny_app, eval=FALSE}
+# create new object
+library(ShinyCell)
+shiny.obj <- mouse_downsample
+VariableFeatures(shiny.obj) <- shiny.obj@assays$SCT@var.features
+
+# set default params
+DefaultAssay(shiny.obj) <- "RNA"
+
+# create config
+names <- colnames(shiny.obj@meta.data)
+names <- names[c(31,32,2:27)]
+sc.config <- createConfig(obj = shiny.obj,
+                          meta.to.include = names)
+
+# change wd
+setwd(out)
+
+# output shiny app folder
+makeShinyApp(obj = shiny.obj, 
+             scConf = sc.config, 
+             gene.mapping = TRUE,
+             shiny.title = "Psi1 snRNAseq Pass 4 Downsampled")
+
+# manual config edits
+setwd(out)
+sc1conf <- readRDS("shinyApp/sc1conf.rds")
+cluster_hex <- "#cc79a7|#d55c00|#000|#0072b2|#009e73|#56b4df|#e69f00|#f0e442"
+sc1conf[2,4] <- cluster_hex
+saveRDS(sc1conf, "shinyApp/sc1conf.rds")
+
+# cleanup
+remove(sc.config,sc1conf,shiny.obj)
+```

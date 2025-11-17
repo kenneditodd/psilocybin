@@ -1,0 +1,687 @@
+---
+title: "Psi1 snRNAseq"
+subtitle: "Recluster Slc17a6 Slc17a7 Neurons"
+author: "Kennedi Todd"
+date: "11/14/2025"
+output:
+  html_document:
+    code_folding: hide
+    theme: cerulean
+    toc: true
+    toc_float: true
+editor_options: 
+  chunk_output_type: inline
+---
+
+
+# Setup
+## Set working directory
+```{r working_directory}
+knitr::opts_knit$set(root.dir = ".")
+```
+
+## Load libraries
+```{r libraries, message=FALSE, warnings=FALSE}
+library(Azimuth)
+library(dotenv)         # load_dot_env()
+library(dplyr)          # %>%
+library(ggplot2)        # geom_vline()
+library(gridExtra)      # grid.arrange()
+library(Seurat)         # DimPlot()
+library(SoupX)          # SoupChannel()
+```
+
+## Variables and functions
+```{r set_variables_and_thresholds}
+# source thresholds and output paths
+source("../../refs/thresholds_and_outs.R")
+out <- paste0(out, "recluster_slc17a6_slc17a7_neurons/")
+
+# single cell functions
+files <- list.files("../../functions", full.names = TRUE)
+invisible(lapply(files, source))
+
+# load the environment variables
+load_dot_env(file = "../../refs/.env")
+project_dir <- Sys.getenv("PROJECT_DIR")
+```
+
+## Load data
+```{r load_data}
+mouse_annotated <- readRDS(
+  file = paste0("../../rObjects/pass4_annotated_seurat_obj.rds"),
+)
+```
+
+## UMAP
+```{r pass3_annotated_umap}
+cluster_colors <- c("#cc79a7","#d55c00","#000","#0072b2","#009e73","#56b4df",
+                    "#e69f00", "#f0e442")
+
+DimPlot(mouse_annotated, 
+        shuffle = TRUE,
+        cols = cluster_colors)
+```
+
+# Recluster neurons
+## Subset neurons
+```{r subset_neurons}
+# subset neurons
+sub <- subset(mouse_annotated, annotated_clusters %in% c("Neurons-Slc17a6",
+                                                         "Neurons-Slc17a7"))
+table(sub$annotated_clusters)
+
+# create new obj
+counts <- GetAssayData(object = sub, layer = "counts", assay = "RNA")
+
+# filter lowly expressed genes
+nonzero <- counts > 0  # produces logical
+keep <- Matrix::rowSums(nonzero) >= 10  # sum the true/false
+counts_filtered <- counts[keep,]  # keep certain genes
+
+# create new Seurat object with corrected counts
+options(Seurat.object.assay.calcn = TRUE)
+neurons <- CreateSeuratObject(counts = counts_filtered)
+
+# add metadata
+neurons <- AddMetaData(neurons, metadata = sub@meta.data[colnames(neurons), 4:27])
+
+# print features removed
+print(paste0(dim(counts)[1] - dim(counts_filtered)[1], " features removed"))
+
+# cleanup
+remove(counts, counts_filtered, mouse_annotated, nonzero, sub)
+```
+
+## SCTransform
+```{r sctransform}
+# split
+neurons_split <- SplitObject(neurons, split.by = "sample_id")
+
+# transform
+options(future.globals.maxSize = 60000 * 1024^2)
+neurons_split <- lapply(neurons_split, SCTransform)
+
+# get shared featured
+shared_features <- SelectIntegrationFeatures(neurons_split)
+
+# merge
+neurons_merged <- merge(neurons_split[[1]], y = neurons_split[-1])
+remove(neurons_split, neurons)
+
+# set default assay
+DefaultAssay(neurons_merged) <- "SCT"
+
+# set variable features
+VariableFeatures(neurons_merged) <- shared_features
+```
+
+## PCA
+```{r run_pca, warning=FALSE, message=FALSE}
+# run PCA
+neurons_merged <- RunPCA(object = neurons_merged, assay = "SCT")
+```
+
+```{r plot_pca}
+pca1 <- DimPlot(neurons_merged,
+                reduction = "pca",
+                group.by = "treatment",
+                shuffle = TRUE)
+pca1
+
+pca2 <- DimPlot(neurons_merged,
+                reduction = "pca",
+                group.by = "sample_id",
+                shuffle = TRUE)
+pca2
+
+pca3 <- DimPlot(neurons_merged,
+                reduction = "pca",
+                group.by = "group",
+                shuffle = TRUE)
+pca3
+
+pca4 <- DimPlot(neurons_merged,
+                reduction = "pca",
+                group.by = "group2",
+                shuffle = TRUE)
+pca4
+
+pca5 <- DimPlot(neurons_merged,
+                reduction = "pca",
+                group.by = "dose",
+                shuffle = TRUE)
+pca5
+
+pca6 <- DimPlot(neurons_merged,
+                reduction = "pca",
+                group.by = "timepoint",
+                shuffle = TRUE)
+pca6
+
+pca7 <- DimPlot(neurons_merged,
+                reduction = "pca",
+                group.by = "sex",
+                shuffle = TRUE)
+pca7
+
+# PC elbow
+e1 <- ElbowPlot(neurons_merged,
+                ndims = 40,
+                reduction = "pca") +
+  geom_vline(xintercept = 15, linetype = "dashed", color = "red")
+e1
+```
+
+
+```{r save_pca, message=FALSE, warning=FALSE}
+path <- paste0(out, "clustering_QC/PCA_colored_by_treatment.pdf")
+pdf(path, width = 6, height = 4)
+pca1
+dev.off()
+
+path <- paste0(out, "clustering_QC/PCA_colored_by_sample.pdf")
+pdf(path, width = 8, height = 4)
+pca2
+dev.off()
+
+path <- paste0(out, "clustering_QC/PCA_colored_by_group.pdf")
+pdf(path, width = 6, height = 4)
+pca3
+dev.off()
+
+path <- paste0(out, "clustering_QC/PCA_colored_by_group2.pdf")
+pdf(path, width = 6, height = 4)
+pca4
+dev.off()
+
+path <- paste0(out, "clustering_QC/PCA_colored_by_dose.pdf")
+pdf(path, width = 6, height = 4)
+pca5
+dev.off()
+
+path <- paste0(out, "clustering_QC/PCA_colored_by_timepoint.pdf")
+pdf(path, width = 6, height = 4)
+pca6
+dev.off()
+
+path <- paste0(out, "clustering_QC/PCA_colored_by_sex.pdf")
+pdf(path, width = 6, height = 4)
+pca7
+dev.off()
+
+# save elbow
+path <- paste0(out, "clustering_QC/PCA_elbow.pdf")
+pdf(path, width = 6, height = 6)
+e1
+dev.off()
+
+# cleanup
+remove(pca1,pca2,pca3,pca4,pca5,pca6,pca7,e1)
+```
+
+
+## Harmony
+```{r harmony}
+# Integrate
+Idents(neurons_merged) <- "sample_id"
+neurons_integrated <- IntegrateLayers(object =  neurons_merged,
+                                      method = "HarmonyIntegration",
+                                      assay = "SCT")
+gc()
+```
+
+```{r plot_harmony}
+# Plot harmony
+harmony1 <- DimPlot(neurons_integrated,
+                reduction = "harmony",
+                group.by = "treatment",
+                shuffle = TRUE)
+harmony1
+
+harmony2 <- DimPlot(neurons_integrated,
+                reduction = "harmony",
+                group.by = "sample_id",
+                shuffle = TRUE)
+harmony2
+
+harmony3 <- DimPlot(neurons_integrated,
+                    reduction = "harmony",
+                    group.by = "group",
+                    shuffle = TRUE)
+harmony3
+
+harmony4 <- DimPlot(neurons_integrated,
+                    reduction = "harmony",
+                    group.by = "group2",
+                    shuffle = TRUE)
+harmony4
+
+harmony5 <- DimPlot(neurons_integrated,
+                    reduction = "harmony",
+                    group.by = "dose",
+                    shuffle = TRUE)
+harmony5
+
+harmony6 <- DimPlot(neurons_integrated,
+                    reduction = "harmony",
+                    group.by = "timepoint",
+                    shuffle = TRUE)
+harmony6
+
+harmony7 <- DimPlot(neurons_integrated,
+                    reduction = "harmony",
+                    group.by = "sex",
+                    shuffle = TRUE)
+harmony7
+```
+
+```{r save_harmony, message=FALSE, warning=FALSE}
+path <- paste0(out, "clustering_QC/harmony_colored_by_treatment.pdf")
+pdf(path, width = 6, height = 4)
+harmony1
+dev.off()
+
+path <- paste0(out, "clustering_QC/harmony_colored_by_sample.pdf")
+pdf(path, width = 8, height = 4)
+harmony2
+dev.off()
+
+path <- paste0(out, "clustering_QC/harmony_colored_by_group.pdf")
+pdf(path, width = 6, height = 4)
+harmony3
+dev.off()
+
+path <- paste0(out, "clustering_QC/harmony_colored_by_group2.pdf")
+pdf(path, width = 6, height = 4)
+harmony4
+dev.off()
+
+path <- paste0(out, "clustering_QC/harmony_colored_by_dose.pdf")
+pdf(path, width = 6, height = 4)
+harmony5
+dev.off()
+
+path <- paste0(out, "clustering_QC/harmony_colored_by_timepoint.pdf")
+pdf(path, width = 6, height = 4)
+harmony6
+dev.off()
+
+path <- paste0(out, "clustering_QC/harmony_colored_by_sex.pdf")
+pdf(path, width = 6, height = 4)
+harmony7
+dev.off()
+
+# cleanup
+remove(harmony1,harmony2,harmony3,harmony4,harmony5,harmony6,harmony7)
+```
+
+## UMAP and Cluster
+```{r umap_and_cluster, message=FALSE, warning=FALSE}
+# run UMAP
+neurons_unannotated <- RunUMAP(neurons_integrated,
+                               dims = 1:20,
+                               reduction = "harmony",
+                               n.components = 3)
+
+# Determine the K-nearest neighbor graph
+neurons_unannotated <- FindNeighbors(object = neurons_unannotated,
+                                     assay = "SCT",
+                                     reduction = "harmony",
+                                     dims = 1:20)
+
+# Determine the clusters for various resolutions
+neurons_unannotated <- FindClusters(object = neurons_unannotated,
+                                    algorithm = 1,
+                                    graph.name = "SCT_snn",
+                                    resolution = 0.1)
+
+# Set default assay and normalize for visualization
+neurons_unannotated <- JoinLayers(neurons_unannotated, assay = "RNA")
+DefaultAssay(neurons_unannotated) <- "RNA"
+neurons_unannotated <- NormalizeData(neurons_unannotated)
+
+# save
+saveRDS(neurons_unannotated, 
+        file = "../../rObjects/recluster_slc17a6_slc17a7_neurons_pass1_unannotated_seurat_obj.rds",
+        compress = FALSE)
+```
+
+```{r grouped_umaps}
+# group
+umap1 <- DimPlot(object = neurons_unannotated,
+                 reduction = "umap",
+                 group.by = "group",
+                 raster = FALSE,
+                 shuffle = TRUE)
+umap1
+
+# group2
+umap2 <- DimPlot(object = neurons_unannotated,
+                 reduction = "umap",
+                 group.by = "group2",
+                 raster = FALSE,
+                 shuffle = TRUE)
+umap2
+
+# sex
+umap3 <- DimPlot(object = neurons_unannotated,
+                 reduction = "umap",
+                 group.by = "sex",
+                 raster = FALSE,
+                 shuffle = TRUE)
+umap3
+
+# dose
+umap4 <- DimPlot(object = neurons_unannotated, 
+                 reduction = "umap",
+                 group.by = "dose",
+                 raster = FALSE,
+                 shuffle = TRUE)
+umap4
+
+# mito_factor
+umap5 <- DimPlot(object = neurons_unannotated, 
+                 group.by = "mito_factor",
+                 reduction = "umap",
+                 raster = FALSE,
+                 shuffle = TRUE)
+umap5
+
+# phase
+umap6 <- DimPlot(object = neurons_unannotated, 
+                 reduction = "umap",
+                 group.by = "phase",
+                 raster = FALSE,
+                 shuffle = TRUE)
+umap6
+
+# sample
+umap7 <- DimPlot(object = neurons_unannotated, 
+                 reduction = "umap",
+                 group.by = "sample_id",
+                 raster = FALSE,
+                 shuffle = TRUE)
+umap7
+```
+
+```{r save_grouped_umap, echo=FALSE, eval=FALSE}
+path <- paste0(out, "clustering_QC/umap_colored_by_")
+pdf(paste0(path, "group.pdf"), width = 6, height = 4)
+umap1
+dev.off()
+
+pdf(paste0(path, "group2.pdf"), width = 6, height = 4)
+umap2
+dev.off()
+
+pdf(paste0(path, "sex.pdf"), width = 6, height = 4)
+umap3
+dev.off()
+
+pdf(paste0(path, "dose.pdf"), width = 6, height = 4)
+umap4
+dev.off()
+
+pdf(paste0(path, "mito_factor.pdf"), width = 6, height = 4)
+umap5
+dev.off()
+
+pdf(paste0(path, "cell_cycle_phase.pdf"), width = 6, height = 4)
+umap6
+dev.off()
+
+pdf(paste0(path, "sample.pdf"), width = 6, height = 4)
+umap7
+dev.off()
+
+remove(umap1,umap2,umap3,umap4,umap5,umap6,umap7)
+```
+
+# Unannotated neurons
+## Clusters
+```{r unannotated_umap}
+Idents(neurons_unannotated) <- "seurat_clusters"
+
+u1 <- DimPlot(neurons_unannotated, 
+              shuffle = TRUE, 
+              label = TRUE)
+u1
+```
+
+```{r save_unannotated_umap}
+pdf(paste0(out, "UMAP/unannotated_umap.pdf"), width = 6, height = 5)
+u1
+dev.off()
+remove(u1)
+```
+
+## Layer 2/3
+```{r}
+neurons_unannotated <- PercentageFeatureSet(
+  object = neurons_unannotated,
+  features = c("Cux1","Cux2","Rgs4"),
+  col.name = "L2_L3"
+)
+
+FeaturePlot(neurons_unannotated,
+              reduction = "umap",
+              features = "L2_L3",
+              order = TRUE) +
+    scale_colour_gradientn(colours = c("blue", "lightblue", "yellow", "orange", "red"))
+```
+
+## L4
+```{r}
+neurons_unannotated <- PercentageFeatureSet(
+  object = neurons_unannotated,
+  features = c("Rorb", "Scnn1a", "Ctxn3", "Rprm", "Rxrg"),
+  col.name = "L4"
+)
+
+FeaturePlot(neurons_unannotated,
+              reduction = "umap",
+              features = "L4",
+              order = TRUE) +
+    scale_colour_gradientn(colours = c("blue", "lightblue", "yellow", "orange", "red"))
+```
+
+## L5
+```{r}
+neurons_unannotated <- PercentageFeatureSet(
+  object = neurons_unannotated,
+  features = c("Bcl11b", "Fezf2", "Etv1"),
+  col.name = "L5"
+)
+
+FeaturePlot(neurons_unannotated,
+              reduction = "umap",
+              features = "L5",
+              order = TRUE) +
+    scale_colour_gradientn(colours = c("blue", "lightblue", "yellow", "orange", "red"))
+```
+
+## Layer 6
+```{r}
+neurons_unannotated <- PercentageFeatureSet(
+  object = neurons_unannotated,
+  features = c("Tbr1", "Tle4", "Foxp2"),
+  col.name = "L6"
+)
+
+FeaturePlot(neurons_unannotated,
+              reduction = "umap",
+              features = "L6",
+              order = TRUE) +
+    scale_colour_gradientn(colours = c("blue", "lightblue", "yellow", "orange", "red"))
+```
+
+## Auto markers
+```{r annotated_auto_find_markers}
+markers <- SeuratWrappers::RunPrestoAll(
+  object = neurons_unannotated,
+  assay = "RNA",
+  slot = "counts",
+  only.pos = TRUE
+)
+
+# filter based on adjusted p-value
+markers <- markers[markers$p_val_adj < 0.01,]
+
+top3 <- Reduce(rbind,
+               by(markers,
+                  markers["cluster"],
+                  head,
+                  n = 3))
+
+top10 <- Reduce(rbind,
+               by(markers,
+                  markers["cluster"],
+                  head,
+                  n = 10))
+
+write.table(x = markers,
+            file = paste0(out, "markers/auto_markers_res_0.1.tsv"),
+            quote = FALSE,
+            sep = "\t",
+            col.names = TRUE,
+            row.names = FALSE)
+write.table(x = top10,
+            file = paste0(out, "markers/auto_markers_top10_res_0.1.tsv"),
+            quote = FALSE,
+            sep = "\t",
+            col.names = TRUE,
+            row.names = FALSE)
+```
+
+## Heatmap
+```{r subtype_heatmap, warning=FALSE, message=FALSE}
+subtypes <- c( "Slc17a7", "Slc17a6", "Foxp2", "Synpo2","Glis3", "Syt6", "Rorb", 
+              "Ctxnd1", "Il16", "Cux2", "Rerg", "Prkca")
+
+# Create FeaturePlots
+fplots <- lapply(subtypes, function(gene) {
+  FeaturePlot(neurons_unannotated,
+              reduction = "umap",
+              features = gene) +
+    scale_colour_gradientn(colours = c("blue", "lightblue", "yellow", "orange", "red")) +
+    ggtitle(gene) +
+    theme(legend.position = "none")
+})
+
+# Combine all plots
+all_plots <- c(fplots)
+layout <- matrix(c(1:12), nrow = 3, ncol = 4, byrow = TRUE)
+```
+
+```{r save_subtype_heatmap}
+path <- paste0(out, "markers/subtypes_heatmap_umap.pdf")
+pdf(path, width = 12, height = 9)
+grid.arrange(grobs = all_plots, layout_matrix = layout)
+dev.off()
+remove(all_plots, fplots, layout)
+```
+
+```{r}
+FeaturePlot(neurons_unannotated,
+              reduction = "umap",
+              features = "Rasgrp2",
+              order = TRUE) +
+    scale_colour_gradientn(colours = c("blue", "lightblue", "yellow", "orange", "red"))
+```
+
+## Dot plot
+```{r gaba_glut_dot_plot}
+d1 <- DotPlot(neurons_unannotated,
+              features = unique(top3$gene),
+              cols = "RdYlBu",
+              assay = "RNA") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  +
+  coord_flip()
+d1
+```
+
+```{r save_gaba_glut_dot_plot}
+pdf(paste0(out, "markers/unannotated_auto_top3_markers_dot_plot.pdf"), 
+    width = 10, height = 8)
+d1
+dev.off()
+remove(d1)
+```
+
+## Assign identities
+```{r assign_glut_gaba_identities}
+new_cluster_names <- c(
+  "0" = "Foxp2 Syt6",
+  "1" = "",
+  "2" = "",
+  "3" = "",
+  "4" = "",
+  "5" = "Exc-Prkch-Synpo2",
+  "6" = "Exc-Glis3-Dock10",
+  "7" = "", 
+  "8" = "",
+  "9" = "",
+  "10" = "Exc-Kcnip1-Lcp1",
+  "11" = "",
+  "12" = "",
+  "13" = "",
+  "14" = "",
+  "15" = ""
+)
+
+# set new idents
+Idents(neurons_unannotated) <- "seurat_clusters"
+neurons_annotated <- RenameIdents(neurons_unannotated, new_cluster_names)
+neurons_annotated$neuron_class <- Idents(neurons_annotated)
+
+# plot
+u6 <- DimPlot(
+  object = neurons_annotated,
+  group.by = "neuron_class"
+)
+u6
+```
+
+```{r save_annotated_umap}
+pdf(paste0(out, "UMAP/neuron_class_umap.pdf"), width = 8, height = 5)
+u6
+dev.off()
+remove(u6)
+```
+
+## Save
+```{r save_glut_gaba_seurat_obj}
+saveRDS(neurons_annotated, 
+        file = "../../rObjects/recluster_slc17a7_scl17a6_neurons_pass1_annotated_seurat_obj.rds",
+        compress = FALSE)
+```
+
+# Shiny app
+```{r shiny_app, eval=FALSE}
+# create new object
+library(ShinyCell)
+shiny.obj <- neurons_unannotated
+VariableFeatures(shiny.obj) <- shiny.obj@assays$SCT@var.features
+
+# set default params
+DefaultAssay(shiny.obj) <- "RNA"
+
+# create config
+names <- colnames(shiny.obj@meta.data)
+names <- names[c(30,31,2:27)]
+sc.config <- createConfig(obj = shiny.obj,
+                          meta.to.include = names)
+
+# change wd
+setwd(out)
+
+# output shiny app folder
+makeShinyApp(obj = shiny.obj, 
+             scConf = sc.config, 
+             gene.mapping = TRUE,
+             shiny.title = "Psi1 snRNAseq Slc17a6+ Slc17a7+ Reclustered")
+
+# cleanup
+remove(sc.config,sc1conf,shiny.obj)
+```

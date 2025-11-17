@@ -1,0 +1,248 @@
+---
+title: "Psilocybin Project 1"
+subtitle: "Variance"
+author: "Kennedi Todd"
+date: "10/14/2024"
+output:
+  html_document:
+    theme: cerulean
+    toc: true
+    toc_float: true
+editor_options: 
+  chunk_output_type: inline
+---
+
+# Setup
+## Working directory
+```{r working_directory}
+knitr::opts_knit$set(root.dir = ".")
+```
+
+## Libraries
+```{r libraries}
+library(corrplot)          # corrplot()
+library(dplyr)             # %>%
+library(edgeR)             # load DGEList object
+library(ggcorrplot)        # ggcorrplot()
+library(gplots)            # heatmap.2()
+library(limma)             # voomWithQualityWeights()
+library(variancePartition) # fitExtractVarPartModel()
+```
+
+## User defined variables
+```{r set_variables}
+# Output directories and file paths
+out <- "../results/all_samples_sex_specific_combat_analysis/"
+out2 <- "all_samples_sex_specific_combat_analysis"
+
+# Colors and levels
+treatment_order <- c("saline", "psilocybin")
+treatment_colors <- c("gray60", "springgreen2")
+
+sex_order <- c("M", "F")
+sex_colors <- c("gold2", "purple")
+
+group_order <- c("S.8h", "S.24h", "S.7d", 
+                 "L.8h", "L.24h", "L.7d", 
+                 "H.8h", "H.24h", "H.7d")
+group_colors <- c("gray90", "gray60", "gray30", 
+                  "lightblue", "cornflowerblue", "blue", 
+                  "sienna1", "red2", "red4")
+```
+
+## Load data
+```{r load_data}
+dge.filtered.norm <- readRDS(paste0("../rObjects/",
+                                    out2, 
+                                    "_DGEList_filtered_normalized.rds"))
+head(colnames(dge.filtered.norm))
+```
+
+# Extract metadata
+```{r extract_meta}
+# get meta
+meta <- as.data.frame(dge.filtered.norm$samples)
+
+# select variables of interest
+variables <- c("group",
+               "group2",
+               "treatment",
+               "dose",
+               "timepoint",
+               "lib.size",
+               "sex",
+               "weight_at_treatment",
+               "hbb_log2cpm",
+               "RIN",
+               "lane",
+               "RNA_extraction_batch",
+               "hbb_log2cpm")
+meta <- meta %>% select(all_of(variables))
+
+# log2 transform lib.size
+meta$log2.lib <- log2(meta$lib.size)
+meta$lib.size <- NULL
+
+# change class
+meta$group <- factor(meta$group, levels = group_order)
+meta$group2 <- factor(meta$group2)
+meta$dose <- factor(meta$dose)
+meta$weight_at_treatment <- as.numeric(gsub(" grams","",meta$weight_at_treatment))
+meta$timepoint <- factor(meta$timepoint)
+meta$lane <- factor(meta$lane)
+meta$RNA_extraction_batch <- factor(meta$RNA_extraction_batch)
+
+# check classes
+sapply(meta, class)
+```
+
+# Correlation
+## Spearman correlation
+- Spearman correlation is generally used to measure the strength and direction of the association between two continuous or ordinal variables
+```{r spearman_heatmap}
+# save
+path <- paste0(out, "variance/spearman_correlation_heatmap1.pdf")
+pdf(path, width = 8, height = 8)
+# formula
+form <- ~0 + group + sex + log2.lib + RIN + RNA_extraction_batch + hbb_log2cpm + lane
+# correlation plot
+model.matrix(form, data = meta) %>% 
+  cor(method = "spearman") %>% 
+  ggcorrplot(show.diag = FALSE, type = "lower", lab = TRUE, lab_size = 2)
+dev.off()
+
+# save
+path <- paste0(out, "variance/spearman_correlation_heatmap2.pdf")
+pdf(path, width = 8, height = 8)
+# formula
+form <- ~0 + group2 + log2.lib + RIN + RNA_extraction_batch + hbb_log2cpm + lane
+# correlation plot
+model.matrix(form, data = meta) %>% 
+  cor(method = "spearman") %>% 
+  ggcorrplot(show.diag = FALSE, type = "lower", lab = TRUE, lab_size = 2)
+dev.off()
+
+# save
+path <- paste0(out, "variance/spearman_correlation_heatmap3.pdf")
+pdf(path, width = 8, height = 8)
+# formula
+form <- ~0 + dose + timepoint + sex + log2.lib + RIN + RNA_extraction_batch + hbb_log2cpm + lane
+# correlation plot
+model.matrix(form, data = meta) %>% 
+  cor(method = "spearman") %>% 
+  ggcorrplot(show.diag = FALSE, type = "lower", lab = TRUE, lab_size = 2)
+dev.off()
+```
+
+## CCA heatmap
+```{r CCA_heatmap}
+# save
+path <- paste0(out, "variance/canonical_correlation_analysis_heatmap1.pdf")
+pdf(path, width = 8, height = 8)
+# formula
+form <- ~0 + group + sex + log2.lib + RIN + RNA_extraction_batch + hbb_log2cpm + lane
+# CCA
+c <- canCorPairs(form, meta)
+# plot
+corrplot(c,
+         type = "lower",
+         is.corr = FALSE,
+         order = "hclust",
+         col = colorRampPalette(c("blue4", "deepskyblue", "white"))(100),
+         addCoef.col = TRUE,
+         method = "shade",
+         tl.col = "black",
+         tl.cex = 0.8,
+         number.cex = 0.7,
+         diag = TRUE)
+dev.off()
+
+# save
+path <- paste0(out, "variance/canonical_correlation_analysis_heatmap2.pdf")
+pdf(path, width = 8, height = 8)
+# formula
+form <- ~0 + group2 + log2.lib + RIN + RNA_extraction_batch + hbb_log2cpm + lane
+# CCA
+c <- canCorPairs(form, meta)
+# plot
+corrplot(c,
+         type = "lower",
+         is.corr = FALSE,
+         order = "hclust",
+         col = colorRampPalette(c("blue4", "deepskyblue", "white"))(100),
+         addCoef.col = TRUE,
+         method = "shade",
+         tl.col = "black",
+         tl.cex = 0.8,
+         number.cex = 0.7,
+         diag = TRUE)
+dev.off()
+
+# save
+path <- paste0(out, "variance/canonical_correlation_analysis_heatmap3.pdf")
+pdf(path, width = 8, height = 8)
+# formula
+form <- ~0 + dose + timepoint + sex + log2.lib + RIN + RNA_extraction_batch + hbb_log2cpm + lane
+# CCA
+c <- canCorPairs(form, meta)
+# plot
+corrplot(c,
+         type = "lower",
+         is.corr = FALSE,
+         order = "hclust",
+         col = colorRampPalette(c("blue4", "deepskyblue", "white"))(100),
+         addCoef.col = TRUE,
+         method = "shade",
+         tl.col = "black",
+         tl.cex = 0.8,
+         number.cex = 0.7,
+         diag = TRUE)
+dev.off()
+```
+
+# Variance partition
+## Variance model
+```{r variance_partition, message=FALSE, eval=FALSE}
+# variables to choose from
+geneExpr <- as.matrix(dge.filtered.norm$counts)
+colnames(meta)
+
+# age is usually a continuous so model it as a fixed effect "age"
+# group is categorical, so model them as random effects "(1|group)"
+form <- ~ (1|dose) + (1|timepoint) + (1|sex) + RIN + hbb_log2cpm
+
+varPart <- fitExtractVarPartModel(geneExpr, form, meta)
+vp <- sortCols(varPart)
+saveRDS(vp, paste0("../rObjects/", out2, "_var_par.rds"))
+```
+
+## Violins
+```{r variance_violins, eval=FALSE}
+# save
+path <- paste0(out, "variance/variance_violins.pdf")
+pdf(path, width = 12, height = 6)
+
+# plot
+plotVarPart(vp)
+```
+
+## Percent bars
+```{r variance_percent_bars}
+# save
+path <- paste0(out, "variance/variance_gene_percent_bars.pdf")
+pdf(paste0(path, ".pdf"), width = 12, height = 6)
+
+# plot
+plotPercentBars(vp[1:10,])
+```
+
+## Sex var
+```{r variance_sex}
+# sort genes based on variance explained by group
+order.varPart.df <- varPart.df[order(varPart.df$sex, decreasing = TRUE),]
+head(order.varPart.df["sex"], 10)
+```
+
+```{r session_info}
+sessionInfo()
+```

@@ -1,0 +1,564 @@
+{
+    "DIRECTORIES": {
+        "rawReads": "rawReads/",
+        "rawQC": "rawQC/",
+        "trimmedReads": "trimmedReads/",
+        "trimmedQC": "trimmedQC/",
+        "starAligned": "starAligned/",
+        "featureCounts": "featureCounts/",
+        "genomeDir": "refs/starGenomeDir/"
+    },
+    "SAMPLE_INFORMATION": {
+        "allSamples": [
+            "Psi1_A10_High_Female_L3",
+            "Psi1_A11_Low_Male_L3",
+            "Psi1_A12_Low_Male_L3",
+            "Psi1_A13_Low_Male_L3",
+            "Psi1_A14_Low_Male_L3",
+            "Psi1_A15_Low_Male_L3",
+            "Psi1_A16_Low_Female_L3",
+            "Psi1_A17_Low_Female_L3",
+            "Psi1_A18_Low_Female_L3",
+            "Psi1_A19_Low_Female_L3",
+            "Psi1_A1_High_Male_L3",
+            "Psi1_A20_Low_Female_L3",
+            "Psi1_A21_NS_Male_L3",
+            "Psi1_A22_NS_Male_L3",
+            "Psi1_A23_NS_Male_L3",
+            "Psi1_A24_NS_Male_L3",
+            "Psi1_A25_NS_Male_L3",
+            "Psi1_A26_NS_Female_L3",
+            "Psi1_A27_NS_Female_L3",
+            "Psi1_A28_NS_Female_L3",
+            "Psi1_A29_NS_Female_L3",
+            "Psi1_A2_High_Male_L3",
+            "Psi1_A30_NS_Female_L3",
+            "Psi1_A31_High_Male_L3",
+            "Psi1_A32_High_Male_L3",
+            "Psi1_A33_High_Male_L3",
+            "Psi1_A34_High_Male_L3",
+            "Psi1_A35_High_Male_L3",
+            "Psi1_A36_High_Female_L3",
+            "Psi1_A37_High_Female_L3",
+            "Psi1_A38_High_Female_L3",
+            "Psi1_A39_High_Female_L3",
+            "Psi1_A3_High_Male_L3",
+            "Psi1_A40_High_Female_L3",
+            "Psi1_A41_Low_Male_L3",
+            "Psi1_A42_Low_Male_L3",
+            "Psi1_A43_Low_Male_L3",
+            "Psi1_A44_Low_Male_L3",
+            "Psi1_A45_Low_Male_L3",
+            "Psi1_A46_Low_Female_L4",
+            "Psi1_A47_Low_Female_L4",
+            "Psi1_A48_Low_Female_L4",
+            "Psi1_A49_Low_Female_L4",
+            "Psi1_A4_High_Male_L3",
+            "Psi1_A50_Low_Female_L4",
+            "Psi1_A51_NS_Male_L4",
+            "Psi1_A52_NS_Male_L4",
+            "Psi1_A53_NS_Male_L4",
+            "Psi1_A54_NS_Male_L4",
+            "Psi1_A55_NS_Male_L4",
+            "Psi1_A56_NS_Female_L4",
+            "Psi1_A57_NS_Female_L4",
+            "Psi1_A58_NS_Female_L4",
+            "Psi1_A59_NS_Female_L4",
+            "Psi1_A5_High_Male_L3",
+            "Psi1_A60_NS_Female_L4",
+            "Psi1_A61_High_Male_L4",
+            "Psi1_A62_High_Male_L4",
+            "Psi1_A63_High_Male_L4",
+            "Psi1_A64_High_Male_L4",
+            "Psi1_A65_High_Male_L4",
+            "Psi1_A66_High_Female_L4",
+            "Psi1_A67_High_Female_L4",
+            "Psi1_A68_High_Female_L4",
+            "Psi1_A69_High_Female_L4",
+            "Psi1_A6_High_Female_L3",
+            "Psi1_A70_High_Female_L4",
+            "Psi1_A71_Low_Male_L4",
+            "Psi1_A72_Low_Male_L4",
+            "Psi1_A73_Low_Male_L4",
+            "Psi1_A74_Low_Male_L4",
+            "Psi1_A75_Low_Male_L4",
+            "Psi1_A76_Low_Female_L4",
+            "Psi1_A77_Low_Female_L4",
+            "Psi1_A78_Low_Female_L4",
+            "Psi1_A79_Low_Female_L4",
+            "Psi1_A7_High_Female_L3",
+            "Psi1_A80_Low_Female_L4",
+            "Psi1_A81_NS_Male_L4",
+            "Psi1_A82_NS_Male_L4",
+            "Psi1_A83_NS_Male_L4",
+            "Psi1_A84_NS_Male_L4",
+            "Psi1_A85_NS_Male_L4",
+            "Psi1_A86_NS_Female_L4",
+            "Psi1_A87_NS_Female_L4",
+            "Psi1_A88_NS_Female_L4",
+            "Psi1_A89_NS_Female_L4",
+            "Psi1_A8_High_Female_L3",
+            "Psi1_A90_NS_Female_L4",
+            "Psi1_A9_High_Female_L3"
+        ],
+        "femaleSamples": [
+            "Psi1_A10_High_Female_L3",
+            "Psi1_A16_Low_Female_L3",
+            "Psi1_A17_Low_Female_L3",
+            "Psi1_A18_Low_Female_L3",
+            "Psi1_A19_Low_Female_L3",
+            "Psi1_A20_Low_Female_L3",
+            "Psi1_A26_NS_Female_L3",
+            "Psi1_A27_NS_Female_L3",
+            "Psi1_A28_NS_Female_L3",
+            "Psi1_A29_NS_Female_L3",
+            "Psi1_A30_NS_Female_L3",
+            "Psi1_A36_High_Female_L3",
+            "Psi1_A37_High_Female_L3",
+            "Psi1_A38_High_Female_L3",
+            "Psi1_A39_High_Female_L3",
+            "Psi1_A40_High_Female_L3",
+            "Psi1_A46_Low_Female_L4",
+            "Psi1_A47_Low_Female_L4",
+            "Psi1_A48_Low_Female_L4",
+            "Psi1_A49_Low_Female_L4",
+            "Psi1_A50_Low_Female_L4",
+            "Psi1_A56_NS_Female_L4",
+            "Psi1_A57_NS_Female_L4",
+            "Psi1_A58_NS_Female_L4",
+            "Psi1_A59_NS_Female_L4",
+            "Psi1_A60_NS_Female_L4",
+            "Psi1_A66_High_Female_L4",
+            "Psi1_A67_High_Female_L4",
+            "Psi1_A68_High_Female_L4",
+            "Psi1_A69_High_Female_L4",
+            "Psi1_A6_High_Female_L3",
+            "Psi1_A70_High_Female_L4",
+            "Psi1_A76_Low_Female_L4",
+            "Psi1_A77_Low_Female_L4",
+            "Psi1_A78_Low_Female_L4",
+            "Psi1_A79_Low_Female_L4",
+            "Psi1_A7_High_Female_L3",
+            "Psi1_A80_Low_Female_L4",
+            "Psi1_A86_NS_Female_L4",
+            "Psi1_A87_NS_Female_L4",
+            "Psi1_A88_NS_Female_L4",
+            "Psi1_A89_NS_Female_L4",
+            "Psi1_A8_High_Female_L3",
+            "Psi1_A90_NS_Female_L4",
+            "Psi1_A9_High_Female_L3"
+        ],
+        "maleSamples": [
+            "Psi1_A11_Low_Male_L3",
+            "Psi1_A12_Low_Male_L3",
+            "Psi1_A13_Low_Male_L3",
+            "Psi1_A14_Low_Male_L3",
+            "Psi1_A15_Low_Male_L3",
+            "Psi1_A1_High_Male_L3",
+            "Psi1_A21_NS_Male_L3",
+            "Psi1_A22_NS_Male_L3",
+            "Psi1_A23_NS_Male_L3",
+            "Psi1_A24_NS_Male_L3",
+            "Psi1_A25_NS_Male_L3",
+            "Psi1_A2_High_Male_L3",
+            "Psi1_A31_High_Male_L3",
+            "Psi1_A32_High_Male_L3",
+            "Psi1_A33_High_Male_L3",
+            "Psi1_A34_High_Male_L3",
+            "Psi1_A35_High_Male_L3",
+            "Psi1_A3_High_Male_L3",
+            "Psi1_A41_Low_Male_L3",
+            "Psi1_A42_Low_Male_L3",
+            "Psi1_A43_Low_Male_L3",
+            "Psi1_A44_Low_Male_L3",
+            "Psi1_A45_Low_Male_L3",
+            "Psi1_A4_High_Male_L3",
+            "Psi1_A51_NS_Male_L4",
+            "Psi1_A52_NS_Male_L4",
+            "Psi1_A53_NS_Male_L4",
+            "Psi1_A54_NS_Male_L4",
+            "Psi1_A55_NS_Male_L4",
+            "Psi1_A5_High_Male_L3",
+            "Psi1_A61_High_Male_L4",
+            "Psi1_A62_High_Male_L4",
+            "Psi1_A63_High_Male_L4",
+            "Psi1_A64_High_Male_L4",
+            "Psi1_A65_High_Male_L4",
+            "Psi1_A71_Low_Male_L4",
+            "Psi1_A72_Low_Male_L4",
+            "Psi1_A73_Low_Male_L4",
+            "Psi1_A74_Low_Male_L4",
+            "Psi1_A75_Low_Male_L4",
+            "Psi1_A81_NS_Male_L4",
+            "Psi1_A82_NS_Male_L4",
+            "Psi1_A83_NS_Male_L4",
+            "Psi1_A84_NS_Male_L4",
+            "Psi1_A85_NS_Male_L4"
+        ]
+    },
+    "CLUSTER_INFORMATION": {
+        "threads": "20"
+    },
+    "SAMPLES": {
+        "Psi1_A10_High_Female_L3": {
+            "read1": "Psi1_A10_High_Female_L3_R1",
+            "read2": "Psi1_A10_High_Female_L3_R2"
+        },
+        "Psi1_A11_Low_Male_L3": {
+            "read1": "Psi1_A11_Low_Male_L3_R1",
+            "read2": "Psi1_A11_Low_Male_L3_R2"
+        },
+        "Psi1_A12_Low_Male_L3": {
+            "read1": "Psi1_A12_Low_Male_L3_R1",
+            "read2": "Psi1_A12_Low_Male_L3_R2"
+        },
+        "Psi1_A13_Low_Male_L3": {
+            "read1": "Psi1_A13_Low_Male_L3_R1",
+            "read2": "Psi1_A13_Low_Male_L3_R2"
+        },
+        "Psi1_A14_Low_Male_L3": {
+            "read1": "Psi1_A14_Low_Male_L3_R1",
+            "read2": "Psi1_A14_Low_Male_L3_R2"
+        },
+        "Psi1_A15_Low_Male_L3": {
+            "read1": "Psi1_A15_Low_Male_L3_R1",
+            "read2": "Psi1_A15_Low_Male_L3_R2"
+        },
+        "Psi1_A16_Low_Female_L3": {
+            "read1": "Psi1_A16_Low_Female_L3_R1",
+            "read2": "Psi1_A16_Low_Female_L3_R2"
+        },
+        "Psi1_A17_Low_Female_L3": {
+            "read1": "Psi1_A17_Low_Female_L3_R1",
+            "read2": "Psi1_A17_Low_Female_L3_R2"
+        },
+        "Psi1_A18_Low_Female_L3": {
+            "read1": "Psi1_A18_Low_Female_L3_R1",
+            "read2": "Psi1_A18_Low_Female_L3_R2"
+        },
+        "Psi1_A19_Low_Female_L3": {
+            "read1": "Psi1_A19_Low_Female_L3_R1",
+            "read2": "Psi1_A19_Low_Female_L3_R2"
+        },
+        "Psi1_A1_High_Male_L3": {
+            "read1": "Psi1_A1_High_Male_L3_R1",
+            "read2": "Psi1_A1_High_Male_L3_R2"
+        },
+        "Psi1_A20_Low_Female_L3": {
+            "read1": "Psi1_A20_Low_Female_L3_R1",
+            "read2": "Psi1_A20_Low_Female_L3_R2"
+        },
+        "Psi1_A21_NS_Male_L3": {
+            "read1": "Psi1_A21_NS_Male_L3_R1",
+            "read2": "Psi1_A21_NS_Male_L3_R2"
+        },
+        "Psi1_A22_NS_Male_L3": {
+            "read1": "Psi1_A22_NS_Male_L3_R1",
+            "read2": "Psi1_A22_NS_Male_L3_R2"
+        },
+        "Psi1_A23_NS_Male_L3": {
+            "read1": "Psi1_A23_NS_Male_L3_R1",
+            "read2": "Psi1_A23_NS_Male_L3_R2"
+        },
+        "Psi1_A24_NS_Male_L3": {
+            "read1": "Psi1_A24_NS_Male_L3_R1",
+            "read2": "Psi1_A24_NS_Male_L3_R2"
+        },
+        "Psi1_A25_NS_Male_L3": {
+            "read1": "Psi1_A25_NS_Male_L3_R1",
+            "read2": "Psi1_A25_NS_Male_L3_R2"
+        },
+        "Psi1_A26_NS_Female_L3": {
+            "read1": "Psi1_A26_NS_Female_L3_R1",
+            "read2": "Psi1_A26_NS_Female_L3_R2"
+        },
+        "Psi1_A27_NS_Female_L3": {
+            "read1": "Psi1_A27_NS_Female_L3_R1",
+            "read2": "Psi1_A27_NS_Female_L3_R2"
+        },
+        "Psi1_A28_NS_Female_L3": {
+            "read1": "Psi1_A28_NS_Female_L3_R1",
+            "read2": "Psi1_A28_NS_Female_L3_R2"
+        },
+        "Psi1_A29_NS_Female_L3": {
+            "read1": "Psi1_A29_NS_Female_L3_R1",
+            "read2": "Psi1_A29_NS_Female_L3_R2"
+        },
+        "Psi1_A2_High_Male_L3": {
+            "read1": "Psi1_A2_High_Male_L3_R1",
+            "read2": "Psi1_A2_High_Male_L3_R2"
+        },
+        "Psi1_A30_NS_Female_L3": {
+            "read1": "Psi1_A30_NS_Female_L3_R1",
+            "read2": "Psi1_A30_NS_Female_L3_R2"
+        },
+        "Psi1_A31_High_Male_L3": {
+            "read1": "Psi1_A31_High_Male_L3_R1",
+            "read2": "Psi1_A31_High_Male_L3_R2"
+        },
+        "Psi1_A32_High_Male_L3": {
+            "read1": "Psi1_A32_High_Male_L3_R1",
+            "read2": "Psi1_A32_High_Male_L3_R2"
+        },
+        "Psi1_A33_High_Male_L3": {
+            "read1": "Psi1_A33_High_Male_L3_R1",
+            "read2": "Psi1_A33_High_Male_L3_R2"
+        },
+        "Psi1_A34_High_Male_L3": {
+            "read1": "Psi1_A34_High_Male_L3_R1",
+            "read2": "Psi1_A34_High_Male_L3_R2"
+        },
+        "Psi1_A35_High_Male_L3": {
+            "read1": "Psi1_A35_High_Male_L3_R1",
+            "read2": "Psi1_A35_High_Male_L3_R2"
+        },
+        "Psi1_A36_High_Female_L3": {
+            "read1": "Psi1_A36_High_Female_L3_R1",
+            "read2": "Psi1_A36_High_Female_L3_R2"
+        },
+        "Psi1_A37_High_Female_L3": {
+            "read1": "Psi1_A37_High_Female_L3_R1",
+            "read2": "Psi1_A37_High_Female_L3_R2"
+        },
+        "Psi1_A38_High_Female_L3": {
+            "read1": "Psi1_A38_High_Female_L3_R1",
+            "read2": "Psi1_A38_High_Female_L3_R2"
+        },
+        "Psi1_A39_High_Female_L3": {
+            "read1": "Psi1_A39_High_Female_L3_R1",
+            "read2": "Psi1_A39_High_Female_L3_R2"
+        },
+        "Psi1_A3_High_Male_L3": {
+            "read1": "Psi1_A3_High_Male_L3_R1",
+            "read2": "Psi1_A3_High_Male_L3_R2"
+        },
+        "Psi1_A40_High_Female_L3": {
+            "read1": "Psi1_A40_High_Female_L3_R1",
+            "read2": "Psi1_A40_High_Female_L3_R2"
+        },
+        "Psi1_A41_Low_Male_L3": {
+            "read1": "Psi1_A41_Low_Male_L3_R1",
+            "read2": "Psi1_A41_Low_Male_L3_R2"
+        },
+        "Psi1_A42_Low_Male_L3": {
+            "read1": "Psi1_A42_Low_Male_L3_R1",
+            "read2": "Psi1_A42_Low_Male_L3_R2"
+        },
+        "Psi1_A43_Low_Male_L3": {
+            "read1": "Psi1_A43_Low_Male_L3_R1",
+            "read2": "Psi1_A43_Low_Male_L3_R2"
+        },
+        "Psi1_A44_Low_Male_L3": {
+            "read1": "Psi1_A44_Low_Male_L3_R1",
+            "read2": "Psi1_A44_Low_Male_L3_R2"
+        },
+        "Psi1_A45_Low_Male_L3": {
+            "read1": "Psi1_A45_Low_Male_L3_R1",
+            "read2": "Psi1_A45_Low_Male_L3_R2"
+        },
+        "Psi1_A46_Low_Female_L4": {
+            "read1": "Psi1_A46_Low_Female_L4_R1",
+            "read2": "Psi1_A46_Low_Female_L4_R2"
+        },
+        "Psi1_A47_Low_Female_L4": {
+            "read1": "Psi1_A47_Low_Female_L4_R1",
+            "read2": "Psi1_A47_Low_Female_L4_R2"
+        },
+        "Psi1_A48_Low_Female_L4": {
+            "read1": "Psi1_A48_Low_Female_L4_R1",
+            "read2": "Psi1_A48_Low_Female_L4_R2"
+        },
+        "Psi1_A49_Low_Female_L4": {
+            "read1": "Psi1_A49_Low_Female_L4_R1",
+            "read2": "Psi1_A49_Low_Female_L4_R2"
+        },
+        "Psi1_A4_High_Male_L3": {
+            "read1": "Psi1_A4_High_Male_L3_R1",
+            "read2": "Psi1_A4_High_Male_L3_R2"
+        },
+        "Psi1_A50_Low_Female_L4": {
+            "read1": "Psi1_A50_Low_Female_L4_R1",
+            "read2": "Psi1_A50_Low_Female_L4_R2"
+        },
+        "Psi1_A51_NS_Male_L4": {
+            "read1": "Psi1_A51_NS_Male_L4_R1",
+            "read2": "Psi1_A51_NS_Male_L4_R2"
+        },
+        "Psi1_A52_NS_Male_L4": {
+            "read1": "Psi1_A52_NS_Male_L4_R1",
+            "read2": "Psi1_A52_NS_Male_L4_R2"
+        },
+        "Psi1_A53_NS_Male_L4": {
+            "read1": "Psi1_A53_NS_Male_L4_R1",
+            "read2": "Psi1_A53_NS_Male_L4_R2"
+        },
+        "Psi1_A54_NS_Male_L4": {
+            "read1": "Psi1_A54_NS_Male_L4_R1",
+            "read2": "Psi1_A54_NS_Male_L4_R2"
+        },
+        "Psi1_A55_NS_Male_L4": {
+            "read1": "Psi1_A55_NS_Male_L4_R1",
+            "read2": "Psi1_A55_NS_Male_L4_R2"
+        },
+        "Psi1_A56_NS_Female_L4": {
+            "read1": "Psi1_A56_NS_Female_L4_R1",
+            "read2": "Psi1_A56_NS_Female_L4_R2"
+        },
+        "Psi1_A57_NS_Female_L4": {
+            "read1": "Psi1_A57_NS_Female_L4_R1",
+            "read2": "Psi1_A57_NS_Female_L4_R2"
+        },
+        "Psi1_A58_NS_Female_L4": {
+            "read1": "Psi1_A58_NS_Female_L4_R1",
+            "read2": "Psi1_A58_NS_Female_L4_R2"
+        },
+        "Psi1_A59_NS_Female_L4": {
+            "read1": "Psi1_A59_NS_Female_L4_R1",
+            "read2": "Psi1_A59_NS_Female_L4_R2"
+        },
+        "Psi1_A5_High_Male_L3": {
+            "read1": "Psi1_A5_High_Male_L3_R1",
+            "read2": "Psi1_A5_High_Male_L3_R2"
+        },
+        "Psi1_A60_NS_Female_L4": {
+            "read1": "Psi1_A60_NS_Female_L4_R1",
+            "read2": "Psi1_A60_NS_Female_L4_R2"
+        },
+        "Psi1_A61_High_Male_L4": {
+            "read1": "Psi1_A61_High_Male_L4_R1",
+            "read2": "Psi1_A61_High_Male_L4_R2"
+        },
+        "Psi1_A62_High_Male_L4": {
+            "read1": "Psi1_A62_High_Male_L4_R1",
+            "read2": "Psi1_A62_High_Male_L4_R2"
+        },
+        "Psi1_A63_High_Male_L4": {
+            "read1": "Psi1_A63_High_Male_L4_R1",
+            "read2": "Psi1_A63_High_Male_L4_R2"
+        },
+        "Psi1_A64_High_Male_L4": {
+            "read1": "Psi1_A64_High_Male_L4_R1",
+            "read2": "Psi1_A64_High_Male_L4_R2"
+        },
+        "Psi1_A65_High_Male_L4": {
+            "read1": "Psi1_A65_High_Male_L4_R1",
+            "read2": "Psi1_A65_High_Male_L4_R2"
+        },
+        "Psi1_A66_High_Female_L4": {
+            "read1": "Psi1_A66_High_Female_L4_R1",
+            "read2": "Psi1_A66_High_Female_L4_R2"
+        },
+        "Psi1_A67_High_Female_L4": {
+            "read1": "Psi1_A67_High_Female_L4_R1",
+            "read2": "Psi1_A67_High_Female_L4_R2"
+        },
+        "Psi1_A68_High_Female_L4": {
+            "read1": "Psi1_A68_High_Female_L4_R1",
+            "read2": "Psi1_A68_High_Female_L4_R2"
+        },
+        "Psi1_A69_High_Female_L4": {
+            "read1": "Psi1_A69_High_Female_L4_R1",
+            "read2": "Psi1_A69_High_Female_L4_R2"
+        },
+        "Psi1_A6_High_Female_L3": {
+            "read1": "Psi1_A6_High_Female_L3_R1",
+            "read2": "Psi1_A6_High_Female_L3_R2"
+        },
+        "Psi1_A70_High_Female_L4": {
+            "read1": "Psi1_A70_High_Female_L4_R1",
+            "read2": "Psi1_A70_High_Female_L4_R2"
+        },
+        "Psi1_A71_Low_Male_L4": {
+            "read1": "Psi1_A71_Low_Male_L4_R1",
+            "read2": "Psi1_A71_Low_Male_L4_R2"
+        },
+        "Psi1_A72_Low_Male_L4": {
+            "read1": "Psi1_A72_Low_Male_L4_R1",
+            "read2": "Psi1_A72_Low_Male_L4_R2"
+        },
+        "Psi1_A73_Low_Male_L4": {
+            "read1": "Psi1_A73_Low_Male_L4_R1",
+            "read2": "Psi1_A73_Low_Male_L4_R2"
+        },
+        "Psi1_A74_Low_Male_L4": {
+            "read1": "Psi1_A74_Low_Male_L4_R1",
+            "read2": "Psi1_A74_Low_Male_L4_R2"
+        },
+        "Psi1_A75_Low_Male_L4": {
+            "read1": "Psi1_A75_Low_Male_L4_R1",
+            "read2": "Psi1_A75_Low_Male_L4_R2"
+        },
+        "Psi1_A76_Low_Female_L4": {
+            "read1": "Psi1_A76_Low_Female_L4_R1",
+            "read2": "Psi1_A76_Low_Female_L4_R2"
+        },
+        "Psi1_A77_Low_Female_L4": {
+            "read1": "Psi1_A77_Low_Female_L4_R1",
+            "read2": "Psi1_A77_Low_Female_L4_R2"
+        },
+        "Psi1_A78_Low_Female_L4": {
+            "read1": "Psi1_A78_Low_Female_L4_R1",
+            "read2": "Psi1_A78_Low_Female_L4_R2"
+        },
+        "Psi1_A79_Low_Female_L4": {
+            "read1": "Psi1_A79_Low_Female_L4_R1",
+            "read2": "Psi1_A79_Low_Female_L4_R2"
+        },
+        "Psi1_A7_High_Female_L3": {
+            "read1": "Psi1_A7_High_Female_L3_R1",
+            "read2": "Psi1_A7_High_Female_L3_R2"
+        },
+        "Psi1_A80_Low_Female_L4": {
+            "read1": "Psi1_A80_Low_Female_L4_R1",
+            "read2": "Psi1_A80_Low_Female_L4_R2"
+        },
+        "Psi1_A81_NS_Male_L4": {
+            "read1": "Psi1_A81_NS_Male_L4_R1",
+            "read2": "Psi1_A81_NS_Male_L4_R2"
+        },
+        "Psi1_A82_NS_Male_L4": {
+            "read1": "Psi1_A82_NS_Male_L4_R1",
+            "read2": "Psi1_A82_NS_Male_L4_R2"
+        },
+        "Psi1_A83_NS_Male_L4": {
+            "read1": "Psi1_A83_NS_Male_L4_R1",
+            "read2": "Psi1_A83_NS_Male_L4_R2"
+        },
+        "Psi1_A84_NS_Male_L4": {
+            "read1": "Psi1_A84_NS_Male_L4_R1",
+            "read2": "Psi1_A84_NS_Male_L4_R2"
+        },
+        "Psi1_A85_NS_Male_L4": {
+            "read1": "Psi1_A85_NS_Male_L4_R1",
+            "read2": "Psi1_A85_NS_Male_L4_R2"
+        },
+        "Psi1_A86_NS_Female_L4": {
+            "read1": "Psi1_A86_NS_Female_L4_R1",
+            "read2": "Psi1_A86_NS_Female_L4_R2"
+        },
+        "Psi1_A87_NS_Female_L4": {
+            "read1": "Psi1_A87_NS_Female_L4_R1",
+            "read2": "Psi1_A87_NS_Female_L4_R2"
+        },
+        "Psi1_A88_NS_Female_L4": {
+            "read1": "Psi1_A88_NS_Female_L4_R1",
+            "read2": "Psi1_A88_NS_Female_L4_R2"
+        },
+        "Psi1_A89_NS_Female_L4": {
+            "read1": "Psi1_A89_NS_Female_L4_R1",
+            "read2": "Psi1_A89_NS_Female_L4_R2"
+        },
+        "Psi1_A8_High_Female_L3": {
+            "read1": "Psi1_A8_High_Female_L3_R1",
+            "read2": "Psi1_A8_High_Female_L3_R2"
+        },
+        "Psi1_A90_NS_Female_L4": {
+            "read1": "Psi1_A90_NS_Female_L4_R1",
+            "read2": "Psi1_A90_NS_Female_L4_R2"
+        },
+        "Psi1_A9_High_Female_L3": {
+            "read1": "Psi1_A9_High_Female_L3_R1",
+            "read2": "Psi1_A9_High_Female_L3_R2"
+        }
+    }
+}

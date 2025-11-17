@@ -1,0 +1,20 @@
+Pathway	Genes	Log10(p)	Direction
+positive regulation of hydrogen peroxide-mediated programmed cell death	FOXO3|PAWR|FOXP1	-4.757487561	DOWN
+phospholipase C-activating G protein-coupled acetylcholine receptor signaling pathway	CHRM1|CHRM3|ITPR1|PRKCB|PLCB1	-7.197556125	DOWN
+G protein-coupled acetylcholine receptor signaling pathway	CHRM1|CHRM3|CHRM4|ITPR1|PRKCB|PLCB1	-6.072832759	DOWN
+negative regulation of cell maturation	NPPC|NPR2|SHB	-3.632751714	DOWN
+vascular wound healing	CD34|NPR2|HPSE	-3.461997603	DOWN
+Voltage gated Potassium channels	KCNH1|KCNQ3|KCNS1|KCNS2|KCNAB1|KCNH4|KCNH3|KCNV1|KCNH5|KCNQ5|KCNH7	-10.11647227	DOWN
+dendrite arborization	SEMA3A|ZNF365|PHACTR1	-3.179454071	DOWN
+positive regulation of excitatory postsynaptic potential	PTK2B|GRIN2A|RGS4|STX1A|RIMS1|CUX2	-4.916779459	DOWN
+Potassium Channels	KCNH1|KCNJ2|KCNJ3|KCNJ4|KCNJ11|KCNK2|KCNQ3|KCNS1|KCNS2|KCNAB1|KCNH4|KCNH3|KCNV1|KCNH5|KCNMB4|KCNQ5|GNB4|KCNH7	-13.06135956	DOWN
+neuron projection arborization	SEMA3A|ZNF365|PAK6|PHACTR1	-3.734537243	DOWN
+galactosylceramide biosynthetic process	UGT8|GAL3ST1|FA2H	-3.84700844	UP
+common myeloid progenitor cell proliferation	CEACAM1|FLT3|ITPKB|LIPA	-4.773571767	UP
+podocyte cell migration	KANK1|DAAM2|ANLN	-3.610333772	UP
+Regulation of CDH11 function	ADAM19|ANGPTL4|CDH24|AMOT	-4.368979245	UP
+Collagen biosynthesis and modifying enzymes	COL2A1|COL4A1|COL4A2|COL7A1|COL11A1|COL15A1|COL16A1|PLOD1|TLL2|P4HA2|P3H3|COL5A3|COL20A1|P4HA3	-10.41341818	UP
+NABA COLLAGENS	COL2A1|COL4A1|COL4A2|COL7A1|COL11A1|COL15A1|COL16A1|COL5A3|COL20A1	-6.820672336	UP
+Dopaminergic neurogenesis	ALDH1A1|DDC|EN2|NKX2-2|RET|SLC18A2	-4.664373181	UP
+Collagen chain trimerization	COL2A1|COL4A1|COL4A2|COL7A1|COL11A1|COL15A1|COL16A1|COL5A3|COL20A1	-6.820672336	UP
+protein folding in endoplasmic reticulum	CALR|PDIA3|HSPA5	-2.962308775	UP

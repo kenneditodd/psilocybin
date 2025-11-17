@@ -1,0 +1,1837 @@
+---
+title: "Psilocybin Project 1"
+subtitle: "Differential Expression"
+author: "Kennedi Todd"
+date: "10/14/2024"
+output:
+  html_document:
+    theme: cerulean
+    toc: true
+    toc_float: true
+editor_options: 
+  chunk_output_type: inline
+---
+
+# Setup
+## Working directory
+```{r setup}
+knitr::opts_knit$set(root.dir = ".")
+```
+
+## Libraries
+```{r libraries, message=FALSE, warning=FALSE}
+library(dplyr)             # %>%
+library(edgeR)             # to load .rds obj
+library(ggraph)
+library(ggrepel)           # geom_text_repel()
+library(ggplot2)           # ggplot()
+library(igraph)
+library(jsonlite)          # toJSON()
+library(limma)             # to load .rds obj
+library(pheatmap)          # pheatmap()
+library(ssizeRNA)          # check.power()
+library(stringr)           # str_match()
+library(tidygraph)
+library(tidyr)             # pivot_wider()
+library(WGCNA)             # pickSoftThreshold()
+```
+
+## User defined variables
+```{r set_variables}
+# Output directories and file paths
+out <- "../results/all_samples_both_sexes_analysis/"
+out2 <- "all_samples_both_sexes_analysis"
+model <- "DEGs_with_hbb/"
+
+# Colors and levels
+treatment_order <- c("saline", "psilocybin")
+treatment_colors <- c("gray60", "springgreen2")
+
+sex_order <- c("M", "F")
+sex_colors <- c("gold2", "purple")
+
+group_order <- c("S.8h", "S.24h", "S.7d", 
+                 "L.8h", "L.24h", "L.7d", 
+                 "H.8h", "H.24h", "H.7d")
+group_colors <- c("gray90", "gray60", "gray30", 
+                  "lightblue", "cornflowerblue", "blue", 
+                  "sienna1", "red2", "red4")
+
+if (grepl("8_hours|24_hours|7_days", out2)) {
+  print("time specific analysis")
+  group_colors <- c("gray60","cornflowerblue","firebrick2")
+}
+```
+
+## Save functions
+```{r save_functions}
+saveToPDF <- function(...) {
+    d = dev.copy(pdf,...)
+    dev.off(d)
+}
+```
+
+## Load data
+```{r read_DGEList}
+dge.filtered.norm <- readRDS(paste0("../rObjects/",
+                                    out2,
+                                    "_DGEList_filtered_normalized.rds"))
+dim(dge.filtered.norm)
+head(colnames(dge.filtered.norm))
+```
+
+# Voom
+## Design matrix
+```{r design_matrix}
+design <- ""
+
+if (grepl("sex_specific", out2)) {
+  print("sex specific analysis")
+  group2 <- interaction(dge.filtered.norm$samples$group2)
+  hbb <- dge.filtered.norm$samples$hbb_log2cpm
+  design <- model.matrix(~ 0 + group2 + hbb)
+  design.names <- gsub("group2","", colnames(design))
+  colnames(design) <- design.names
+} else if (grepl("both_sexes", out2)) {
+  print("both sexes analysis")
+  group <- interaction(dge.filtered.norm$samples$group)
+  sex <- factor(dge.filtered.norm$samples$sex)
+  hbb <- dge.filtered.norm$samples$hbb_log2cpm
+  design <- model.matrix(~ 0 + group + sex + hbb)
+  design.names <- gsub("group","", colnames(design))
+  colnames(design) <- design.names
+}
+
+head(design)
+```
+
+## Contrasts
+```{r contrasts}
+myContrasts <- ""
+
+if (out2 == "all_samples_sex_specific_analysis" | 
+    out2 == "all_samples_sex_specific_combat_analysis") {
+  myContrasts <- c("L.8h.F - S.8h.F", 
+                   "L.8h.M - S.8h.M",
+                   "L.24h.F - S.24h.F",
+                   "L.24h.M - S.24h.M",
+                   "L.7d.F - S.7d.F",
+                   "L.7d.M - S.7d.M",
+                   "H.8h.F - S.8h.F",
+                   "H.8h.M - S.8h.M",
+                   "H.24h.F - S.24h.F",
+                   "H.24h.M - S.24h.M",
+                   "H.7d.F - S.7d.F",
+                   "H.7d.M - S.7d.M",
+                   "S.8h.F - S.8h.M",
+                   "S.24h.F - S.24h.M",
+                   "S.7d.F - S.7d.M")
+} else if (out2 == "all_samples_both_sexes_analysis" | 
+           out2 == "all_samples_both_sexes_combat_analysis") {
+  myContrasts <- c("L.8h - S.8h",
+                   "L.24h - S.24h",
+                   "L.7d - S.7d",
+                   "H.8h - S.8h",
+                   "H.24h - S.24h",
+                   "H.7d - S.7d")
+} else if (out2 == "24_hours_sex_specific_analysis") {
+  myContrasts <- c("L.24h.F - S.24h.F",
+                   "L.24h.M - S.24h.M",
+                   "H.24h.F - H.24h.F",
+                   "H.24h.M - H.24h.M",
+                   "S.24h.F - S.24h.M",
+                   "L.24h.F - S.24h.M",
+                   "H.24h.F - H.24h.M")
+} else if (out2 == "24_hours_both_sexes_analysis") {
+  myContrasts <- c("L.24h - S.24h",
+                   "H.24h - S.24h",
+                   "H.24h - L.24h")
+} else if (out2 == "8_hours_both_sexes_analysis") {
+  myContrasts <- c("L.8h - S.8h",
+                   "H.8h - S.8h",
+                   "H.8h - L.8h")
+} else if (out2 == "8_hours_sex_specific_analysis") {
+  myContrasts <- c("L.8h.F - S.8h.F",
+                   "L.8h.M - S.8h.M",
+                   "H.8h.F - H.8h.F",
+                   "H.8h.M - H.8h.M",
+                   "S.8h.F - S.8h.M",
+                   "L.8h.F - S.8h.M",
+                   "H.8h.F - H.8h.M")
+} else if (out2 == "7_days_both_sexes_analysis") {
+  myContrasts <- c("L.7d - S.7d",
+                   "H.7d - S.7d",
+                   "H.7d - L.7d")
+} else if (out2 == "7_days_sex_specific_analysis") {
+  myContrasts <- c("L.7d.F - S.7d.F",
+                   "L.7d.M - S.7d.M",
+                   "H.7d.F - H.7d.F",
+                   "H.7d.M - H.7d.M",
+                   "S.7d.F - S.7d.M",
+                   "L.7d.F - S.7d.M",
+                   "H.7d.F - H.7d.M")
+}
+
+head(myContrasts)
+```
+
+## Quality weights
+```{r voom}
+# voom transform counts
+v <- voomWithQualityWeights(dge.filtered.norm,
+                            design,
+                            plot = TRUE)
+
+# condense gene info
+genes <- v$genes
+genes <- genes %>% select(all_of(c("gene_name_unique","gene_name",
+                                   "gene_id","seqnames","start","end",
+                                   "strand","exonic_length")))
+v$genes <- genes
+
+# save
+path <- paste0(out, "postfiltering_QC/voom_gene_mean_var_weights")
+saveToPDF(paste0(path, ".pdf"), width = 6, height = 4)
+
+# fits linear model for each gene given a series of arrays
+fit <- lmFit(v, design)
+
+# contrast design for differential expression
+contrasts <- makeContrasts(
+  contrasts = myContrasts,
+  levels = design.names)
+head(contrasts)
+
+# save contrast names
+allComparisons <- colnames(contrasts)
+allComparisons # check
+
+# run contrast analysis
+vfit <- contrasts.fit(fit, contrasts = contrasts)
+
+# Compute differential expression based on the empirical Bayes moderation of the
+# standard errors towards a common value.
+veBayesFit <- eBayes(vfit)
+plotSA(veBayesFit, main = "Final Model: Mean-variance Trend")
+
+# save
+path <- paste0(out, "postfiltering_QC/voom_gene_final_mean_var")
+saveToPDF(paste0(path, ".pdf"), width = 6, height = 4)
+
+# Cleanup
+remove(fit,vfit,genes,design)
+```
+
+# Voom MDS Plots
+## Sex
+```{r mds_postfiltering_sex, warning=FALSE}
+# loop through dimensions and top genes
+names <- v$targets$sample_id
+dims <- list(c(1,2),c(2,3),c(3,4))
+topGenes <- c(100,500)
+
+for (dim in dims) {
+  
+  for (numGenes in topGenes) {
+      
+    mds <- plotMDS(v, 
+                   labels = names, 
+                   top = numGenes,
+                   plot = FALSE,
+                   dim.plot = dim)
+
+    toplot <- data.frame(DimX = mds$x, 
+                         DimY = mds$y,
+                         Sample = rownames(mds$distance.matrix.squared),
+                         sex = v$targets$sex)
+    
+    x.lab <- paste0(mds$axislabel," ",mds$dim.plot[1]," (",
+                    round(mds$var.explained[mds$dim.plot[1]] * 100, digits = 2),
+                    "%)")
+    y.lab <- paste0(mds$axislabel," ",mds$dim.plot[2]," (",
+                    round(mds$var.explained[mds$dim.plot[2]] * 100, digits = 2),
+                    "%)")
+    
+    p <- ggplot(toplot, aes(x = DimX, y = DimY, color = sex, label = Sample)) + 
+      geom_point(size = 3) +
+      scale_color_manual(values = sex_colors) +
+      theme_bw() +
+      geom_text(aes(label = Sample), size=4, vjust = -1) +
+      xlab(x.lab) + ylab(y.lab) + 
+      ggtitle(paste0("MDS Filtered: Top ", numGenes, ", Log2(CPM)"))
+    print(p)
+    
+    # save
+    dimTitle <- as.character(dim)
+    path <- paste0(out,"postfiltering_QC/MDS_top_",
+                   numGenes,"_genes/MDS_filtered_top_", numGenes, "_",
+                   "dim", as.character(dim)[1], "&", as.character(dim[2]), 
+                   "_colored_by_sex")
+    saveToPDF(paste0(path, ".pdf"), width = 8, height = 8)
+  }
+}
+
+remove(data)
+```
+
+## Group
+```{r mds_postfiltering_group}
+# loop through dimensions and top genes
+names <- v$targets$group
+dims <- list(c(1,2),c(2,3),c(3,4))
+topGenes <- c(100,500)
+
+for (dim in dims) {
+  
+  for (numGenes in topGenes) {
+      
+    mds <- plotMDS(v, 
+                   labels = names, 
+                   top = numGenes,
+                   plot = FALSE,
+                   dim.plot = dim)
+
+    toplot <- data.frame(DimX = mds$x, 
+                         DimY = mds$y,
+                         Sample = rownames(mds$distance.matrix.squared),
+                         group = v$targets$group)
+    
+    x.lab <- paste0(mds$axislabel," ",mds$dim.plot[1]," (",
+                    round(mds$var.explained[mds$dim.plot[1]] * 100, digits = 2),
+                    "%)")
+    y.lab <- paste0(mds$axislabel," ",mds$dim.plot[2]," (",
+                    round(mds$var.explained[mds$dim.plot[2]] * 100, digits = 2),
+                    "%)")
+    
+    p <- ggplot(toplot, aes(x = DimX, y = DimY, color = group, label = Sample)) + 
+      geom_point(size = 3) +
+      scale_color_manual(values = group_colors) +
+      theme_bw() +
+      geom_text(aes(label = Sample), size=4, vjust = -1) +
+      xlab(x.lab) + ylab(y.lab) + 
+      ggtitle(paste0("MDS Filtered: Top ", numGenes, ", Log2(CPM)"))
+    print(p)
+    
+    # save
+    dimTitle <- as.character(dim)
+    path <- paste0(out, "postfiltering_QC/MDS_top_",
+                   numGenes,"_genes/MDS_filtered_top_", numGenes, "_",
+                   "dim", as.character(dim)[1], "&", as.character(dim[2]), 
+                   "_colored_by_group")
+    saveToPDF(paste0(path, ".pdf"), width = 8, height = 8)
+  }
+}
+```
+
+## Time point
+```{r mds_postfiltering_timepoint}
+# loop through dimensions and top genes
+names <- v$targets$sample_id
+dims <- list(c(1,2),c(2,3),c(3,4))
+topGenes <- c(100,500)
+
+for (dim in dims) {
+  
+  for (numGenes in topGenes) {
+      
+    mds <- plotMDS(v, 
+                   labels = names, 
+                   top = numGenes,
+                   plot = FALSE,
+                   dim.plot = dim)
+
+    toplot <- data.frame(DimX = mds$x, 
+                         DimY = mds$y,
+                         Sample = rownames(mds$distance.matrix.squared),
+                         timepoint = v$targets$timepoint)
+    
+    x.lab <- paste0(mds$axislabel," ",mds$dim.plot[1]," (",
+                    round(mds$var.explained[mds$dim.plot[1]] * 100, digits = 2),
+                    "%)")
+    y.lab <- paste0(mds$axislabel," ",mds$dim.plot[2]," (",
+                    round(mds$var.explained[mds$dim.plot[2]] * 100, digits = 2),
+                    "%)")
+    
+    p <- ggplot(toplot, aes(x = DimX, y = DimY, color = timepoint, label = Sample)) + 
+      geom_point(size = 3) +
+      theme_bw() +
+      geom_text(aes(label = Sample), size=4, vjust = -1) +
+      xlab(x.lab) + ylab(y.lab) + 
+      ggtitle(paste0("MDS Filtered: Top ", numGenes, ", Log2(CPM)"))
+    print(p)
+    
+    # save
+    dimTitle <- as.character(dim)
+    path <- paste0(out, "postfiltering_QC/MDS_top_",
+                   numGenes,"_genes/MDS_filtered_top_", numGenes, "_",
+                   "dim", as.character(dim)[1], "&", as.character(dim[2]), 
+                   "_colored_by_timepoint")
+    saveToPDF(paste0(path, ".pdf"), width = 8, height = 8)
+  }
+}
+```
+
+## Treatment
+```{r mds_postfiltering_treatment}
+# loop through dimensions and top genes
+names <- v$targets$treatment
+dims <- list(c(1,2),c(2,3),c(3,4))
+topGenes <- c(100,500)
+
+for (dim in dims) {
+  
+  for (numGenes in topGenes) {
+      
+    mds <- plotMDS(v, 
+                   labels = names, 
+                   top = numGenes,
+                   plot = FALSE,
+                   dim.plot = dim)
+
+    toplot <- data.frame(DimX = mds$x, 
+                         DimY = mds$y,
+                         Sample = rownames(mds$distance.matrix.squared),
+                         treatment = v$targets$treatment)
+    
+    x.lab <- paste0(mds$axislabel," ",mds$dim.plot[1]," (",
+                    round(mds$var.explained[mds$dim.plot[1]] * 100, digits = 2),
+                    "%)")
+    y.lab <- paste0(mds$axislabel," ",mds$dim.plot[2]," (",
+                    round(mds$var.explained[mds$dim.plot[2]] * 100, digits = 2),
+                    "%)")
+    
+    p <- ggplot(toplot, aes(x = DimX, y = DimY, color = treatment, label = Sample)) + 
+      geom_point(size = 3) +
+      theme_bw() +
+      geom_text(aes(label = Sample), size=4, vjust = -1) +
+      xlab(x.lab) + ylab(y.lab) + 
+      ggtitle(paste0("MDS Filtered: Top ", numGenes, ", Log2(CPM)"))
+    print(p)
+    
+    # save
+    dimTitle <- as.character(dim)
+    path <- paste0(out, "postfiltering_QC/MDS_top_",
+                   numGenes,"_genes/MDS_filtered_top_", numGenes, "_",
+                   "dim", as.character(dim)[1], "&", as.character(dim[2]), 
+                   "_colored_by_treatment")
+    saveToPDF(paste0(path, ".pdf"), width = 8, height = 8)
+  }
+}
+```
+
+## RIN
+```{r mds_postfiltering_RIN}
+# loop through dimensions and top genes
+names <- v$targets$sample_id
+dims <- list(c(1,2),c(2,3),c(3,4))
+topGenes <- c(100,500)
+
+for (dim in dims) {
+  
+  for (numGenes in topGenes) {
+      
+    mds <- plotMDS(v, 
+                   labels = names, 
+                   top = numGenes,
+                   plot = FALSE,
+                   dim.plot = dim)
+
+    toplot <- data.frame(DimX = mds$x, 
+                         DimY = mds$y,
+                         Sample = rownames(mds$distance.matrix.squared),
+                         RIN = v$targets$RIN)
+    
+    x.lab <- paste0(mds$axislabel," ",mds$dim.plot[1]," (",
+                    round(mds$var.explained[mds$dim.plot[1]] * 100, digits = 2),
+                    "%)")
+    y.lab <- paste0(mds$axislabel," ",mds$dim.plot[2]," (",
+                    round(mds$var.explained[mds$dim.plot[2]] * 100, digits = 2),
+                    "%)")
+    
+    p <- ggplot(toplot, aes(x = DimX, y = DimY, color = RIN, label = Sample)) + 
+      geom_point(size = 3) +
+      theme_bw() +
+      geom_text(aes(label = Sample), size=4, vjust = -1) +
+      xlab(x.lab) + ylab(y.lab) + 
+      scale_color_gradientn(colors = c("red","yellow","lightblue","blue")) +
+      ggtitle(paste0("MDS Filtered: Top ", numGenes, ", Log2(CPM)"))
+    print(p)
+    
+    # save
+    dimTitle <- as.character(dim)
+    path <- paste0(out, "postfiltering_QC/MDS_top_",
+                   numGenes,"_genes/MDS_filtered_top_", numGenes, "_",
+                   "dim", as.character(dim)[1], "&", as.character(dim[2]), 
+                   "_colored_by_RIN")
+    saveToPDF(paste0(path, ".pdf"), width = 8, height = 8)
+  }
+}
+```
+
+
+## Lane
+```{r mds_postfiltering_ss}
+# loop through dimensions and top genes
+names <- v$targets$sample_id
+dims <- list(c(1,2),c(2,3),c(3,4))
+topGenes <- c(100,500)
+
+for (dim in dims) {
+  
+  for (numGenes in topGenes) {
+      
+    mds <- plotMDS(v, 
+                   labels = names, 
+                   top = numGenes,
+                   plot = FALSE,
+                   dim.plot = dim)
+
+    toplot <- data.frame(DimX = mds$x, 
+                         DimY = mds$y,
+                         Sample = rownames(mds$distance.matrix.squared),
+                         lane = v$targets$lane)
+    
+    x.lab <- paste0(mds$axislabel," ",mds$dim.plot[1]," (",
+                    round(mds$var.explained[mds$dim.plot[1]] * 100, digits = 2),
+                    "%)")
+    y.lab <- paste0(mds$axislabel," ",mds$dim.plot[2]," (",
+                    round(mds$var.explained[mds$dim.plot[2]] * 100, digits = 2),
+                    "%)")
+    
+    p <- ggplot(toplot, aes(x = DimX, y = DimY, color = lane, label = Sample)) + 
+      geom_point(size = 3) +
+      theme_bw() +
+      geom_text(aes(label = Sample), size=4, vjust = -1) +
+      xlab(x.lab) + ylab(y.lab) + 
+      ggtitle(paste0("MDS Filtered: Top ", numGenes, ", Log2(CPM)"))
+    print(p)
+    
+    # save
+    dimTitle <- as.character(dim)
+    path <- paste0(out, "postfiltering_QC/MDS_top_",
+                   numGenes,"_genes/MDS_filtered_top_", numGenes, "_",
+                   "dim", as.character(dim)[1], "&", as.character(dim[2]), 
+                   "_colored_by_lane")
+    saveToPDF(paste0(path, ".pdf"), width = 8, height = 8)
+  }
+}
+```
+
+## RNA Extraction
+```{r mds_postfiltering_ss}
+# loop through dimensions and top genes
+names <- v$targets$sample_id
+dims <- list(c(1,2),c(2,3),c(3,4))
+topGenes <- c(100,500)
+
+for (dim in dims) {
+  
+  for (numGenes in topGenes) {
+      
+    mds <- plotMDS(v, 
+                   labels = names, 
+                   top = numGenes,
+                   plot = FALSE,
+                   dim.plot = dim)
+
+    toplot <- data.frame(DimX = mds$x, 
+                         DimY = mds$y,
+                         Sample = rownames(mds$distance.matrix.squared),
+                         RNA_extraction_batch = v$targets$RNA_extraction_batch)
+    
+    x.lab <- paste0(mds$axislabel," ",mds$dim.plot[1]," (",
+                    round(mds$var.explained[mds$dim.plot[1]] * 100, digits = 2),
+                    "%)")
+    y.lab <- paste0(mds$axislabel," ",mds$dim.plot[2]," (",
+                    round(mds$var.explained[mds$dim.plot[2]] * 100, digits = 2),
+                    "%)")
+    
+    p <- ggplot(toplot, aes(x = DimX, y = DimY, color = RNA_extraction_batch, label = Sample)) + 
+      geom_point(size = 3) +
+      theme_bw() +
+      geom_text(aes(label = Sample), size=4, vjust = -1) +
+      xlab(x.lab) + ylab(y.lab) + 
+      ggtitle(paste0("MDS Filtered: Top ", numGenes, ", Log2(CPM)"))
+    print(p)
+    
+    # save
+    dimTitle <- as.character(dim)
+    path <- paste0(out, "postfiltering_QC/MDS_top_",
+                   numGenes,"_genes/MDS_filtered_top_", numGenes, "_",
+                   "dim", as.character(dim)[1], "&", as.character(dim[2]), 
+                   "_colored_by_RNA_extraction")
+    saveToPDF(paste0(path, ".pdf"), width = 8, height = 8)
+  }
+}
+```
+
+# Differential Expressioin
+## Number of DEGs
+Identify number of differentially expressed genes.
+```{r decide_tests}
+# set thresholds
+pval <- 0.01
+my.lfc <- 0.2
+
+# run tests
+sumTable <- summary(decideTests(
+  veBayesFit,
+  adjust.method = "BH",
+  p.value = pval,
+  lfc = my.lfc
+  ))
+print(paste0(" FDRq < ", pval, ", LFC = ", my.lfc))
+sumTable
+
+# reformat table
+sumTable <- as.data.frame(sumTable)
+colnames(sumTable) <- c("direction", "comparison", "count")
+sumTable <- sumTable |> 
+  pivot_wider(names_from = comparison, values_from = count)
+colnames(sumTable) <- gsub(" - ", "_vs_", colnames(sumTable))
+
+# save table
+path <- paste0(out, model, "DEG_tables/DEG_comparison_FDRq_", 
+               format(pval, nsmall = 2), "_LFC_", format(my.lfc, nsmall = 2), 
+               ".tsv")
+write.table(sumTable, 
+            path, 
+            quote = FALSE, 
+            sep = "\t")
+```
+
+## DEG heatmap
+```{r}
+# reformat before plotting
+df <- as.data.frame(sumTable)
+df <- df[!df$direction == "NotSig",]
+rownames(df) <- df$direction
+df$direction <- NULL
+df <- t(df)
+
+# set heatmap colors and names
+meta <- data.frame(treatment = c(rep("low dose", 3),
+                                rep("high dose", 3)),
+                   timepoint = rep(c("8 hours", "24 hours", "7 days"), 2))
+rownames(meta) <- rownames(df)
+paletteLength <- 100
+myColor <- colorRampPalette(c("white","#f0eb9e","darkgreen"))(paletteLength)
+ann_colors = list(treatment = c(`low dose` = "cornflowerblue", 
+                               `high dose` = "firebrick1"),
+                  timepoint = c(`8 hours` = "gray",
+                                `24 hours` = "gold",
+                                `7 days` = "chartreuse2"))
+
+# save
+path <- paste0(out, model, "/DEG_tables/DEG_comparison_FDRq_",
+               format(pval, nsmall = 2),
+               "_LFC_", format(my.lfc, nsmall = 2),".pdf")
+pdf(path, width = 8, height = 9)
+
+# plot
+pheatmap::pheatmap(df,
+                   main = paste0("FDRq < ", pval, ", |LFC| > ", my.lfc),
+                   treeheight_row = 0,
+                   treeheight_col = 0,
+                   color = myColor,
+                   cluster_rows = FALSE,
+                   annotation_row = meta,
+                   annotation_colors = ann_colors,
+                   display_numbers = round(df, digits = 0),
+                   fontsize_number = 12,
+                   number_color = "black")
+```
+
+## DEG heatmap sex specific
+```{r}
+# reformat before plotting
+df <- as.data.frame(sumTable)
+df <- df[!df$direction == "NotSig",]
+rownames(df) <- df$direction
+df$direction <- NULL
+df <- t(df)
+
+# set heatmap colors and names
+meta <- data.frame(treatment = c(rep("low dose", 6),
+                                rep("high dose", 6),
+                                rep("saline", 3)),
+                   sex = c(rep(c("female","male"),6), rep("both",3)),
+                   timepoint = c(rep(c("8 hours","8 hours",
+                                       "24 hours","24 hours",
+                                       "7 days", "7 days"),
+                                     2),
+                                 "8 hours", 
+                                 "24 hours", 
+                                 "7 days"))
+rownames(meta) <- rownames(df)
+paletteLength <- 100
+myColor <- colorRampPalette(c("white","#f0eb9e","darkgreen"))(paletteLength)
+ann_colors = list(treatment = c(`low dose` = "cornflowerblue", 
+                               `high dose` = "firebrick2",
+                               `saline` = "gray"),
+                  sex = c(female = 'chartreuse2',
+                          male = 'chocolate4',
+                          both = "pink"),
+                  timepoint = c(`8 hours` = "gold",
+                                `24 hours` = "purple",
+                                `7 days` = "black"))
+
+# save
+path <- paste0(out, model, "/DEG_tables/DEG_comparison_FDRq_",
+               format(pval, nsmall = 2),
+               "_LFC_", format(my.lfc, nsmall = 2),".pdf")
+pdf(path, width = 8, height = 9)
+
+# plot
+pheatmap::pheatmap(df,
+                   main = paste0("FDRq < ", pval, ", |LFC| > ", my.lfc),
+                   treeheight_row = 0,
+                   treeheight_col = 0,
+                   color = myColor,
+                   cluster_rows = FALSE,
+                   annotation_row = meta,
+                   annotation_colors = ann_colors,
+                   display_numbers = round(df, digits = 0),
+                   fontsize_number = 12,
+                   number_color = "black")
+```
+
+## DEG heatmap timepoint and sex specific
+```{r}
+# reformat before plotting
+df <- as.data.frame(sumTable)
+df <- df[!df$direction == "NotSig",]
+rownames(df) <- df$direction
+df$direction <- NULL
+df <- t(df)
+
+# set heatmap colors and names
+meta <- data.frame(treatment = c(rep("low dose", 2),
+                                rep("high dose", 2),
+                                rep("other", 3)),
+                   sex = c(rep(c("female","male"),2), rep("both",3)))
+rownames(meta) <- rownames(df)
+paletteLength <- 100
+myColor <- colorRampPalette(c("white","#f0eb9e","darkgreen"))(paletteLength)
+ann_colors = list(treatment = c(`low dose` = "cornflowerblue", 
+                               `high dose` = "firebrick2",
+                               `other` = "gray"),
+                  sex = c(female = 'chartreuse2',
+                          male = 'purple',
+                          both = "gold"))
+
+# save
+path <- paste0(out, model, "/DEG_tables/DEG_comparison_FDRq_",
+               format(pval, nsmall = 2),
+               "_LFC_", format(my.lfc, nsmall = 2),".pdf")
+pdf(path, width = 8, height = 9)
+
+# plot
+pheatmap::pheatmap(df,
+                   main = paste0("FDRq < ", pval, ", |LFC| > ", my.lfc),
+                   treeheight_row = 0,
+                   treeheight_col = 0,
+                   color = myColor,
+                   cluster_rows = FALSE,
+                   annotation_row = meta,
+                   annotation_colors = ann_colors,
+                   display_numbers = round(df, digits = 0),
+                   fontsize_number = 12,
+                   number_color = "black")
+```
+
+## DEG heatmap timepoint both sexes
+```{r}
+# reformat before plotting
+df <- as.data.frame(sumTable)
+df <- df[!df$direction == "NotSig",]
+rownames(df) <- df$direction
+df$direction <- NULL
+df <- t(df)
+
+# set heatmap colors and names
+meta <- data.frame(category = c(rep("low dose", 1),
+                                rep("high dose", 1),
+                                rep("other", 1)))
+rownames(meta) <- rownames(df)
+paletteLength <- 100
+myColor <- colorRampPalette(c("white","#f0eb9e","darkgreen"))(paletteLength)
+ann_colors = list(category = c(`low dose` = "cornflowerblue", 
+                               `high dose` = "firebrick2",
+                               `other` = "gray"))
+
+# save
+path <- paste0(out, model, "/DEG_tables/DEG_comparison_FDRq_",
+               format(pval, nsmall = 2),
+               "_LFC_", format(my.lfc, nsmall = 2),".pdf")
+pdf(path, width = 8, height = 9)
+
+# plot
+pheatmap::pheatmap(df,
+                   main = paste0("FDRq < ", pval, ", |LFC| > ", my.lfc),
+                   treeheight_row = 0,
+                   treeheight_col = 0,
+                   color = myColor,
+                   cluster_rows = FALSE,
+                   annotation_row = meta,
+                   annotation_colors = ann_colors,
+                   display_numbers = round(df, digits = 0),
+                   fontsize_number = 12,
+                   number_color = "black")
+```
+
+## Output DEG tables
+```{r output_DEG_tables}
+coef <- 1
+
+for (i in allComparisons) {
+  # title 
+  title <- gsub(" ", "_", i)
+  title <- gsub("-","vs", title)
+  
+  
+  # p < 1, log2fc > 0 ----------------------------------------------------------
+  vTopTableAll <-
+    topTable(
+      veBayesFit, 
+      coef = coef,  
+      n = Inf, 
+      p.value = 1,
+      lfc = 0,
+      confint = TRUE
+    )
+  #output as txt file
+  path <- paste(out, model, "DEG_tables/", title, "_FDRq_1.00_LFC_0.00.tsv", sep = "") 
+  write.table(
+    vTopTableAll,
+    path,
+    sep = "\t",
+    row.names = FALSE,
+    quote = FALSE
+  )
+  
+  # p < 0.10, log2fc > 0.20 ----------------------------------------------------
+  vTopTable1 <-
+    topTable( 
+      veBayesFit,  
+      coef = coef,  
+      n = Inf, 
+      p.value = 0.10,
+      lfc = 0.2,
+      confint = TRUE
+    )
+  path <- paste(out, model, "DEG_tables/", title, "_FDRq_0.10_LFC_0.20.tsv", sep = "") 
+  write.table(
+    vTopTable1,
+    path,
+    sep = "\t",
+    row.names = FALSE,
+    quote = FALSE
+  )
+  
+  # increment ------------------------------------------------------------------
+  coef <- coef + 1
+}
+```
+
+## Volcano
+```{r volcano_plot, message=FALSE, eval=FALSE}
+# set variables
+thresh <- 0.1
+my.lfc <- 0.2
+
+# get file list
+files <- list.files(paste0(out, model,"DEG_tables/"))
+keep <- grep("_1.00_LFC_0.00.tsv", files)
+files <- files[keep]
+files <- paste0(out, model, "DEG_tables/", files)
+
+for (i in files) {
+  
+  # read DEG file
+  data <- read.delim(i,sep = "\t")
+  
+  # assign colors
+  color_values <- vector()
+  max <- nrow(data)
+  for(row in 1:max){
+    if (data$adj.P.Val[row] < thresh){
+      if (data$logFC [row] > my.lfc){
+        color_values <- c(color_values, 1) # 1 when logFC > my.lfc and FDRq < thresh
+      } else if (data$logFC[row] < -my.lfc){
+        color_values <- c(color_values, 2) # 2 when logFC < -my.lfc and FDRq < thresh
+      } else {
+        color_values <- c(color_values, 3) # 3 when logFC between -my.lfc and +my.lfc and FDRq < thresh
+      }
+    } else {
+      color_values <- c(color_values, 3) # 3 when FDRq >= thresh
+    }
+  }
+  data$color_adjpval <- factor(color_values)
+  
+ # comparison name
+ comparison <- gsub(paste0(out, model, "DEG_tables/"), "", i)
+ comparison <- gsub("_FDRq_1.00_LFC_0.00.tsv","",comparison)
+    
+ # plot only if there are DEGs with adj.P.Val < thresh
+ num <- data[data$adj.P.Val < thresh,]
+ num <- nrow(num)
+ if(num != 0) {
+   
+    # subset genes to label
+    up <- data[data$color_adjpval == 1,]
+    up.sig <- up[order(up$adj.P.Val),][1:15,]
+    up.lfc <- up[order(up$logFC, decreasing = TRUE),][1:15,]
+    up30 <- rbind(up.sig,up.lfc)
+    up30 <- up30[!duplicated(up30$gene_name_unique),]
+    down <- data[data$color_adjpval == 2,]
+    down.sig <- down[order(down$adj.P.Val),][1:15,]
+    down.lfc <- down[order(down$logFC, decreasing = FALSE),][1:15,]
+    down30 <- rbind(down.sig,down.lfc)
+    down30 <- down30[!duplicated(down30$gene_name_unique),]
+      
+    # set manual colors
+    if (!1 %in% unique(data$color_adjpval)) {
+      my_colors <- c("blue","gray")
+    } else if (!2 %in% unique(data$color_adjpval)) {
+      my_colors <- c("red","gray")
+    } else if (!1 %in% unique(data$color_adjpval) && !2 %in% unique(data$color_adjpval)) {
+      my_colors <- c("gray")
+    } else {
+      my_colors <- c("red","blue","gray")
+    }
+      
+    # set significance threshold
+    hadjpval <- (-log10(max(data$P.Value[data$adj.P.Val < thresh], na.rm=TRUE)))
+
+    # plot
+    p <-
+      ggplot(data = data, 
+             aes(x = logFC,  # x-axis is logFC
+                 y = -log10(P.Value),  # y-axis will be -log10 of P.Value
+                 color = color_adjpval)) +  # color is based on factored color column
+      geom_point(alpha = 0.8, size = 2) +  # create scatterplot, alpha makes points transparent
+      theme_bw() +  # set color theme
+      theme(legend.position = "none") +  # no legend
+      scale_color_manual(values = my_colors) +  # set factor colors
+      labs(
+        title = "", # no main title
+        x = expression(log[2](FC)), # x-axis title
+         y = expression(-log[10] ~ "(" ~ italic("p") ~ "-value)") # y-axis title
+      ) +
+      theme(axis.title.x = element_text(size = 15),
+            axis.text.x = element_text(size = 15)) +
+      theme(axis.title.y = element_text(size = 15),
+            axis.text.y = element_text(size = 15)) +
+      theme(plot.title = element_text(size = 15)) +
+      geom_hline(yintercept = hadjpval,  #  horizontal line
+                         colour = "#000000",
+                         linetype = "dashed") +
+      geom_vline(xintercept = -my.lfc,  #  vertical line
+                         colour = "#000000",
+                         linetype = "dashed") +
+      geom_vline(xintercept = my.lfc,  #  vertical line
+                         colour = "#000000",
+                         linetype = "dashed") +
+      ggtitle(paste0(comparison, ", adj.P.Val < ", thresh, ", LFC = ", my.lfc)) +
+      geom_text_repel(data = up30,
+                      aes(x = logFC, y= -log10(P.Value), label = gene_name), 
+                      size = 5,
+                      color = "maroon", 
+                      fontface="italic",
+                      max.overlaps = getOption("ggrepel.max.overlaps", default = 30)
+                      ) +
+      geom_text_repel(data = down30,
+                      aes(x = logFC, y= -log10(P.Value), label = gene_name), 
+                      color = "navyblue", 
+                      size = 5,
+                      fontface="italic",
+                      max.overlaps = getOption("ggrepel.max.overlaps", default = 30)
+                      ) +
+      ylim(c(0,15))
+     p
+      
+    # save
+    path <- paste0(out, model, "volcano/", comparison, "_FDRq_", 
+                   format(thresh, nsmall = 2), "_LFC_",
+                   format(my.lfc, nsmall = 2), "_volcano.pdf")
+    pdf(path, height = 8, width = 8)
+    print(p)
+    dev.off()
+  }
+} # end loop through variables
+```
+
+## Volcano - joe
+```{r volcano_plot, message=FALSE, eval=FALSE}
+# set variables
+thresh <- 0.1
+my.lfc <- 0.2
+
+# get file list
+files <- list.files(paste0(out, model,"DEG_tables/"))
+keep <- grep("_1.00_LFC_0.00.tsv", files)
+files <- files[keep]
+files <- paste0(out, model, "DEG_tables/", files)
+
+for (i in files) {
+  
+  # read DEG file
+  data <- read.delim(i,sep = "\t")
+  
+  # assign colors
+  color_values <- vector()
+  max <- nrow(data)
+  for(row in 1:max){
+    if (data$adj.P.Val[row] < thresh){
+      if (data$logFC [row] > my.lfc){
+        color_values <- c(color_values, 1) # 1 when logFC > my.lfc and FDRq < thresh
+      } else if (data$logFC[row] < -my.lfc){
+        color_values <- c(color_values, 2) # 2 when logFC < -my.lfc and FDRq < thresh
+      } else {
+        color_values <- c(color_values, 3) # 3 when logFC between -my.lfc and +my.lfc and FDRq < thresh
+      }
+    } else {
+      color_values <- c(color_values, 3) # 3 when FDRq >= thresh
+    }
+  }
+  data$color_adjpval <- factor(color_values)
+  
+ # comparison name
+ comparison <- gsub(paste0(out, model, "DEG_tables/"), "", i)
+ comparison <- gsub("_FDRq_1.00_LFC_0.00.tsv","",comparison)
+    
+ # plot only if there are DEGs with adj.P.Val < thresh
+ num <- data[data$adj.P.Val < thresh,]
+ num <- nrow(num)
+ if(num != 0) {
+   
+    # subset genes to label
+    up <- data[data$color_adjpval == 1,]
+    up.sig <- up[order(up$adj.P.Val),][1:15,]
+    up.lfc <- up[order(up$logFC, decreasing = TRUE),][1:15,]
+    up30 <- rbind(up.sig,up.lfc)
+    up30 <- up30[!duplicated(up30$gene_name_unique),]
+    down <- data[data$color_adjpval == 2,]
+    down.sig <- down[order(down$adj.P.Val),][1:15,]
+    down.lfc <- down[order(down$logFC, decreasing = FALSE),][1:15,]
+    down30 <- rbind(down.sig,down.lfc)
+    down30 <- down30[!duplicated(down30$gene_name_unique),]
+      
+    # set manual colors
+    if (!1 %in% unique(data$color_adjpval)) {
+      my_colors <- c("blue","gray")
+    } else if (!2 %in% unique(data$color_adjpval)) {
+      my_colors <- c("red","gray")
+    } else if (!1 %in% unique(data$color_adjpval) && !2 %in% unique(data$color_adjpval)) {
+      my_colors <- c("gray")
+    } else {
+      my_colors <- c("red","blue","gray")
+    }
+      
+    # set significance threshold
+    hadjpval <- (-log10(max(data$adj.P.Val[data$adj.P.Val < thresh], na.rm=TRUE)))
+
+    # plot
+    p <-
+      ggplot(data = data, 
+             aes(x = logFC,  # x-axis is logFC
+                 y = -log10(adj.P.Val),  # y-axis will be -log10 of P.Value
+                 color = color_adjpval)) +  # color is based on factored color column
+      geom_point(alpha = 0.8, size = 2) +  # create scatterplot, alpha makes points transparent
+      theme_bw() +  # set color theme
+      theme(legend.position = "none") +  # no legend
+      scale_color_manual(values = my_colors) +  # set factor colors
+      labs(
+        title = "", # no main title
+        x = expression(log[2](FC)), # x-axis title
+         y = expression(-log[10] ~ "(adjusted p-value)") # y-axis title
+      ) +
+      theme(axis.title.x = element_text(size = 15),
+            axis.text.x = element_text(size = 15)) +
+      theme(axis.title.y = element_text(size = 15),
+            axis.text.y = element_text(size = 15)) +
+      theme(plot.title = element_text(size = 15)) +
+      geom_hline(yintercept = hadjpval,  #  horizontal line
+                         colour = "#000000",
+                         linetype = "dashed") +
+      geom_vline(xintercept = -my.lfc,  #  vertical line
+                         colour = "#000000",
+                         linetype = "dashed") +
+      geom_vline(xintercept = my.lfc,  #  vertical line
+                         colour = "#000000",
+                         linetype = "dashed") +
+      ggtitle(paste0(comparison, ", adj.P.Val < ", thresh, ", LFC = ", my.lfc)) +
+      geom_text_repel(data = up30,
+                      aes(x = logFC, y= -log10(adj.P.Val), label = gene_name), 
+                      size = 5,
+                      color = "maroon", 
+                      fontface="italic",
+                      max.overlaps = getOption("ggrepel.max.overlaps", default = 30)
+                      ) +
+      geom_text_repel(data = down30,
+                      aes(x = logFC, y= -log10(adj.P.Val), label = gene_name), 
+                      color = "navyblue", 
+                      size = 5,
+                      fontface="italic",
+                      max.overlaps = getOption("ggrepel.max.overlaps", default = 30)
+                      )
+     p
+      
+    # save
+    path <- paste0(out, model, "volcano_figures/", comparison, "_FDRq_", 
+                   format(thresh, nsmall = 2), "_LFC_",
+                   format(my.lfc, nsmall = 2), "_volcano.pdf")
+    pdf(path, height = 8, width = 8)
+    print(p)
+    dev.off()
+  }
+} # end loop through variables
+```
+
+## Single volcano
+```{r}
+# set variables
+thresh <- 0.1
+my.lfc <- 0.2
+
+# get file list
+files <- list.files(paste0(out, model,"DEG_tables/"))
+keep <- grep("_1.00_LFC_0.00.tsv", files)
+files <- files[keep]
+files <- paste0(out, model, "DEG_tables/", files)
+files <- files[grepl(pattern = "DEG_tables/S\\.", x = files)]
+files <- paste0(out, model, "DEG_tables/L.8h.M_vs_S.8h.M_FDRq_1.00_LFC_0.00.tsv")
+
+for (i in files) {
+  
+  # read DEG file
+  data <- read.delim(i,sep = "\t")
+  
+  # assign colors
+  color_values <- vector()
+  max <- nrow(data)
+  for(row in 1:max){
+    if (data$adj.P.Val[row] < thresh){
+      if (data$logFC [row] > my.lfc){
+        color_values <- c(color_values, 1) # 1 when logFC > my.lfc and FDRq < thresh
+      } else if (data$logFC[row] < -my.lfc){
+        color_values <- c(color_values, 2) # 2 when logFC < -my.lfc and FDRq < thresh
+      } else {
+        color_values <- c(color_values, 3) # 3 when logFC between -my.lfc and +my.lfc and FDRq < thresh
+      }
+    } else {
+      color_values <- c(color_values, 3) # 3 when FDRq >= thresh
+    }
+  }
+  data$color_adjpval <- factor(color_values)
+  
+ # comparison name
+ comparison <- gsub(paste0(out, model, "DEG_tables/"), "", i)
+ comparison <- gsub("_FDRq_1.00_LFC_0.00.tsv","",comparison)
+    
+ # plot only if there are DEGs with adj.P.Val < thresh
+ num <- data[data$adj.P.Val < thresh,]
+ num <- nrow(num)
+ if(num != 0) {
+   
+    # subset genes to label
+    up <- data[data$color_adjpval == 1,]
+    up.sig <- up[order(up$adj.P.Val),][1:15,]
+    up.lfc <- up[order(up$logFC, decreasing = TRUE),][1:15,]
+    up30 <- rbind(up.sig,up.lfc)
+    up30 <- up30[!duplicated(up30$gene_name_unique),]
+    down <- data[data$color_adjpval == 2,]
+    down.sig <- down[order(down$adj.P.Val),][1:15,]
+    down.lfc <- down[order(down$logFC, decreasing = FALSE),][1:15,]
+    down30 <- rbind(down.sig,down.lfc)
+    down30 <- down30[!duplicated(down30$gene_name_unique),]
+      
+    # set manual colors
+    if (!1 %in% unique(data$color_adjpval)) {
+      my_colors <- c("blue","gray")
+    } else if (!2 %in% unique(data$color_adjpval)) {
+      my_colors <- c("red","gray")
+    } else if (!1 %in% unique(data$color_adjpval) && !2 %in% unique(data$color_adjpval)) {
+      my_colors <- c("gray")
+    } else {
+      my_colors <- c("red","blue","gray")
+    }
+      
+    # set significance threshold
+    hadjpval <- (-log10(max(data$adj.P.Val[data$adj.P.Val < thresh], na.rm=TRUE)))
+
+    # plot
+    p <-
+      ggplot(data = data, 
+             aes(x = logFC,  # x-axis is logFC
+                 y = -log10(adj.P.Val),  # y-axis will be -log10 of adj.P.Val
+                 color = color_adjpval)) +  # color is based on factored color column
+      geom_point(alpha = 0.8, size = 2) +  # create scatterplot, alpha makes points transparent
+      theme_bw() +  # set color theme
+      theme(legend.position = "none") +  # no legend
+      scale_color_manual(values = my_colors) +  # set factor colors
+      labs(
+        title = "", # no main title
+        x = expression(log[2](FC)), # x-axis title
+         y = expression(-log[10] ~ "(adjsuted p-value)") # y-axis title
+      ) +
+      theme(axis.title.x = element_text(size = 15),
+            axis.text.x = element_text(size = 15)) +
+      theme(axis.title.y = element_text(size = 15),
+            axis.text.y = element_text(size = 15)) +
+      theme(plot.title = element_text(size = 15)) +
+      geom_hline(yintercept = hadjpval,  #  horizontal line
+                         colour = "#000000",
+                         linetype = "dashed") +
+      geom_vline(xintercept = -my.lfc,  #  vertical line
+                         colour = "#000000",
+                         linetype = "dashed") +
+      geom_vline(xintercept = my.lfc,  #  vertical line
+                         colour = "#000000",
+                         linetype = "dashed") +
+      ggtitle(paste0(comparison, ", adj.P.Val < ", thresh, ", LFC = ", my.lfc)) +
+      geom_text_repel(data = up30,
+                      aes(x = logFC, y= -log10(adj.P.Val), label = gene_name), 
+                      size = 5,
+                      color = "maroon", 
+                      fontface="italic",
+                      max.overlaps = getOption("ggrepel.max.overlaps", default = 30)
+                      ) +
+      geom_text_repel(data = down30,
+                      aes(x = logFC, y= -log10(adj.P.Val), label = gene_name), 
+                      color = "navyblue", 
+                      size = 5,
+                      fontface="italic",
+                      max.overlaps = getOption("ggrepel.max.overlaps", default = 30)
+                      )
+     p
+      
+    # save
+    path <- paste0(out, model, "volcano/sex_linked_removed_", comparison, "_FDRq_", 
+                   format(thresh, nsmall = 2), "_LFC_",
+                   format(my.lfc, nsmall = 2), "_volcano.pdf")
+    pdf(path, height = 8, width = 8)
+    print(p)
+    dev.off()
+  }
+} # end loop through variables
+```
+
+## Metascape input
+```{r}
+# set variables
+thresh <- 0.1
+my.lfc <- 0.2
+
+# get file list
+files <- list.files(paste0(out, model,"DEG_tables/"))
+keep <- grep("_1.00_LFC_0.00.tsv", files)
+files <- paste0(out, model, "DEG_tables/", files[keep])
+
+# intitalize table for command line version of metascape
+msbio.df <- data.frame()
+
+# loop through DEG files
+for (i in 1:length(files)) {
+  # read table
+  data <- read.table(files[i], header = TRUE, sep = "\t")
+  
+  # filter based on adjusted p-value
+  data <- data[data$adj.P.Val < thresh,]
+  
+  # create up-regulated gene list
+  up <- data[data$logFC > my.lfc,]
+  up <- up$gene_name
+  
+  # create down-regulated gene list
+  down <- data[data$logFC < -my.lfc,]
+  down <- down$gene_name
+  
+ # get the comparison name
+ comparison <- gsub(paste0(out, model, "DEG_tables/"), "", files[i])
+ comparison <- gsub("_FDRq_1.00_LFC_0.00.tsv","",comparison)
+ 
+ # make two filenames for up and downregulated genes
+ # include the comparison, adjusted p-value threshold, and logFC threshold
+ up.filename <- paste0(out, model, "metascape_input/", comparison,
+                       "_upregulated_FDRq_", format(thresh, nsmall = 2), 
+                       "_LFC_", format(my.lfc, nsmall = 2), ".txt")
+ down.filename <- paste0(out, model, "metascape_input/", comparison,
+                         "_downregulated_FDRq_", format(thresh, nsmall = 2), 
+                         "_LFC_", format(my.lfc, nsmall = 2), ".txt")
+ 
+ 
+  # save the up and down-reulated gene lists
+  write.table(x = up,
+              file = up.filename,
+              quote = FALSE,
+              row.names = FALSE,
+              col.names = FALSE)
+  write.table(x = down,
+              file = down.filename,
+              quote = FALSE,
+              row.names = FALSE,
+              col.names = FALSE)
+    
+  # job for MSBio
+  # if there are more than 10 up-regulated genes, add paths in json format for msbio job
+  if (length(up) > 10) {
+      msbio <- jsonlite::toJSON(list(
+        input = gsub(paste0(out, model, "metascape_input/"),
+                     "/data/metascape_input/",
+                     up.filename),
+        output = paste0("/data/metascape_output/",
+                        comparison,
+                        "_upregulated_", 
+                        format(thresh, nsmall = 2), 
+                        "_LFC_", format(my.lfc, nsmall = 2)),
+        single = TRUE))
+      msbio <- gsub("\\[","",msbio)
+      msbio <- gsub("\\]","",msbio)
+      msbio.df <- rbind(msbio.df, msbio)
+  }
+  # if there are more than 10 down-regulated genes, add paths in json format for msbio job
+  if (length(down) > 10) {
+      msbio <- jsonlite::toJSON(list(
+        input = gsub(paste0(out, model, "metascape_input/"),
+                     "/data/metascape_input/",
+                     down.filename),
+        output = paste0("/data/metascape_output/",
+                        comparison,
+                        "_downregulated_", 
+                        format(thresh, nsmall = 2),
+                        "_LFC_", 
+                        format(my.lfc, nsmall = 2)),
+        single = TRUE))
+      msbio <- gsub("\\[","",msbio)
+      msbio <- gsub("\\]","",msbio)
+      msbio.df <- rbind(msbio.df, msbio)
+  }
+}
+
+# save msbio job
+write.table(x = msbio.df,
+            file = paste0(out, model, "metascape_input/msbio.job"),
+            quote = FALSE,
+            row.names = FALSE,
+            col.names = FALSE)
+```
+
+## Subset counts
+```{r}
+# normalize by sequencing depth
+cpm <- cpm(dge.filtered.norm)
+
+# extract DEG list for H vs S and L vs S for all time points
+files <- paste0(out, model, "DEG_tables/", c("L.8h.F_vs_S.8h.F_FDRq_0.10_LFC_0.20.tsv",
+                                             "L.24h.F_vs_S.24h.F_FDRq_0.10_LFC_0.20.tsv",
+                                             "L.7d.F_vs_S.7d.F_FDRq_0.10_LFC_0.20.tsv",
+                                             "H.8h.F_vs_S.8h.F_FDRq_0.10_LFC_0.20.tsv",
+                                             "H.24h.F_vs_S.24h.F_FDRq_0.10_LFC_0.20.tsv",
+                                             "H.7d.F_vs_S.7d.F_FDRq_0.10_LFC_0.20.tsv",
+                                             "L.8h.M_vs_S.8h.M_FDRq_0.10_LFC_0.20.tsv",
+                                             "L.24h.M_vs_S.24h.M_FDRq_0.10_LFC_0.20.tsv",
+                                             "L.7d.M_vs_S.7d.M_FDRq_0.10_LFC_0.20.tsv",
+                                             "H.8h.M_vs_S.8h.M_FDRq_0.10_LFC_0.20.tsv",
+                                             "H.24h.M_vs_S.24h.M_FDRq_0.10_LFC_0.20.tsv",
+                                             "H.7d.M_vs_S.7d.M_FDRq_0.10_LFC_0.20.tsv"))
+files <- paste0(out, model, "DEG_tables/", c("L.8h_vs_S.8h_FDRq_0.10_LFC_0.20.tsv",
+                                             "L.24h_vs_S.24h_FDRq_0.10_LFC_0.20.tsv",
+                                             "L.7d_vs_S.7d_FDRq_0.10_LFC_0.20.tsv",
+                                             "H.8h_vs_S.8h_FDRq_0.10_LFC_0.20.tsv",
+                                             "H.24h_vs_S.24h_FDRq_0.10_LFC_0.20.tsv",
+                                             "H.7d_vs_S.7d_FDRq_0.10_LFC_0.20.tsv"))
+
+# init variables
+genes <- NULL
+
+# loop through files
+for (i in files) {
+  df <- read.delim2(i)
+  genes <- c(genes, df$gene_name)
+}
+
+# subset cpm
+genes <- unique(genes)
+cpm <- as.data.frame(cpm)
+cpm <- cpm[genes,]
+
+# save
+path <- paste0(out, "counts/CPM_filtered_by_DEGs.tsv")
+write.table(cpm, path, quote = FALSE, sep = "\t")
+```
+
+# WGCNA
+### Extract data
+- WGCNA = Weigh Gene Co-Expression Network Analysis
+```{r WGCNA}
+# User defined variables
+sex <- "male"
+network_type <- "unsigned"
+wgcna_out <- paste0(out, "WGCNA/", network_type, "_", sex, "/")
+
+# Extract the log2 CPM values from the voom object and meta
+voom_data <- t(v$E)
+metadata <- v$targets
+remove(veBayesFit, contrasts, dge.filtered.norm)
+
+# extract DEG list for H vs S and L vs S for all time points
+if(out2 == "all_samples_both_sexes_analysis") {
+  files <- paste0(out, model, "DEG_tables/", c("L.8h_vs_S.8h_FDRq_0.10_LFC_0.20.tsv",
+                                               "L.24h_vs_S.24h_FDRq_0.10_LFC_0.20.tsv",
+                                               "L.7d_vs_S.7d_FDRq_0.10_LFC_0.20.tsv",
+                                               "H.8h_vs_S.8h_FDRq_0.10_LFC_0.20.tsv",
+                                               "H.24h_vs_S.24h_FDRq_0.10_LFC_0.20.tsv",
+                                               "H.7d_vs_S.7d_FDRq_0.10_LFC_0.20.tsv"))
+} else if (out2 == "all_samples_sex_specific_analysis" & sex == "female") {
+  files <- paste0(out, model, "DEG_tables/", c("L.8h.F_vs_S.8h.F_FDRq_0.10_LFC_0.20.tsv",
+                                           "L.24h.F_vs_S.24h.F_FDRq_0.10_LFC_0.20.tsv",
+                                           "L.7d.F_vs_S.7d.F_FDRq_0.10_LFC_0.20.tsv",
+                                           "H.8h.F_vs_S.8h.F_FDRq_0.10_LFC_0.20.tsv",
+                                           "H.24h.F_vs_S.24h.F_FDRq_0.10_LFC_0.20.tsv",
+                                           "H.7d.F_vs_S.7d.F_FDRq_0.10_LFC_0.20.tsv"))
+} else if (out2 == "all_samples_sex_specific_analysis" & sex == "male") {
+  files <- paste0(out, model, "DEG_tables/", c("L.8h.M_vs_S.8h.M_FDRq_0.10_LFC_0.20.tsv",
+                                               "L.24h.M_vs_S.24h.M_FDRq_0.10_LFC_0.20.tsv",
+                                               "L.7d.M_vs_S.7d.M_FDRq_0.10_LFC_0.20.tsv",
+                                               "H.8h.M_vs_S.8h.M_FDRq_0.10_LFC_0.20.tsv",
+                                               "H.24h.M_vs_S.24h.M_FDRq_0.10_LFC_0.20.tsv",
+                                               "H.7d.M_vs_S.7d.M_FDRq_0.10_LFC_0.20.tsv"))
+}
+  
+# init variables
+genes <- NULL
+
+# Loop through files
+for (i in files) {
+  # Read the first row to check if there's data beyond the header
+  df_preview <- try(read.delim2(i, nrows = 1), silent = TRUE)
+    
+  # Check if the file has data rows (i.e., df_preview has at least one row)
+  if (inherits(df_preview, "try-error") || nrow(df_preview) == 0) {
+    # Print a message if the file is empty (optional)
+    message(paste("Skipping empty file:", i))
+  } else {
+    # Read the full file since it has data
+    df <- read.delim2(i)
+      
+    # Append gene names to the genes vector
+    genes <- c(genes, df$gene_name)
+  }
+}
+  
+# subset cpm
+genes <- unique(genes)
+print(paste(length(genes), "unique genes for", sex, "DEGs"))
+  
+# Filter with DEG list
+voom_data <- voom_data[,genes]
+dim(voom_data)
+```
+
+### Soft thresh
+- WGCNA requires an appropriate soft-thresholding power for network construction. \
+- This step helps determine the adjacency matrix. \
+- Commonly, powers between 4 and 12 are tested to see which power best approximates a scale-free topology. \
+- Choose a power where the Scale Free Topology Model Fit (R^2) is above 0.8
+```{r soft_threshold}
+sft <- pickSoftThreshold(voom_data, powerVector = 1:20)
+
+# Prepare the data for ggplot2
+sft_data <- data.frame(
+  Power = sft$fitIndices[, 1],
+  ScaleFreeR2 = -sign(sft$fitIndices[, 3]) * sft$fitIndices[, 2]
+)
+
+# Plot the results to visualize the scale-free topology
+ggplot(sft_data, aes(x = Power, y = ScaleFreeR2)) +
+  geom_point(color = "red", size = 3) +  # Points in red
+  geom_text(aes(label = Power), vjust = -0.5, size = 3.5) +  # Add labels for powers
+  labs(
+    x = "Soft Threshold (power)",
+    y = "Scale Free Topology Model Fit, signed R^2",
+    title = "Scale Independence"
+  ) +
+  theme_minimal() +
+  scale_y_continuous(breaks = seq(-1, 1, by = 0.1))
+
+remove(sft)
+```
+
+## Construct network
+- mergeCutHeight: A value of 0.25 means that modules with a correlation of 0.75 or higher (1 - 0.25) between their eigengenes (the summary expression profiles for each module) will be merged. By default, 0.15 is the cutoff which is relatively stringent so we will set ours to 0.25.c \
+- minModuleSize: A minimum module size of 30 genes is a common recommendation in WGCNA to ensure that each module has enough genes for reliable downstream analysis \
+```{r construct_network, eval=FALSE}
+# from plot above
+softPower <- sft_data[sft_data$ScaleFreeR2 > 0.8,]
+softPower <- softPower[1,1]
+
+# run blockwiseModules
+bwnet <- blockwiseModules(
+  datExpr = voom_data,                 # Your gene expression data with genes as columns
+  power = softPower,                   # Soft threshold power
+  minModuleSize = 30,                  # Minimum module size
+  mergeCutHeight = 0.25,               # Merging threshold for similar modules
+  pamRespectsDendro = FALSE,           # Ignore PAM in dynamic cut
+  reassignThreshold = 0,               # Reassign genes to modules with a min threshold
+  numericLabels = TRUE,                # Use numeric module labels
+  saveTOMs = TRUE,                     # Optionally save TOMs to disk
+  networkType = network_type,
+  TOMType = network_type
+)
+
+# preview
+summary(bwnet)
+
+# cleanup
+remove(sft_data)
+```
+
+- bwnet structure
+  - colors: a vector containing the numeric module assignment for each gene, each number can be converted to a color using labels2colors() \
+  - unmergedColors: module assignment before any merging of similar modules, assuming mergeCutHeight is enbabled \
+  - MEs: a data frame containing the module eigengenes \
+  - goodSamples: a logical vector indicating whether each sample passed QC checks was included in the analysis \
+  - goodGenes: a logical vector indicating whether each gene passed QC checks and was included in the analysis \
+  - dendrograms: a list of dendrograms for the genes in each block \
+  - TOMFiles: names of files storing the Topological Overlap Matrices (TOMs) for each block, used for determining network connectivity \
+  - blockGenes: a list where each element is a vector of indices specifying which genes belong to which block, relevant if split into blocks for computational efficiency \
+  - blocks: a vector indicating the block assignment of each gene, relevant if split into blocks for computational efficiency \
+  - MEsOK: a logical value indicated whether the module eigengenes were successfully calculated
+  
+## Dendrogram
+```{r WGCNA_dendrogram}
+# save
+pdf(file = paste0(wgcna_out, "cluster_dendrogram.pdf"),
+    height = 5,
+    width = 10)
+
+# extract module labels and module colors
+moduleLabels <- bwnet$colors
+moduleColors <- labels2colors(moduleLabels)
+colorMap <- data.frame(module_label = moduleLabels,
+                       module_color = moduleColors)
+colorMap <- colorMap[!duplicated(colorMap),]
+
+# plot dendrogram with module colors
+plotDendroAndColors(dendro = bwnet$dendrograms[[1]],
+                    colors = moduleColors,
+                    groupLabels = "Module Colors",
+                    dendroLabels = FALSE,
+                    hang = 0.03,
+                    addGuide = TRUE,
+                    guideHang = 0.05)
+```
+
+## Genes per module
+```{r WGCNA_export}
+# create module df
+module_df <- data.frame(
+  module_color = moduleColors,
+  gene_names = names(moduleLabels)
+)
+module_df <- module_df %>%
+  group_by(module_color) %>%
+  summarise(genes = paste(gene_names, collapse = ",")) %>%
+  ungroup()
+
+# remove grey (all leftover gene put into grey)
+module_df <- module_df[!module_df$module_color == "grey",]
+
+# save
+write.table(
+  x = module_df,
+  file = paste0(wgcna_out, "module_gene_table.tsv"),
+  sep = "\t",
+  quote = FALSE,
+  row.names = FALSE
+)
+
+# cleanup
+remove(module_df)
+```
+
+## Top hub genes
+```{r top_hub_gene}
+# Calculate intramodular connectivity
+connectivity <- intramodularConnectivity.fromExpr(
+  datExpr = voom_data,               # Expression matrix
+  colors = moduleColors,             # Module assignments
+  networkType = network_type,        # e.g., "unsigned" or "signed"
+  power = softPower,                 # Soft threshold power
+  corFnc = "cor",                    # Correlation function
+  corOptions = "use = 'p'"           # Correlation options
+)
+
+# Initialize a list to store top 5 genes per module
+top_5_genes_per_module <- list()
+
+# Loop through each module
+unique_modules <- unique(moduleColors)
+for (module in unique_modules) {
+  if (module == "grey") next  # Skip the grey module (unassigned genes)
+  
+  # Get genes in the current module
+  module_genes <- colnames(voom_data)[moduleColors == module]
+  
+  # Subset connectivity values for the module
+  module_connectivity <- connectivity[module_genes, ]
+  
+  # Sort genes by their intramodular connectivity (KWithin) in descending order
+  top_5_genes <- head(order(module_connectivity$kWithin, decreasing = TRUE), 5)
+  
+  # Store the top 5 genes for the module
+  top_5_genes_per_module[[module]] <- module_genes[top_5_genes]
+}
+
+# Convert the list to a data frame for easier viewing
+top_5_genes_df <- data.frame(
+  Module = rep(names(top_5_genes_per_module), each = 5),
+  Gene = unlist(top_5_genes_per_module)
+)
+
+# Save
+write.table(
+  x = top_5_genes_df,
+  file = paste0(wgcna_out, "top_5_genes_per_module.tsv"),
+  sep = "\t",
+  quote = FALSE,
+  row.names = FALSE
+)
+```
+
+## Gene networks
+```{r gene_network}
+# Get unique module colors, excluding "grey"
+module_colors <- unique(moduleColors)
+module_colors <- module_colors[module_colors != "grey"]
+
+# Compute adjacency matrix for all genes
+adjacency_matrix <- adjacency(voom_data, power = softPower)
+
+# Loop through each module
+for (myModule in module_colors) {
+  cat("Processing module:", myModule, "\n")
+  
+  # Get genes in the current module
+  module_genes <- colnames(voom_data)[moduleColors == myModule]
+  
+  # Subset the adjacency matrix for the current module
+  module_adjacency <- adjacency_matrix[module_genes, module_genes]
+  
+  # Define thresholds for filtering edges
+  thresholds <- seq(0.2, 0.4, by = 0.1)
+  
+  # Loop through thresholds to visualize the network
+  for (threshold in thresholds) {
+    # Apply the threshold to the adjacency matrix
+    adj_filtered <- module_adjacency
+    adj_filtered[adj_filtered < threshold] <- 0
+    
+    # Create the graph
+    network <- graph_from_adjacency_matrix(
+      adjmatrix = adj_filtered, 
+      mode = "undirected", 
+      weighted = TRUE, 
+      diag = FALSE)
+    
+    # Add node degree as a measure for node size and color
+    V(network)$degree <- degree(network)
+    
+    # Remove nodes with degree 0 (not connected to any edges)
+    network <- delete_vertices(network, V(network)[degree(network) == 0])
+    
+    # Debugging
+    cat("Module:", myModule, ", Threshold:", threshold, "\n")
+    cat("Number of nodes:", vcount(network), "\n")
+    cat("Number of edges:", ecount(network), "\n")
+    
+    # Convert network to tidygraph
+    network <- as_tbl_graph(network)
+    
+    # Save
+    pdf(file = paste0(wgcna_out, "gene_network_corr_", threshold, "/", 
+                    myModule, ".pdf"), width = 12, height = 12)
+    
+    # Visualize the network
+    g <- ggraph(network, layout = "kk") +
+      # edges
+      geom_edge_link(aes(edge_width = weight), edge_alpha = 0.5, edge_color = "grey") +
+      # nodes (size and color scaled by degree)
+      geom_node_point(aes(size = degree, color = degree), show.legend = TRUE) +
+      # labels (all in black)
+      geom_node_text(aes(label = name), size = 3, color = "black", 
+                     vjust = 0.5, hjust = 0.5, fontface = "bold") +
+      # customize color gradient for nodes
+      scale_color_gradient(low = "#FFF715", high = "#356C0B") +
+      # customize node size range
+      scale_size_continuous(range = c(3, 20)) +
+      # theme and title
+      theme_void() +
+      labs(
+        title = paste0(myModule, " network (threshold = ", threshold, ")"),
+        color = "degree",
+        size = "degree"
+      )
+    print(g)  # Display the graph
+    dev.off()
+  }
+}
+```
+
+# Power analysis
+## Power - sex specific
+```{r power_sex_specific}
+# design
+group <- interaction(dge.filtered.norm$samples$group2)
+hbb <- dge.filtered.norm$samples$hbb_log2cpm
+design <- model.matrix(~ 0 + group + hbb)
+design.names <- gsub("group","", colnames(design))
+design.names <- gsub("sex", "", design.names)
+colnames(design) <- design.names
+head(design)
+
+# find dispersion
+dge.filtered.norm <- estimateDisp(dge.filtered.norm, design)
+myDisp <- dge.filtered.norm$common.dispersion
+myDisp
+
+# get dataframes
+counts <- as.data.frame(dge.filtered.norm$counts)
+meta <- dge.filtered.norm$samples[,c("sample_id","group2")]
+
+# find avg count per group
+mean.group <- counts |>
+  mutate(gene = row.names(counts)) |>
+  pivot_longer(-gene, names_to = "sample_id") |>
+  left_join(meta, by = "sample_id") |>
+  summarize(mean = mean(value), .by = c(gene, group2)) |>
+  pivot_wider(names_from = group2, values_from = mean)
+mean.group <- as.data.frame(mean.group)
+rownames(mean.group) <- mean.group$gene
+mean.group$gene <- NULL
+mean.group <- round(mean.group, digits = 4)
+
+# check mean read count for control group of interest
+summary(mean.group)
+
+# set var
+maxGenes <- dim(dge.filtered.norm)[1]
+
+# extract DEG comparison table
+degs <- read.delim2(file = paste0(out, model,"DEG_tables/DEG_comparison_FDRq_0.10_LFC_0.20.tsv"))
+rownames(degs) <- degs$direction
+degs$direction <- NULL
+comparisons <- colnames(degs)
+
+powerTable <- as.data.frame(matrix(NA, nrow = 1, ncol = length(comparisons)))
+colnames(powerTable) <- comparisons
+
+for (i in comparisons) {
+  # mean read counts in reference group
+  print(i)
+  refGroup <- str_match(i, ".+_vs_(.+)")[,2]
+  refMean <- mean(mean.group[,refGroup])
+
+  # loop through comparisons and check power
+  pow <- check.power(
+              nGenes = maxGenes,                  # total num genes
+              pi0 = degs["NotSig", i] / maxGenes, # nonsig proportion
+              m = 5,                              # sample size, n=10 per group
+              mu = refMean,                       # mean read counts in a control group
+              disp = myDisp,                      # dispersion for all genes
+              fc = 0.2,                           # fold change for DE genes
+              up = degs["Up", i] / maxGenes,      # upreg proportion
+              fdr = 0.1)                          # false discovery rate  
+  pow <- pow$pow_bh_ave
+  powerTable[1,i] <- pow
+}
+```
+
+## Power - both sexes
+```{r power_both_sexes}
+# design
+group <- interaction(dge.filtered.norm$samples$group)
+sex <- factor(dge.filtered.norm$samples$sex)
+hbb <- dge.filtered.norm$samples$hbb
+design <- model.matrix(~ 0 + group + sex + hbb)
+design.names <- gsub("group","", colnames(design))
+design.names <- gsub("sex", "", design.names)
+colnames(design) <- design.names
+head(design)
+
+# find dispersion
+dge.filtered.norm <- estimateDisp(dge.filtered.norm, design)
+myDisp <- dge.filtered.norm$common.dispersion
+myDisp
+
+# get dataframes
+counts <- as.data.frame(dge.filtered.norm$counts)
+meta <- dge.filtered.norm$samples[,c("sample_id","group")]
+
+# find avg count per group
+mean.group <- counts |>
+  mutate(gene = row.names(counts)) |>
+  pivot_longer(-gene, names_to = "sample_id") |>
+  left_join(meta, by = "sample_id") |>
+  summarize(mean = mean(value), .by = c(gene, group)) |>
+  pivot_wider(names_from = group, values_from = mean)
+mean.group <- as.data.frame(mean.group)
+rownames(mean.group) <- mean.group$gene
+mean.group$gene <- NULL
+mean.group <- round(mean.group, digits = 4)
+
+# check mean read count for control group of interest
+summary(mean.group)
+
+# set var
+maxGenes <- dim(dge.filtered.norm)[1]
+
+# extract DEG comparison table
+degs <- read.delim2(file = paste0(out, model,"DEG_tables/DEG_comparison_FDRq_0.10_LFC_0.20.tsv"))
+rownames(degs) <- degs$direction
+degs$direction <- NULL
+comparisons <- colnames(degs)
+
+powerTable <- as.data.frame(matrix(NA, nrow = 1, ncol = length(comparisons)))
+colnames(powerTable) <- comparisons
+
+for (i in comparisons) {
+  # mean read counts in reference group
+  print(i)
+  refGroup <- str_match(i, ".+_vs_(.+)")[,2]
+  refMean <- mean(mean.group[,refGroup])
+
+  # loop through comparisons and check power
+  pow <- check.power(
+              nGenes = maxGenes,                  # total num genes
+              pi0 = degs["NotSig", i] / maxGenes, # nonsig proportion
+              m = 10,                             # sample size, n=10 per group
+              mu = refMean,                       # mean read counts in a control group
+              disp = myDisp,                      # dispersion for all genes
+              fc = 0.2,                           # fold change for DE genes
+              up = degs["Up", i] / maxGenes,      # upreg proportion
+              fdr = 0.1)                          # false discovery rate  
+  pow <- pow$pow_bh_ave
+  powerTable[1,i] <- pow
+}
+```
+
+## Sample size calculator
+Use for future experiments.
+```{r}
+ssizeRNA_single(nGenes = 13000,                # total genes
+                pi0 = 0.9,                     # proportion nonsig genes
+                m = 4,                         # pseudo sample size
+                mu = 7000,                     # pseudo mean counts in control group
+                disp = 0.1,                    # pseudo dispersion
+                fc = .2,                       # fold change
+                up = 0.5,                      # percent up-reg of DE genes
+                fdr = 0.05,                    # adjusted p value
+                power = 0.8)                   # prob you accept alternative hypothesis
+```
+
+```{r}
+sessionInfo()
+```
