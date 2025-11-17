@@ -1,8 +1,0 @@
-Pathway	Genes	Log10(p)	Direction
-PID CIRCADIAN PATHWAY	PER1|BHLHE40|PER2	-4.724371359	UP
-negative regulation of epithelial cell differentiation	TBX3|VEGFA|SPRED2|SPRED3	-4.477385627	UP
-PID S1P S1P3 PATHWAY	GNA15|PDGFB|VEGFA	-3.9233127	UP
-Circadian Clock	PER1|BHLHE40|PER2|HELZ2	-4.064328118	UP
-positive regulation of blood vessel endothelial cell migration	PDGFB|MAP2K3|VEGFA|PRKD2	-3.881157141	UP
-Pluripotent stem cell differentiation pathway	IL6R|PDGFB|VEGFA	-3.26785487	UP
-regulation of p38MAPK cascade	GADD45A|PER1|VEGFA	-3.35070803	UP

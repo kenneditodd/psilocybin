@@ -12,10 +12,7 @@ directories = {
     "rawReads": "rawReads/",
     "rawQC": "rawQC/",
     "trimmedReads": "trimmedReads/",
-    "trimmedQC": "trimmedQC/",
-    "starAligned": "starAligned/",
-    "featureCounts": "featureCounts/",
-    "genomeDir": "refs/starGenomeDir/"
+    "trimmedQC": "trimmedQC/"
 }
 
 cluster_info = {

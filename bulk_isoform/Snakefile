@@ -7,8 +7,6 @@ rawReadsDir = config["DIRECTORIES"]["rawReads"]
 trimmedReadsDir = config["DIRECTORIES"]["trimmedReads"]
 rawQCDir = config["DIRECTORIES"]["rawQC"]
 trimmedQCDir = config["DIRECTORIES"]["trimmedQC"]
-starDir = config["DIRECTORIES"]["starAligned"]
-countsDir = config["DIRECTORIES"]["featureCounts"]
 
 
 # ENVIRONMENT VARIABLES
@@ -21,41 +19,37 @@ load_dotenv("refs/.env")
 
 # Get paths from environment variables
 gtf_file = os.getenv("MMUSCULUS_GTF")
-fa_file = os.getenv("MMUSCULUS_FA")
+genome_fa_file = os.getenv("MMUSCULUS_FA")
+projectDir = os.getenv("PROJECT_DIR")
 
 
 # RULE ALL
 #-------------------------------------------------------------------------------
 rule all:
     input:
-        config["DIRECTORIES"]["genomeDir"] + "Genome",
+        projectDir + "/refs/transcripts.fa",
         expand(trimmedReadsDir + "{sample}_trim_R1.fastq.gz", sample=config["SAMPLE_INFORMATION"]["allSamples"]),
         expand(trimmedReadsDir + "{sample}_trim_R2.fastq.gz", sample=config["SAMPLE_INFORMATION"]["allSamples"]),
         expand(rawQCDir + "{sample}_R1_fastqc.zip", sample=config["SAMPLE_INFORMATION"]["allSamples"]),
         expand(trimmedQCDir + "{sample}_trim_R1_fastqc.zip", sample=config["SAMPLE_INFORMATION"]["allSamples"]),
         rawQCDir + "multiqc_report.html",
-        trimmedQCDir + "multiqc_report.html",
-        expand(starDir + "{sample}.Aligned.sortedByCoord.out.bam", sample=config["SAMPLE_INFORMATION"]["allSamples"]),
-        expand(countsDir + "{sample}_{feature_type}.counts", sample=config["SAMPLE_INFORMATION"]["allSamples"], feature_type=["gene", "exon"])
+        trimmedQCDir + "multiqc_report.html"
 
 
-# INDEX GENOME
+# CREATE TRANSCRIPTS.FA
 #-------------------------------------------------------------------------------
-rule index_genome:
+rule create_transcripts_fa:
     input:
-        fa = fa_file,
-        gtf = gtf_file
+        gtf = gtf_file,
+        genome = genome_fa_file
     output:
-        starIndex = config["DIRECTORIES"]["genomeDir"] + "Genome"
-    params:
-        genomeDir = config["DIRECTORIES"]["genomeDir"],
-        threads = config["CLUSTER_INFORMATION"]["threads"]
+        transcripts = projectDir + "/refs/transcripts.fa"
     shell:
         """
-        STAR --runMode genomeGenerate --runThreadN {params.threads} --genomeFastaFiles {input.fa} --sjdbGTFfile {input.gtf} --genomeDir {params.genomeDir}
+        gffread {input.gtf} -g {input.genome} -w {output.transcripts}
         """
-
-
+        
+        
 # RAW FASTQC
 #-------------------------------------------------------------------------------
 rule raw_fastqc:
@@ -107,42 +101,6 @@ rule trimmed_fastqc:
         """
 
 
-# ALIGN READS
-#-------------------------------------------------------------------------------
-rule align_reads:
-    input:
-        trimR1 = trimmedReadsDir + "{sample}_trim_R1.fastq.gz",
-        trimR2 = trimmedReadsDir + "{sample}_trim_R2.fastq.gz",
-        genomeIndex = rules.index_genome.output.starIndex
-    output:
-        aligned = starDir + "{sample}.Aligned.sortedByCoord.out.bam"
-    params:
-        prefix = starDir + "{sample}.",
-        threads = config["CLUSTER_INFORMATION"]["threads"],
-        genomeDir = config["DIRECTORIES"]["genomeDir"]
-    shell:
-        """
-        STAR --genomeDir {params.genomeDir} --runThreadN {params.threads} --readFilesCommand zcat --limitBAMsortRAM 31000000000 --readFilesIn {input.trimR1} {input.trimR2} --outFileNamePrefix {params.prefix} --outSAMtype BAM SortedByCoordinate
-        """
-
-
-# FEATURE COUNTS
-#-------------------------------------------------------------------------------   
-rule feature_count:
-    input:
-        bam = starDir + "{sample}.Aligned.sortedByCoord.out.bam",
-        gtf = gtf_file
-    output:
-        counts = countsDir + "{sample}_{feature_type}.counts"
-    params:
-        feature_type = "{feature_type}",  # can be 'gene' or 'exon'
-        threads = config["CLUSTER_INFORMATION"]["threads"]
-    shell:
-        """
-        featureCounts -p --primary -t {params.feature_type} -T {params.threads} -s 2 -a {input.gtf} -o {output.counts} {input.bam}
-        """
-
-
 # MULTIQC FOR RAW FASTQC
 #-------------------------------------------------------------------------------
 rule raw_multiqc:
@@ -173,4 +131,3 @@ rule trimmed_multiqc:
         """
         multiqc --interactive {trimmedQCDir} -o {params.outdir}
         """
-
