@@ -28,17 +28,19 @@ projectDir = os.getenv("PROJECT_DIR")
 rule all:
     input:
         projectDir + "/refs/transcripts.fa",
+        projectDir + "/refs/kallisto.idx",
         expand(trimmedReadsDir + "{sample}_trim_R1.fastq.gz", sample=config["SAMPLE_INFORMATION"]["allSamples"]),
         expand(trimmedReadsDir + "{sample}_trim_R2.fastq.gz", sample=config["SAMPLE_INFORMATION"]["allSamples"]),
         expand(rawQCDir + "{sample}_R1_fastqc.zip", sample=config["SAMPLE_INFORMATION"]["allSamples"]),
         expand(trimmedQCDir + "{sample}_trim_R1_fastqc.zip", sample=config["SAMPLE_INFORMATION"]["allSamples"]),
         rawQCDir + "multiqc_report.html",
-        trimmedQCDir + "multiqc_report.html"
+        trimmedQCDir + "multiqc_report.html",
+        expand(projectDir + "/kallisto/{sample}_kallisto/abundance.tsv", sample=config["SAMPLE_INFORMATION"]["allSamples"])
 
 
-# CREATE TRANSCRIPTS.FA
+# CREATE TRANSCRIPTS
 #-------------------------------------------------------------------------------
-rule create_transcripts_fa:
+rule create_transcripts:
     input:
         gtf = gtf_file,
         genome = genome_fa_file
@@ -49,7 +51,22 @@ rule create_transcripts_fa:
         gffread {input.gtf} -g {input.genome} -w {output.transcripts}
         """
         
-        
+ 
+ # INDEX TRANSCRIPTS
+#-------------------------------------------------------------------------------
+rule index_transcripts:
+    input:
+        transcripts = projectDir + "/refs/transcripts.fa"
+    output:
+        index = projectDir + "/refs/kallisto.idx"
+    params:
+        threads = config["CLUSTER_INFORMATION"]["threads"]
+    shell:
+        """
+        kallisto index --threads {params.threads} --index {output.index} {input.transcripts}
+        """
+
+
 # RAW FASTQC
 #-------------------------------------------------------------------------------
 rule raw_fastqc:
@@ -131,3 +148,22 @@ rule trimmed_multiqc:
         """
         multiqc --interactive {trimmedQCDir} -o {params.outdir}
         """
+
+
+# KALLISTO QUANT
+#-------------------------------------------------------------------------------
+rule kallisto_quant:
+    input:
+        index = projectDir + "/refs/kallisto.idx",
+        trimR1 = trimmedReadsDir + "{sample}_trim_R1.fastq.gz",
+        trimR2 = trimmedReadsDir + "{sample}_trim_R2.fastq.gz"
+    output:
+        abundance = projectDir + "/kallisto/{sample}_kallisto/abundance.tsv"
+    params:
+      threads = config["CLUSTER_INFORMATION"]["threads"],
+      outdir = projectDir + "/kallisto/{sample}_kallisto"
+    shell:
+        """
+        kallisto quant --index {input.index} --output-dir {params.outdir} --bootstrap-samples 100 --threads {params.threads} --rf-stranded {input.trimR1} {input.trimR2}
+        """
+  

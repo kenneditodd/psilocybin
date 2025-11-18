@@ -72,6 +72,8 @@ bulk_gene/scripts/backup_shiny_app
 bulk_isoform/.snakemake
 
 # track folder structure but ignore contents
+bulk_isoform/kallisto/*
+!bulk_isoform/kallisto/.gitkeep
 bulk_isoform/rawReads/*
 !bulk_isoform/rawReads/.gitkeep
 bulk_isoform/rawQC/*
@@ -83,5 +85,6 @@ bulk_isoform/trimmedReads/*
 
 # files I want but don't want in git repo
 bulk_isoform/refs/.env
+bulk_isoform/refs/kallisto.idx
 bulk_isoform/refs/transcripts.fa
 bulk_isoform/scripts/logs
