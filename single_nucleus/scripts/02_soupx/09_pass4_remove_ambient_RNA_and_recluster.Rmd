@@ -1,6 +1,6 @@
 ---
 title: "Psi1 snRNAseq"
-subtitle: "Pass 6: SoupX and Recluster"
+subtitle: "Pass 4: SoupX and Recluster"
 author: "Kennedi Todd"
 date: "11/13/2025"
 output:
@@ -22,7 +22,6 @@ knitr::opts_knit$set(root.dir = ".")
 
 ## Load libraries
 ```{r libraries, message=FALSE, warnings=FALSE}
-library(Azimuth)
 library(dotenv)         # load_dot_env()
 library(dplyr)          # %>%
 library(ggplot2)        # geom_vline()
@@ -65,94 +64,6 @@ DimPlot(mouse_annotated,
 ```
 
 # SoupX 
-## rhoPrior 0.2
-```{r soupx_auto_default}
-# store the corrected counts for each sample
-corrected_list <- list()
-seq_ids <- unique(mouse_annotated$tgen_subject_name)
-sample_ids <- unique(mouse_annotated$sample_id)
-rho_estimates <- setNames(numeric(length(sample_ids)), sample_ids)
-
-for (i in seq_along(seq_ids)) {
-
-  cat("\nProcessing sample:", sample_ids[i], "\n")
-  
-  # get table of droplets (tod) from Cell Ranger output
-  # genes as rows, cells as columns
-  cellranger_out_dir <- 
-    paste0(project_dir, "/counts/", seq_ids[i], "/outs/multi/count/raw_feature_bc_matrix")
-  tod <- Seurat::Read10X(cellranger_out_dir)
-  colnames(tod) <- paste0(sample_ids[i], "_", colnames(tod))
-  
-  # get table of counts (toc) from filtered Seurat object
-  # cells are a subset of tod
-  toc <- mouse_annotated@assays$RNA$counts[, mouse_annotated$sample_id == sample_ids[i]]
-  
-  # subset tod genes to match genes in toc
-  genes_to_keep <- rownames(toc)
-  tod <- tod[genes_to_keep, ]
-  stopifnot(all(rownames(tod) == rownames(toc)))
-  
-  # build SoupChannel manually
-  cat("\n\t Building SoupChannel \n")
-  sc <- SoupChannel(tod, toc)
-
-  # get cluster labels for toc
-  all.equal(colnames(toc), rownames(sc$metaData))
-  toc_clusters <- mouse_annotated$annotated_clusters[colnames(toc)]
-  
-  # add to SoupChannel
-  sc <- setClusters(sc, toc_clusters)
-  sc <- setDR(sc, mouse_annotated@reductions$umap@cell.embeddings[colnames(toc), ])
-  
-  # estimate
-  cat("\t Estimating rho \n")
-  sc <- autoEstCont(sc, priorRho = 0.2)
-  
-  # save top contaminators
-  cat("\t Saving top 200 contaminators \n")
-  top_contam <- sc$soupProfile[order(sc$soupProfile$est, decreasing = TRUE),]
-  top_contam$est <- round(top_contam$est, digits = 4)
-  top_contam <- top_contam[1:200,]
-  top_contam$gene <- rownames(top_contam)
-  write.table(x = top_contam,
-              file = paste0(out, "soupx/", sample_ids[i], "_top200_contaminators.tsv"),
-              sep = "\t",
-              quote = FALSE,
-              row.names = FALSE)
-  
-  # adjust (auto mode with rounding)
-  cat("\t Adjusting counts \n")
-  sc.cleaned <- adjustCounts(sc, roundToInt = TRUE)
-
-  # save corrected counts
-  corrected_list[[sample_ids[i]]] <- sc.cleaned
-  cat("Done:", sample_ids[i], "\n")
-  
-  # save rho estimate
-  rho_estimates[sample_ids[i]] <- sc$fit$rhoEst
-}
-
-cat("\nAll samples processed & merged!\n")
-
-# save the corrected list
-saveRDS(corrected_list,
-        paste0("../../rObjects/pass3_soupx.rds"),
-        compress = FALSE)
-
-# merge corrected counts
-corrected_counts <- do.call(cbind, corrected_list)
-
-# save rho estimates
-write.table(
-  x = data.frame(Sample = names(rho_estimates), Rho = rho_estimates),
-  file = paste0(out, "soupx/rho_estimates.tsv"),
-  sep = "\t",
-  quote = FALSE,
-  row.names = FALSE
-)
-```
-
 ## Non-expressed list
 ```{r}
 # define marker genes
@@ -665,7 +576,7 @@ dev.off()
 remove(umap1,umap2,umap3,umap4,umap5,umap6,umap7)
 ```
 
-# Unannotated pass 4
+# Annotated pass 4
 ## Unannotated UMAP
 ```{r unannotated_umap}
 Idents(mouse_unannotated) <- "seurat_clusters"
@@ -774,8 +685,7 @@ saveRDS(mouse_annotated,
         compress = FALSE)
 ```
 
-# Annotated pass 4
-## UMAP
+## Annotated UMAP
 ```{r annotated_umap}
 cluster_colors <- c("#cc79a7","#d55c00","#000","#0072b2","#009e73","#56b4df",
                     "#e69f00", "#f0e442")
@@ -794,39 +704,328 @@ dev.off()
 remove(u1)
 ```
 
-## Canonical markers
-```{r annotated_canonical_markers}
-# Canonical
-canonical_markers <- c(
-  "Aldoc", "Aqp4",                                    # Astrocytes
-  "Ttr", "Folr1",                                     # Choroid
-  "P2ry12", "Tmem119",                                # Microglia
-  "Syt1", "Snap25",                                   # Pan-neuron
-  "Gad1", "Gad2", "Slc32a1",                          # GABA
-  "Slc17a6", "Slc17a7",                               # Glut
-  "Mag", "Mog",                                       # Oligodendrocytes
-  "Cspg4", "Pdgfra"                                   # OPCs
+# Subtype Gad2
+## Subcluster
+```{r}
+Idents(mouse_annotated) <- "annotated_clusters"
+mouse_annotated <- FindSubCluster(
+  object = mouse_annotated,
+  cluster = "Neurons-Gad2",
+  subcluster.name = "gad2_clusters",
+  graph.name = "SCT_snn",
+  resolution = 0.7
 )
+Idents(mouse_annotated) <- "gad2_clusters"
 
-d2 <- DotPlot(mouse_annotated,
-              features = canonical_markers,
+# set level
+mouse_annotated$gad2_clusters <- factor(mouse_annotated$gad2_clusters,
+                                  levels = c("Astrocytes",
+                                             "Choroid",
+                                             "Microglia",
+                                             "Neurons-Gad2_0",
+                                             "Neurons-Gad2_1",
+                                             "Neurons-Gad2_2",
+                                             "Neurons-Gad2_3",
+                                             "Neurons-Gad2_4",
+                                             "Neurons-Gad2_5",
+                                             "Neurons-Gad2_6",
+                                             "Neurons-Gad2_7",
+                                             "Neurons-Gad2_8",
+                                             "Neurons-Gad2_9",
+                                             "Neurons-Gad2_10",
+                                             "Neurons-Gad2_11",
+                                             "Neurons-Gad2_12",
+                                             "Neurons-Gad2_13",
+                                             "Neurons-Gad2_14",
+                                             "Neurons-Gad2_15",
+                                             "Neurons-Gad2_16",
+                                             "Neurons-Gad2_17",
+                                             "Neurons-Gad2_18",
+                                             "Neurons-Gad2_19",
+                                             "Neurons-Gad2_20",
+                                             "Neurons-Gad2_21",
+                                             "Neurons-Slc17a6",
+                                             "Neurons-Slc17a7",
+                                             "Oligodendrocytes",
+                                             "OPCs"))
+Idents(mouse_annotated) <- "gad2_clusters"
+```
+
+## Markers
+```{r}
+DotPlot(mouse_annotated,
+              features = c("Gad1","Gad2","Pvalb","Lamp5","Vip","Sst",
+                           "Drd1","Drd2","Drd3"),
               cols = "RdYlBu",
               assay = "RNA") +
   coord_flip() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
-d2
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
-```{r save_annotated_markers}
-pdf(paste0(out, "markers/annotated_canonical_markers.pdf"), width = 8, height = 10)
-d2
-dev.off()
-remove(d2)
+
+## Assign idetities
+```{r assign_identities}
+new_cluster_names <- c(
+  "Neurons-Gad2_0" = "Inh_Drd1_Drd2",
+  "Neurons-Gad2_1" = "Inh_Drd1_Drd2",
+  "Neurons-Gad2_2" = "Inh_Pvalb",
+  "Neurons-Gad2_3" = "Inh_Vip",
+  "Neurons-Gad2_4" = "Inh_Sst",
+  "Neurons-Gad2_5" = "Inh_Drd1_Drd2",
+  "Neurons-Gad2_6" = "Inh_Drd1_Drd2",
+  "Neurons-Gad2_7" = "Inh_Drd1_Drd2",
+  "Neurons-Gad2_8" = "Inh_Lamp5",
+  "Neurons-Gad2_9" = "Inh_Drd1_Drd2",
+  "Neurons-Gad2_10" = "Inh_Pvalb",
+  "Neurons-Gad2_11" = "Inh_Sst",
+  "Neurons-Gad2_12" = "Inh_Pvalb",
+  "Neurons-Gad2_13" = "Inh_Drd1_Drd2",
+  "Neurons-Gad2_14" = "Inh_Sst",
+  "Neurons-Gad2_15" = "Inh_Pvalb",
+  "Neurons-Gad2_16" = "Inh_Vip",
+  "Neurons-Gad2_17" = "Inh_Drd1_Drd2",
+  "Neurons-Gad2_18" = "Inh_Drd1_Drd2",
+  "Neurons-Gad2_19" = "Inh_Drd1_Drd2",
+  "Neurons-Gad2_20" = "Inh_Pvalb",
+  "Neurons-Gad2_21" = "Inh_Drd1_Drd2"
+)
+
+# set new idents
+Idents(mouse_annotated) <- "gad2_clusters"
+mouse_annotated <- RenameIdents(mouse_annotated, new_cluster_names)
+mouse_annotated$gad2_clusters_annotated <- Idents(mouse_annotated)
+
+# set level
+mouse_annotated$gad2_clusters_annotated <- factor(mouse_annotated$gad2_clusters_annotated,
+                                  levels = c("Astrocytes",
+                                             "Choroid",
+                                             "Microglia",
+                                             "Inh_Drd1_Drd2",
+                                             "Inh_Lamp5",
+                                             "Inh_Pvalb",
+                                             "Inh_Sst",
+                                             "Inh_Vip",
+                                             "Neurons-Slc17a6",
+                                             "Neurons-Slc17a7",
+                                             "Oligodendrocytes",
+                                             "OPCs"))
+Idents(mouse_annotated) <- "gad2_clusters_annotated"
+```
+
+## Annotated UMAP
+```{r}
+DimPlot(mouse_annotated, 
+        group.by = "gad2_clusters_annotated",
+        cols = c(rep("gray",3), "red","gold","green","blue","violet",
+                 "gray","gray","gray","gray"),
+        shuffle = TRUE)
+```
+
+## Markers
+```{r}
+DotPlot(mouse_annotated,
+              features = c("Gad1","Gad2","Drd1","Drd2","Drd3","Lamp5","Pvalb",
+                           "Sst","Vip"),
+              cols = "RdYlBu",
+              assay = "RNA") +
+  coord_flip() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+# Subtype Slc17a7
+## Subcluster
+```{r}
+Idents(mouse_annotated) <- "gad2_clusters_annotated"
+mouse_annotated <- FindSubCluster(
+  object = mouse_annotated,
+  cluster = "Neurons-Slc17a7",
+  subcluster.name = "slc17a7_clusters",
+  graph.name = "SCT_snn",
+  resolution = 0.3
+)
+
+# set level
+mouse_annotated$slc17a7_clusters <- factor(mouse_annotated$slc17a7_clusters,
+                                  levels = c("Astrocytes",
+                                             "Choroid",
+                                             "Microglia",
+                                             "Inh_Drd1_Drd2",
+                                             "Inh_Lamp5",
+                                             "Inh_Pvalb",
+                                             "Inh_Sst",
+                                             "Inh_Vip",
+                                             "Neurons-Slc17a6",
+                                             "Neurons-Slc17a7_0",
+                                             "Neurons-Slc17a7_1",
+                                             "Neurons-Slc17a7_2",
+                                             "Neurons-Slc17a7_3",
+                                             "Neurons-Slc17a7_4",
+                                             "Neurons-Slc17a7_5",
+                                             "Neurons-Slc17a7_6",
+                                             "Neurons-Slc17a7_7",
+                                             "Neurons-Slc17a7_8",
+                                             "Neurons-Slc17a7_9",
+                                             "Neurons-Slc17a7_10",
+                                             "Neurons-Slc17a7_11",
+                                             "Neurons-Slc17a7_12",
+                                             "Neurons-Slc17a7_13",
+                                             "Oligodendrocytes",
+                                             "OPCs"))
+Idents(mouse_annotated) <- "slc17a7_clusters"
+
+DimPlot(mouse_annotated, 
+        shuffle = TRUE,
+        cols = c(rep("gray",8), "black", "maroon","firebrick1", "gold", "orange","green",
+                 "forestgreen", "cyan", "steelblue", "blue", "purple", "violet","pink",
+                 "tan","chocolate4", "gray","gray"))
+```
+
+## Marker dot plot
+```{r}
+DotPlot(mouse_annotated,
+              features = c("Slc17a7", "Cux1", "Cux2", "Bcl11b", "Tle4",
+                           "Rorb", "Glis3"),
+              cols = "RdYlBu",
+              assay = "RNA") +
+  coord_flip() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+## Marker heatmap
+```{r marker_heatmaps, message=FALSE}
+marker_genes <- c("Slc17a7", "Cux2", "Foxp2", "Prox1")
+
+# create 4 FeaturePlots
+fplots <- lapply(marker_genes, function(gene) {
+  FeaturePlot(mouse_annotated,
+              reduction = "umap",
+              features = gene) +
+    scale_colour_gradientn(colours = c("blue", "lightblue", "yellow", "orange", "red")) +
+    ggtitle(gene) +
+    theme(legend.position = "none")
+})
+
+# plot together
+all_plots <- c(fplots)
+layout <- matrix(1:4, nrow = 2, ncol = 4, byrow = TRUE)
+grid.arrange(grobs = all_plots, layout_matrix = layout)
 ```
 
 ## Auto markers
 ```{r annotated_auto_markers}
+Idents(mouse_annotated) <- "slc17a7_clusters"
+auto_markers <- SeuratWrappers::RunPrestoAll(
+  object = mouse_annotated,
+  assay = "RNA",
+  slot = "counts",
+  only.pos = TRUE
+)
+
+top10 <- auto_markers %>%
+  filter(p_val_adj < 0.01) %>%
+  group_by(cluster) %>%
+  slice_head(n = 10) %>%
+  ungroup()
+
+dot <- DotPlot(mouse_annotated,
+               features = unique(top10$gene),
+               cols = "RdYlBu",
+               assay = "RNA") +
+  coord_flip() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+dot
+
+saveRDS(auto_markers, "auto_markers.rds", compress = FALSE)
+```
+
+## Assign idetities
+```{r assign_identities}
+new_cluster_names <- c(
+  "Neurons-Slc17a6" = "Exc_Slc17a6",
+  "Neurons-Slc17a7_0" = "Exc_Slc17a7_Foxp2",
+  "Neurons-Slc17a7_1" = "Exc_Slc17a7_Cux2",
+  "Neurons-Slc17a7_2" = "Exc_Slc17a7_Cux2",
+  "Neurons-Slc17a7_3" = "Exc_Slc17a7_Cux2",
+  "Neurons-Slc17a7_4" = "Exc_Slc17a7_Cux2",
+  "Neurons-Slc17a7_5" = "Exc_Slc17a7_Cux2",
+  "Neurons-Slc17a7_6" = "Exc_Slc17a7_Prox1",
+  "Neurons-Slc17a7_7" = "Exc_Slc17a7_Cux2",
+  "Neurons-Slc17a7_8" = "Exc_Slc17a7_Cux2",
+  "Neurons-Slc17a7_9" = "Exc_Slc17a7_Cux2",
+  "Neurons-Slc17a7_10" = "Exc_Slc17a7_Foxp2",
+  "Neurons-Slc17a7_11" = "Exc_Slc17a7_Cux2",
+  "Neurons-Slc17a7_12" = "Exc_Slc17a7_Cux2",
+  "Neurons-Slc17a7_13" = "Exc_Slc17a7_Foxp2"
+)
+
+# set new idents
+Idents(mouse_annotated) <- "slc17a7_clusters"
+mouse_annotated <- RenameIdents(mouse_annotated, new_cluster_names)
+mouse_annotated$slc17a7_clusters_annotated <- Idents(mouse_annotated)
+
+# set level
+mouse_annotated$slc17a7_clusters_annotated <- factor(mouse_annotated$slc17a7_clusters_annotated,
+                                  levels = c("Astrocytes",
+                                             "Choroid",
+                                             "Microglia",
+                                             "Exc_Slc17a6",
+                                             "Exc_Slc17a7_Cux2",
+                                             "Exc_Slc17a7_Foxp2",
+                                             "Exc_Slc17a7_Prox1",
+                                             "Inh_Drd1_Drd2",
+                                             "Inh_Lamp5",
+                                             "Inh_Pvalb",
+                                             "Inh_Sst",
+                                             "Inh_Vip",
+                                             "Oligodendrocytes",
+                                             "OPCs"))
+
+# overwrite main annotations
+mouse_annotated$annotated_clusters <- mouse_annotated$slc17a7_clusters_annotated
 Idents(mouse_annotated) <- "annotated_clusters"
+
+# save
+saveRDS(mouse_annotated, 
+        file = paste0( "../../rObjects/pass4_annotated_subtypes_seurat_obj.rds"),
+        compress = FALSE)
+```
+
+## UMAP
+```{r}
+cluster_colors <- c(
+  "Astrocytes"           = "#d55c00",
+  "Choroid"              = "#F0E442",
+  "Microglia"            = "#000000",
+  
+  # Excitatory (blues)
+  "Exc_Slc17a6"          = "#2C3E8F",
+  "Exc_Slc17a7_Cux2"     = "#0072B2",
+  "Exc_Slc17a7_Foxp2"    = "#56B4E9",
+  "Exc_Slc17a7_Prox1"    = "#9AD0F3",
+  
+  # Inhibitory (purples/magentas)
+  "Inh_Drd1_Drd2"        = "#882E72",
+  "Inh_Lamp5"            = "#AA4499",
+  "Inh_Pvalb"            = "#CC79A7",
+  "Inh_Sst"              = "#D58BC8",
+  "Inh_Vip"              = "#8C6BB1",
+  
+  # Oligodendrocytes / OPCs (blue-greens)
+  "Oligodendrocytes"     = "#009E73",
+  "OPCs"                 = "#7FCDBB"
+)
+
+
+DimPlot(mouse_annotated, 
+        cols = cluster_colors,
+        shuffle = TRUE)
+```
+
+
+# QC
+## Auto markers
+```{r annotated_auto_markers}
 auto_markers <- SeuratWrappers::RunPrestoAll(
   object = mouse_annotated,
   assay = "RNA",
@@ -850,16 +1049,48 @@ dot
 ```
 
 ```{r save_annotated_auto_markers}
-pdf(paste0(out, "markers/annotated_auto_markers.pdf"), width = 10, height = 10)
+pdf(paste0(out, "markers/annotated_auto_top3_markers.pdf"), width = 10, height = 10)
 dot
 dev.off()
 remove(dot, top3)
 ```
 
+## Canonical markers
+```{r annotated_canonical_markers}
+# Canonical
+canonical_markers <- c(
+  "Aldoc", "Aqp4",                                    # Astrocytes
+  "Ttr", "Folr1",                                     # Choroid
+  "P2ry12", "Tmem119",                                # Microglia
+  "Syt1", "Snap25",                                   # Pan-neuron
+  "Slc17a6", "Slc17a7",                               # Exc
+  "Cux2", "Foxp2", "Prox1",                           # Exc
+  "Gad1", "Gad2",                                     # Inh
+  "Drd1","Drd2","Lamp5","Pvalb","Sst","Vip",          # Inh
+  "Mag", "Mog",                                       # Oligodendrocytes
+  "Cspg4", "Pdgfra"                                   # OPCs
+)
+
+d2 <- DotPlot(mouse_annotated,
+              features = canonical_markers,
+              cols = "RdYlBu",
+              assay = "RNA") +
+  coord_flip() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+d2
+```
+
+```{r save_annotated_markers}
+pdf(paste0(out, "markers/annotated_canonical_markers.pdf"), width = 8, height = 10)
+d2
+dev.off()
+remove(d2)
+```
+
 ## Marker heatmap
 ```{r marker_heatmaps}
-marker_genes <- c("Aqp4", "Ttr", "P2ry12", "Snap25", "Rbfox3", "Slc17a6", "Slc17a7", 
-                  "Gad1", "Gad2", "Slc32a1", "Cspg4", "Mog")
+marker_genes <- c("Snap25", "Gad2", "Drd1","Lamp5", "Vip", "Sst", "Pvalb",
+                  "Slc17a6", "Slc17a7", "Cux2", "Foxp2", "Prox1")
 
 # Create 12 FeaturePlots
 fplots <- lapply(marker_genes, function(gene) {
@@ -878,7 +1109,7 @@ layout <- matrix(1:12, nrow = 3, ncol = 4, byrow = TRUE)
 
 ```{r save_marker_heatmap}
 # Save as PDF
-path <- paste0(out, "markers/umap_heatmap_canonical_markers.pdf")
+path <- paste0(out, "markers/umap_heatmap_neuronal_markers.pdf")
 pdf(path, width = 12, height = 8)
 grid.arrange(grobs = all_plots, layout_matrix = layout)
 dev.off()
@@ -907,7 +1138,7 @@ Idents(mouse_downsample) <- "annotated_clusters"
 
 # save
 saveRDS(mouse_downsample, 
-        file = "../../rObjects/pass4_downsampled_annotated_seurat_obj.rds",
+        file = "../../rObjects/pass4_downsampled_annotated_subytypes_seurat_obj.rds",
         compress = FALSE)
 ```
 
@@ -922,10 +1153,10 @@ VariableFeatures(shiny.obj) <- shiny.obj@assays$SCT@var.features
 DefaultAssay(shiny.obj) <- "RNA"
 
 # create config
-names <- colnames(shiny.obj@meta.data)
-names <- names[c(31,32,2:27)]
+colNames <- colnames(shiny.obj@meta.data)
+colNames <- colNames[c(31:36,2:27)]
 sc.config <- createConfig(obj = shiny.obj,
-                          meta.to.include = names)
+                          meta.to.include = colNames)
 
 # change wd
 setwd(out)
@@ -939,7 +1170,7 @@ makeShinyApp(obj = shiny.obj,
 # manual config edits
 setwd(out)
 sc1conf <- readRDS("shinyApp/sc1conf.rds")
-cluster_hex <- "#cc79a7|#d55c00|#000|#0072b2|#009e73|#56b4df|#e69f00|#f0e442"
+cluster_hex <- "#d55c00|#F0E442|#000000|#2C3E8F|#0072B2|#56B4E9|#9AD0F3|#882E72|#AA4499|#CC79A7|#D58BC8|#8C6BB1|#009E73|#7FCDBB"
 sc1conf[2,4] <- cluster_hex
 saveRDS(sc1conf, "shinyApp/sc1conf.rds")
 

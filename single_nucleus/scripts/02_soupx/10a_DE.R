@@ -29,7 +29,7 @@ pct <- 0.6
 
 # Read Seurat object
 mouse.annotated <- readRDS(
-  paste0(project_dir, "/rObjects/pass4_downsampled_annotated_seurat_obj.rds"))
+  paste0(project_dir, "/rObjects/pass4_downsampled_annotated_subtypes_seurat_obj.rds"))
 
 # Define comparisons
 comparisons_both_sexes <- list(

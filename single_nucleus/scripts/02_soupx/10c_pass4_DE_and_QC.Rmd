@@ -45,13 +45,35 @@ invisible(lapply(files, source))
 
 ## Load data
 ```{r read_annotated_obj}
-mouse_annotated <- readRDS("../../rObjects/pass4_downsampled_annotated_seurat_obj.rds")
+mouse_annotated <- readRDS("../../rObjects/pass4_downsampled_annotated_subtypes_seurat_obj.rds")
 ```
 
 ## UMAP
 ```{r annotated_umap}
-cluster_colors <- c("#cc79a7","#d55c00","#000","#0072b2","#009e73","#56b4df",
-                    "#e69f00", "#f0e442")
+cluster_colors <- c(
+  "Astrocytes"           = "#d55c00",
+  "Choroid"              = "#F0E442",
+  "Microglia"            = "#000000",
+  
+  # Excitatory (blues)
+  "Exc_Slc17a6"          = "#2C3E8F",
+  "Exc_Slc17a7_Cux2"     = "#0072B2",
+  "Exc_Slc17a7_Foxp2"    = "#56B4E9",
+  "Exc_Slc17a7_Prox1"    = "#9AD0F3",
+  
+  # Inhibitory (purples/magentas)
+  "Inh_Drd1_Drd2"        = "#882E72",
+  "Inh_Lamp5"            = "#AA4499",
+  "Inh_Pvalb"            = "#CC79A7",
+  "Inh_Sst"              = "#D58BC8",
+  "Inh_Vip"              = "#8C6BB1",
+  
+  # Oligodendrocytes / OPCs (blue-greens)
+  "Oligodendrocytes"     = "#009E73",
+  "OPCs"                 = "#7FCDBB"
+)
+
+Idents(mouse_annotated) <- "annotated_clusters"
 
 u1 <- DimPlot(
   object = mouse_annotated,
@@ -72,6 +94,156 @@ remove(u1)
 # done in another script and submitted to HPC
 ```
 
+# Protein coding only
+## Write new tables
+Filtering DEG tables to protein coding only.
+```{r compare_DEGs}
+# get file paths
+files <- list.files(paste0(out, "DEGs_MAST_pct_0.6/DEG_tables"))
+files <- files[grepl(".+_DEGs.tsv", files)]
+
+# read in annotation file
+if (file.exists("../../rObjects/annotation.rds")) {
+  genes <- readRDS("../../rObjects/annotation.rds")
+} else {
+  file <- paste0(ann_dir, "/refdata-gex-GRCm39-2024-A/genes/genes.gtf")
+  genes <- rtracklayer::import(file)
+  genes <- as.data.frame(genes)
+  saveRDS(genes, "../../rObjects/annotation.rds")
+}
+genes <- genes[genes$gene_type == "protein_coding",]
+
+# init data.frame
+deg.df <- data.frame()
+
+# loop through files
+for (i in files) {
+  
+  # read table
+  df <- read.table(paste0(out, "DEGs_MAST_pct_0.6/DEG_tables/", i),
+                   sep = "\t", 
+                   header = TRUE)
+  df <- df %>% rename(gene_name = gene)
+  
+  # add gene meta
+  df <- left_join(x = df, y = genes, by = "gene_name")
+  
+  # save
+  write.table(x = df, 
+              file = paste0(out, "DEGs_MAST_pct_0.6_protein_only/DEG_tables/", i), 
+              sep = "\t", 
+              quote = FALSE, 
+              row.names = FALSE)
+}
+```
+
+# Filter tables
+Filtering DEG tables to protein coding only.
+```{r compare_DEGs}
+# set thresh
+adjpval_thresh <- 0.01
+lfc_thresh <- 0.2
+pct_thresh <- 0.6
+
+# get file paths
+files <- list.files(paste0(out, "DEGs_MAST_pct_", pct_thresh, "/DEG_tables"))
+files <- files[grepl(".+_DEGs.tsv", files)]
+
+# read in annotation file
+if (file.exists("../../rObjects/annotation.rds")) {
+  genes <- readRDS("../../rObjects/annotation.rds")
+} else {
+  file <- paste0(ann_dir, "/refdata-gex-GRCm39-2024-A/genes/genes.gtf")
+  genes <- rtracklayer::import(file)
+  genes <- as.data.frame(genes)
+  saveRDS(genes, "../../rObjects/annotation.rds")
+}
+genes <- genes[genes$gene_type == "protein_coding",]
+
+# init data.frame
+deg.df <- data.frame()
+
+# loop through files
+for (i in files) {
+  
+  # read table
+  df <- read.table(paste0(out, "DEGs_MAST_pct_", pct_thresh, "/DEG_tables/", i),
+                   sep = "\t", 
+                   header = TRUE)
+  df <- df %>% rename(gene_name = gene)
+  
+  # add gene meta
+  df <- left_join(x = df, y = genes, by = "gene_name")
+  
+  # save
+  out_dir <- paste0(out, "DEGs_MAST_pct_0.6_protein_only/DEG_tables/")
+  write.table(x = df, 
+              file = paste0(out_dir, i), 
+              sep = "\t", 
+              quote = FALSE, 
+              row.names = FALSE)
+  
+  # filter by adjusted p-value and LFC
+  df <- df[!is.na(df$p_val_adj),]
+  df <- df[df$p_val_adj < adjpval_thresh,]
+  df <- df[df$avg_log2FC < -lfc_thresh | df$avg_log2FC > lfc_thresh,]
+  
+  # add direction column
+  comparisonName <- gsub("_DEGs.tsv", "", i)
+  direction <- df$avg_log2FC > 0 # already filtered on lfc so only matters it's positive/negative
+  direction <- gsub(TRUE, paste0(comparisonName, "_up"), direction)
+  direction <- gsub(FALSE, paste0(comparisonName, "_down"), direction)
+  df$direction <- direction
+  
+  # reformat table
+  df <- df %>% 
+    dplyr::count(cluster, direction) %>%
+    tidyr::spread(cluster, n)
+  
+  # add to MASTer table
+  deg.df <- smartbind(deg.df, df)
+}
+
+# reorder rows
+rownames(deg.df) <- 1:nrow(deg.df)
+deg.df <- deg.df[c(7:12,1:6),]
+rownames(deg.df) <- deg.df$direction
+deg.df$direction <- NULL
+
+# reformat
+deg.df[is.na(deg.df)] <- 0
+
+# save
+prefix <- paste0(out, "DEGs_MAST_pct_", pct_thresh, "_protein_only/DEG_comparison/",
+                 "all_comparisons_FDRq_", format(adjpval_thresh, nsmall = 2),
+                 "_LFC_", format(lfc_thresh, nsmall = 2))
+write.table(deg.df, 
+            paste0(prefix, ".tsv"),
+            sep = "\t", quote = FALSE, row.names = TRUE)
+
+# set heatmap colors and names
+paletteLength <- 100
+myColor <- colorRampPalette(c("white","#f0eb9e","darkgreen"))(paletteLength)
+
+# save
+pdf(paste0(prefix, ".pdf"), width = 10, height = 6)
+
+# plot
+pheatmap::pheatmap(deg.df,
+                   main = paste0("FDRq < ", format(adjpval_thresh, nsmall = 2), 
+                                 ", |LFC| > ", format(lfc_thresh, nsmall = 2)),
+                   treeheight_row = 0,
+                   treeheight_col = 0,
+                   color = myColor,
+                   cluster_rows = FALSE,
+                   display_numbers = round(deg.df, digits = 0),
+                   fontsize_number = 12,
+                   number_color = "black")
+
+# cleanup
+remove(ann_colors, deg.df, df, meta)
+```
+
 # QC
 ## Canonical markers
 ```{r annotated_canonical_markers}
@@ -81,8 +253,10 @@ canonical_markers <- c(
   "Ttr", "Folr1",                                     # Choroid
   "P2ry12", "Tmem119",                                # Microglia
   "Syt1", "Snap25",                                   # Pan-neuron
-  "Gad1", "Gad2", "Slc32a1",                          # GABA
-  "Slc17a6", "Slc17a7",                               # Glut
+  "Slc17a6", "Slc17a7",                               # Exc
+  "Cux2", "Foxp2", "Prox1",                           # Exc
+  "Gad1", "Gad2",                                     # Inh
+  "Drd1","Drd2","Lamp5","Pvalb","Sst","Vip",          # Inh
   "Mag", "Mog",                                       # Oligodendrocytes
   "Cspg4", "Pdgfra"                                   # OPCs
 )
