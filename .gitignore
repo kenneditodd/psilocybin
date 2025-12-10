@@ -87,6 +87,7 @@ bulk_isoform/trimmedReads/*
 bulk_isoform/refs/.env
 bulk_isoform/refs/kallisto.idx
 bulk_isoform/refs/transcripts.fa
+bulk_isoform/results
 bulk_isoform/rObjects
 bulk_isoform/scripts/logs
 bulk_isoform/scripts/old

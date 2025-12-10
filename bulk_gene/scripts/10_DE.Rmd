@@ -947,8 +947,6 @@ for (i in files) {
                       size = 5,
                       fontface="italic",
                       max.overlaps = getOption("ggrepel.max.overlaps", default = 30)
-                      ) +
-      ylim(c(0,15))
      p
       
     # save
