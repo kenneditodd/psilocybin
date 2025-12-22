@@ -117,11 +117,6 @@ for (ctr in myContrasts) {
   design_cols <- colnames(models(so)$full$design_matrix)
   beta_name <- paste0("group", num)
   
-  if (!beta_name %in% design_cols) {
-    stop("Could not find beta '", beta_name,
-         "' in design matrix.")
-  }
-  
   # Wald test for this contrast
   so <- sleuth_wt(so, which_beta = beta_name, which_model = fit_name)
   

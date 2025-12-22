@@ -1,0 +1,1123 @@
+---
+title: "Psilocybin Project 1"
+subtitle: "Sleuth QC"
+author: "Kennedi Todd"
+date: "11/19/2025"
+output:
+  html_document:
+    theme: cerulean
+    toc: true
+    toc_float: true
+editor_options: 
+  chunk_output_type: inline
+---
+
+# Background
+- bulk RNA sequencing of prefrontal cortex of 90 mice \
+- 5 samples per group (treatment, dose, time point, sex) \
+- high dose = 1 mg/kg, low dose = 0.25 mg/kg
+
+# Setup
+```{r setup, include=FALSE}
+# Set working directory globally
+knitr::opts_knit$set(root.dir = ".")
+```
+
+## Libraries
+```{r libraries, message=FALSE, warning=FALSE}
+library(dotenv)  # load_dot_env
+library(dplyr)   # %>%
+library(ggplot2) # ggplot
+library(ggrepel) # geom_text_repel
+library(gtools)  # smartbind
+library(sleuth)  # sleuth_prep
+library(tidyr)   # pivot_wider
+library(ComplexUpset)
+library(UpSetR)
+```
+
+## User defined variables
+```{r set_variables}
+# Get output directories and file paths
+out <- "../results/"
+model <- "group2_hbb"
+
+# Load environment variables
+load_dot_env(file = "../refs/.env")  # Adjust the path to your .env file
+
+# Colors and levels
+treatment_order <- c("saline", "psilocybin")
+treatment_colors <- c("gray60", "springgreen2")
+
+sex_order <- c("M", "F")
+sex_colors <- c("gold2", "purple")
+
+group_order <- c("S.8h", "S.24h", "S.7d", 
+                 "L.8h", "L.24h", "L.7d", 
+                 "H.8h", "H.24h", "H.7d")
+group_colors <- c("gray90", "gray60", "gray30", 
+                  "lightblue", "cornflowerblue", "blue", 
+                  "sienna1", "red2", "red4")
+```
+
+## Read sleuth object
+```{r}
+so <- readRDS(paste0("../rObjects/so_", model, ".rds"))
+```
+
+# QC
+## PCA
+```{r plot_pca}
+p1 <- plot_pca(so, color_by = "group2")
+p1
+
+p2 <- plot_pca(so, color_by = "group")
+p2
+
+p3 <- plot_pca(so, color_by = "sex")
+p3
+
+p4 <- plot_pca(so, color_by = "treatment")
+p4
+
+p5 <- plot_pca(so, color_by = "dose")
+p5
+
+p6 <- plot_pca(so, color_by = "timepoint")
+p6
+```
+
+```{r save_pca}
+pdf(paste0(out, "PCA/PCA_colored_by_group2.pdf"), width = 8, height = 6)
+p1
+dev.off()
+
+pdf(paste0(out, "PCA/PCA_colored_by_group.pdf"), width = 8, height = 6)
+p2
+dev.off()
+
+pdf(paste0(out, "PCA/PCA_colored_by_sex.pdf"), width = 8, height = 6)
+p3
+dev.off()
+
+pdf(paste0(out, "PCA/PCA_colored_by_treatment.pdf"), width = 8, height = 6)
+p4
+dev.off()
+
+pdf(paste0(out, "PCA/PCA_colored_by_dose.pdf"), width = 8, height = 6)
+p5
+dev.off()
+
+pdf(paste0(out, "PCA/PCA_colored_by_time_point.pdf"), width = 8, height = 6)
+p6
+dev.off()
+
+remove(p1,p2,p3,p4,p5,p6)
+```
+
+## Sample density
+```{r}
+plot_sample_density(so)
+```
+
+## Sample heatmap
+```{r}
+plot_sample_heatmap(so)
+```
+
+## Scatter
+```{r}
+plot_scatter(so)
+```
+
+```{r}
+plot_fld(so, sample = "Psi1_A1_High_Male_L3_kallisto")
+```
+
+# Get Hbb-bs TPM
+```{r}
+hbb_transcripts <- subset(so$target_mapping, gene_name == "Hbb-bs")
+hbb_transcripts <- hbb_transcripts[,"target_id"]
+
+tpm <- so$obs_norm_filt
+
+hbb_tpm <- subset(tpm, target_id %in% hbb_transcripts) %>% 
+  select(sample, tpm)
+hbb_tpm$hbb_tpm <- hbb_tpm$tpm
+hbb_tpm$tpm <- NULL
+
+meta <- so$sample_to_covariates
+meta <- left_join(x = meta, y = hbb_tpm, by = "sample")
+so$sample_to_covariates <- meta
+
+remove(hbb_tpm, tpm, meta)
+```
+
+# DE plots
+## Comparison table
+```{r}
+qval_thresh <- 0.1
+lfc_thresh <- 0
+deg_files <- list.files(paste0(out, "DEG_tables/"))
+master_deg <- data.frame()
+
+# loop through files
+for (i in deg_files) {
+  
+  # read table
+  df <- read.table(paste0(out, "DEG_tables/", i), 
+                   sep = "\t", header = TRUE)
+  
+  # filter
+  df <- df[!is.na(df$qval),]
+  df <- df[df$qval < qval_thresh,]
+  df <- df[df$b > lfc_thresh | df$b < -lfc_thresh,]
+  
+  # add direction column
+  comparisonName <- gsub("_DEGs.tsv", "", i)
+  
+  # get up/down direction
+  direction <- df$b > 0
+  direction <- gsub(TRUE, "up", direction)
+  direction <- gsub(FALSE, "down", direction)
+  df$direction <- direction
+  
+  # reformat table
+  df <- df %>% dplyr::count(direction) 
+  rownames(df) <- df$direction
+  df$direction <- NULL
+  df <- as.data.frame(t(df))
+  df$comparison <- comparisonName
+  
+  # add to master table
+  master_deg <- smartbind(master_deg, df)
+}
+
+# replace NAs
+master_deg[is.na(master_deg)] <- 0
+
+# reorder rows
+rownames(master_deg) <- 1:nrow(master_deg)
+master_deg <- master_deg[c(16:18,10:12,13:15,7:9,1:3,4:6),]
+
+# reformat
+rownames(master_deg) <- master_deg$comparison
+master_deg$comparison <- NULL
+
+# save
+write.table(x = master_deg,
+            file = paste0(out, "DEG_comparison/DEG_comparison_qval_", 
+                          format(qval_thresh, nsmall = 2), 
+                          "_lfc_", format(lfc_thresh, nsmall = 2),
+                          ".tsv"),
+            sep = "\t",
+            row.names = TRUE,
+            col.names = TRUE,
+            quote = FALSE)
+
+# cleanup
+remove(df)
+```
+
+## Comparison heatmap
+```{r}
+# set heatmap colors and names
+meta <- data.frame(treatment = c(rep("low dose", 9), rep("high dose", 9)),
+                   sex = c(rep(c("both","female","male"), 6)),
+                   timepoint = c(rep(c("8 hours", "8 hours", "8 hours",
+                                       "24 hours", "24 hours", "24 hours",
+                                       "7 days", "7 days", "7 days"),
+                                     2)))
+rownames(meta) <- rownames(master_deg)
+paletteLength <- 100
+myColor <- colorRampPalette(c("white","#f0eb9e","darkgreen"))(paletteLength)
+ann_colors = list(treatment = c(`low dose` = "cornflowerblue", 
+                               `high dose` = "firebrick2",
+                               `saline` = "gray"),
+                  sex = c(female = 'chartreuse2',
+                          male = 'chocolate4',
+                          both = "pink"),
+                  timepoint = c(`8 hours` = "gold",
+                                `24 hours` = "purple",
+                                `7 days` = "black"))
+
+# save
+path <- paste0(out, "DEG_comparison/DEG_comparison_qval_",
+               format(qval_thresh, nsmall = 2), "_lfc_", 
+               format(lfc_thresh, nsmall = 2), ".pdf")
+pdf(path, width = 8, height = 9)
+
+# plot
+pheatmap::pheatmap(master_deg,
+                   main = paste0("qval < ", format(qval_thresh, nsmall = 2), 
+                                 ", |lfc| > ", format(lfc_thresh, nsmall = 2)),
+                   treeheight_row = 0,
+                   treeheight_col = 0,
+                   color = myColor,
+                   cluster_rows = FALSE,
+                   annotation_row = meta,
+                   annotation_colors = ann_colors,
+                   display_numbers = round(master_deg, digits = 0),
+                   fontsize_number = 12,
+                   number_color = "black")
+
+# cleanup
+remove(ann_colors,meta)
+```
+
+
+## Volcano
+```{r volcano_plot, message=FALSE, eval=FALSE}
+# get file list
+qval_thresh <- 0.1
+b_thresh <- 0
+deg_files <- list.files(paste0(out, "DEG_tables/"))
+
+for (i in deg_files) {
+  
+  # read DEG file
+  data <- read.delim(paste0(out, "DEG_tables/", i), sep = "\t")
+  data <- data[!is.na(data$qval),]
+  
+  # assign colors
+  color_values <- vector()
+  max <- nrow(data)
+  for(row in 1:max){
+    if (data$qval[row] < qval_thresh){
+      if (data$b [row] > b_thresh){
+        color_values <- c(color_values, 1) # 1 when b > b_thresh and qval < qval_thresh
+      } else if (data$b[row] < -b_thresh){
+        color_values <- c(color_values, 2) # 2 when b < -b_thresh and qval < qval_thresh
+      } else {
+        color_values <- c(color_values, 3) # 3 when b between -b_thresh and +b_thresh and qval < qval_thresh
+      }
+    } else {
+      color_values <- c(color_values, 3) # 3 when qval >= qval_thresh
+    }
+  }
+  data$color_qval <- factor(color_values)
+  
+ # comparison name
+ comparison <- gsub(paste0(out, "DEG_tables/"), "", i)
+ comparison <- gsub("_DEGs.tsv","",comparison)
+    
+ # plot only if there are DEGs with qval < qval_thresh
+ num <- data[data$qval < qval_thresh,]
+ num <- nrow(num)
+ if(num != 0) {
+   
+    # subset genes to label
+    up <- data[data$color_qval == 1,]
+    up.sig <- up[order(up$qval),][1:15,]
+    up.b <- up[order(up$b, decreasing = TRUE),][1:15,]
+    up30 <- rbind(up.sig,up.b)
+    up30 <- up30[!duplicated(up30$transcript_name),]
+    down <- data[data$color_qval == 2,]
+    down.sig <- down[order(down$qval),][1:15,]
+    down.b <- down[order(down$b, decreasing = FALSE),][1:15,]
+    down30 <- rbind(down.sig,down.b)
+    down30 <- down30[!duplicated(down30$transcript_name),]
+      
+    # set manual colors
+    if (!1 %in% unique(data$color_qval)) {
+      my_colors <- c("blue","gray")
+    } else if (!2 %in% unique(data$color_qval)) {
+      my_colors <- c("red","gray")
+    } else if (!1 %in% unique(data$color_qval) && !2 %in% unique(data$color_qval)) {
+      my_colors <- c("gray")
+    } else {
+      my_colors <- c("red","blue","gray")
+    }
+      
+    # set significance threshold
+    hqval <- (-log10(max(data$pval[data$qval < qval_thresh], na.rm=TRUE)))
+
+    # plot
+    p <-
+      ggplot(data = data, 
+             aes(x = b,  # x-axis is b
+                 y = -log10(pval),  # y-axis will be -log10 of pval
+                 color = color_qval)) +  # color is based on factored color column
+      geom_point(alpha = 0.8, size = 2) +  # create scatterplot, alpha makes points transparent
+      theme_bw() +  # set color theme
+      theme(legend.position = "none") +  # no legend
+      scale_color_manual(values = my_colors) +  # set factor colors
+      labs(
+        title = "", # no main title
+        x = expression(log[2](FC)), # x-axis title
+         y = expression(-log[10] ~ "(" ~ italic("p") ~ "-value)") # y-axis title
+      ) +
+      theme(axis.title.x = element_text(size = 15),
+            axis.text.x = element_text(size = 15)) +
+      theme(axis.title.y = element_text(size = 15),
+            axis.text.y = element_text(size = 15)) +
+      theme(plot.title = element_text(size = 15)) +
+      geom_hline(yintercept = hqval,  #  horizontal line
+                         colour = "#000000",
+                         linetype = "dashed") +
+      geom_vline(xintercept = -b_thresh,  #  vertical line
+                         colour = "#000000",
+                         linetype = "dashed") +
+      geom_vline(xintercept = b_thresh,  #  vertical line
+                         colour = "#000000",
+                         linetype = "dashed") +
+      ggtitle(paste0(comparison, ", qval < ", qval_thresh, ", b = ", b_thresh)) +
+      geom_text_repel(data = up30,
+                      aes(x = b, y= -log10(pval), label = transcript_name), 
+                      size = 5,
+                      color = "maroon", 
+                      fontface="italic",
+                      max.overlaps = getOption("ggrepel.max.overlaps", default = 30)
+                      ) +
+      geom_text_repel(data = down30,
+                      aes(x = b, y= -log10(pval), label = transcript_name), 
+                      color = "navyblue", 
+                      size = 5,
+                      fontface="italic",
+                      max.overlaps = getOption("ggrepel.max.overlaps", default = 30)
+                      )
+     p
+      
+    # save
+    path <- paste0(out, "volcano/", comparison, "_qval_", 
+                   format(qval_thresh, nsmall = 2), "_b_",
+                   format(b_thresh, nsmall = 2), "_volcano.pdf")
+    pdf(path, height = 8, width = 8)
+    print(p)
+    dev.off()
+  }
+} # end loop through variables
+```
+
+## Metascape gene_name input
+```{r}
+# get file list
+qval_thresh <- 0.1
+b_thresh <- 0
+deg_files <- list.files(paste0(out, "DEG_tables/"))
+
+# intitalize table for command line version of metascape
+msbio.df <- data.frame()
+
+# loop through DEG files
+for (i in 1:length(deg_files)) {
+  # read table
+  data <- read.table(paste0(out, "DEG_tables/", deg_files[i]), header = TRUE, sep = "\t")
+  data <- data[!is.na(data$qval),]
+  
+  # filter based on adjusted p-value
+  data <- data[data$qval < qval_thresh,]
+  
+  # create up-regulated gene list
+  up <- data[data$b > b_thresh,]
+  up <- unique(up$gene_name)
+  
+  # create down-regulated gene list
+  down <- data[data$b < -b_thresh,]
+  down <- unique(down$gene_name)
+  
+ # get the comparison name
+ comparison <- deg_files[i]
+ comparison <- gsub("_DEGs.tsv", "", comparison)
+ 
+ # make two filenames for up and downregulated genes
+ # include the comparison, adjusted p-value threshold, and logFC threshold
+ up.filename <- paste0(out, "metascape_gene_name_input/", comparison,
+                       "_upregulated_qval_", format(qval_thresh, nsmall = 2), 
+                       "_b_", format(b_thresh, nsmall = 2), ".txt")
+ down.filename <- paste0(out, "metascape_gene_name_input/", comparison,
+                         "_downregulated_qval_", format(qval_thresh, nsmall = 2), 
+                         "_b_", format(b_thresh, nsmall = 2), ".txt")
+ 
+ 
+  # save the up and down-reulated gene lists
+  write.table(x = up,
+              file = up.filename,
+              quote = FALSE,
+              row.names = FALSE,
+              col.names = FALSE)
+  write.table(x = down,
+              file = down.filename,
+              quote = FALSE,
+              row.names = FALSE,
+              col.names = FALSE)
+    
+  # job for MSBio
+  # if there are more than 10 up-regulated genes, add paths in json format for msbio job
+  if (length(up) > 10) {
+      msbio <- jsonlite::toJSON(list(
+        input = gsub(paste0(out, "metascape_gene_name_input/"),
+                     "/data/metascape_gene_name_input/",
+                     up.filename),
+        output = paste0("/data/metascape_output/",
+                        comparison,
+                        "_upregulated_qval_", 
+                        format(qval_thresh, nsmall = 2), 
+                        "_b_", format(b_thresh, nsmall = 2)),
+        single = TRUE))
+      msbio <- gsub("\\[","",msbio)
+      msbio <- gsub("\\]","",msbio)
+      msbio.df <- rbind(msbio.df, msbio)
+  }
+  # if there are more than 10 down-regulated genes, add paths in json format for msbio job
+  if (length(down) > 10) {
+      msbio <- jsonlite::toJSON(list(
+        input = gsub(paste0(out, "metascape_gene_name_input/"),
+                     "/data/metascape_gene_name_input/",
+                     down.filename),
+        output = paste0("/data/metascape_output/",
+                        comparison,
+                        "_downregulated_qval_", 
+                        format(qval_thresh, nsmall = 2),
+                        "_b_", 
+                        format(b_thresh, nsmall = 2)),
+        single = TRUE))
+      msbio <- gsub("\\[","",msbio)
+      msbio <- gsub("\\]","",msbio)
+      msbio.df <- rbind(msbio.df, msbio)
+  }
+}
+
+# save msbio job
+write.table(x = msbio.df,
+            file = paste0(out, "metascape_gene_name_input/msbio.job"),
+            quote = FALSE,
+            row.names = FALSE,
+            col.names = FALSE)
+```
+
+## Metascape gene_name input
+```{r}
+# get file list
+qval_thresh <- 0.1
+b_thresh <- 0
+deg_files <- list.files(paste0(out, "DEG_tables/"))
+
+# intitalize table for command line version of metascape
+msbio.df <- data.frame()
+
+# loop through DEG files
+for (i in 1:length(deg_files)) {
+  # read table
+  data <- read.table(paste0(out, "DEG_tables/", deg_files[i]), header = TRUE, sep = "\t")
+  data <- data[!is.na(data$qval),]
+  
+  # filter based on adjusted p-value
+  data <- data[data$qval < qval_thresh,]
+  
+  # create up-regulated gene list
+  up <- data[data$b > b_thresh,]
+  up <- unique(up$transcript_name)
+  
+  # create down-regulated gene list
+  down <- data[data$b < -b_thresh,]
+  down <- unique(down$transcript_name)
+  
+ # get the comparison name
+ comparison <- deg_files[i]
+ comparison <- gsub("_DEGs.tsv", "", comparison)
+ 
+ # make two filenames for up and downregulated genes
+ # include the comparison, adjusted p-value threshold, and logFC threshold
+ up.filename <- paste0(out, "metascape_transcript_name_input/", comparison,
+                       "_upregulated_qval_", format(qval_thresh, nsmall = 2), 
+                       "_b_", format(b_thresh, nsmall = 2), ".txt")
+ down.filename <- paste0(out, "metascape_transcript_name_input/", comparison,
+                         "_downregulated_qval_", format(qval_thresh, nsmall = 2), 
+                         "_b_", format(b_thresh, nsmall = 2), ".txt")
+ 
+ 
+  # save the up and down-reulated gene lists
+  write.table(x = up,
+              file = up.filename,
+              quote = FALSE,
+              row.names = FALSE,
+              col.names = FALSE)
+  write.table(x = down,
+              file = down.filename,
+              quote = FALSE,
+              row.names = FALSE,
+              col.names = FALSE)
+    
+  # job for MSBio
+  # if there are more than 10 up-regulated genes, add paths in json format for msbio job
+  if (length(up) > 10) {
+      msbio <- jsonlite::toJSON(list(
+        input = gsub(paste0(out, "metascape_transcript_name_input/"),
+                     "/data/metascape_transcript_name_input/",
+                     up.filename),
+        output = paste0("/data/metascape_output/",
+                        comparison,
+                        "_upregulated_qval_", 
+                        format(qval_thresh, nsmall = 2), 
+                        "_b_", format(b_thresh, nsmall = 2)),
+        single = TRUE))
+      msbio <- gsub("\\[","",msbio)
+      msbio <- gsub("\\]","",msbio)
+      msbio.df <- rbind(msbio.df, msbio)
+  }
+  # if there are more than 10 down-regulated genes, add paths in json format for msbio job
+  if (length(down) > 10) {
+      msbio <- jsonlite::toJSON(list(
+        input = gsub(paste0(out, "metascape_transcript_name_input/"),
+                     "/data/metascape_transcript_name_input/",
+                     down.filename),
+        output = paste0("/data/metascape_output/",
+                        comparison,
+                        "_downregulated_qval_", 
+                        format(qval_thresh, nsmall = 2),
+                        "_b_", 
+                        format(b_thresh, nsmall = 2)),
+        single = TRUE))
+      msbio <- gsub("\\[","",msbio)
+      msbio <- gsub("\\]","",msbio)
+      msbio.df <- rbind(msbio.df, msbio)
+  }
+}
+
+# save msbio job
+write.table(x = msbio.df,
+            file = paste0(out, "metascape_transcript_name_input/msbio.job"),
+            quote = FALSE,
+            row.names = FALSE,
+            col.names = FALSE)
+```
+
+# Upset
+## Intersection function
+```{r}
+get_exclusive_intersection_genes <- function(upset_data, list_input) {
+  # Initialize a list to store the results
+  results <- list()
+  
+  # Get the names of the columns (gene sets)
+  set_names <- colnames(upset_data)
+  
+  # For each row of the UpSet matrix, extract the exclusive intersection
+  for (i in 1:nrow(upset_data)) {
+    # Check which sets (columns) are "active" (i.e., 1) for the current row
+    active_sets <- set_names[upset_data[i, ] == 1]
+    
+    if (length(active_sets) > 0) {
+      # Find the intersection of genes in the active sets
+      intersected_genes <- Reduce(intersect, list_input[active_sets])
+      
+      # Find genes that are present in any of the other sets (not part of this combination)
+      other_sets <- set_names[upset_data[i, ] == 0]
+      other_genes <- Reduce(union, list_input[other_sets])
+      
+      # Subtract the genes that are in the other sets to make the intersection exclusive
+      exclusive_genes <- setdiff(intersected_genes, other_genes)
+      
+      # Create a label for the current intersection (e.g., "Set1 & Set2")
+      intersection_label <- paste(active_sets, collapse = " & ")
+      
+      # Store the number of genes and the exclusive gene list
+      results[[intersection_label]] <- list(
+        total_genes = length(exclusive_genes),
+        gene_list = paste(exclusive_genes, collapse = ", ")
+      )
+    }
+  }
+  
+  return(results)
+}
+```
+
+## Sex specific
+```{r}
+# set variables
+prefix <- paste0(out, "metascape_transcript_name_input/")
+suffix <- "_qval_0.10_b_0.00.txt"
+
+# get file list
+L.8h.F_vs_S.8h.F_down <- 
+  readLines(paste0(prefix, "L.8h.F_vs_S.8h.F_downregulated", suffix))
+L.8h.F_vs_S.8h.F_up <- 
+  readLines(paste0(prefix, "L.8h.F_vs_S.8h.F_upregulated", suffix))
+L.8h.M_vs_S.8h.M_down <- 
+  readLines(paste0(prefix, "L.8h.M_vs_S.8h.M_downregulated", suffix))
+L.8h.M_vs_S.8h.M_up <- 
+  readLines(paste0(prefix, "L.8h.M_vs_S.8h.M_upregulated", suffix))
+
+L.24h.F_vs_S.24h.F_down <- 
+  readLines(paste0(prefix, "L.24h.F_vs_S.24h.F_downregulated", suffix))
+L.24h.F_vs_S.24h.F_up <- 
+  readLines(paste0(prefix, "L.24h.F_vs_S.24h.F_upregulated", suffix))
+L.24h.M_vs_S.24h.M_down <- 
+  readLines(paste0(prefix, "L.24h.M_vs_S.24h.M_downregulated", suffix))
+L.24h.M_vs_S.24h.M_up <- 
+  readLines(paste0(prefix, "L.24h.M_vs_S.24h.M_upregulated", suffix))
+
+L.7d.F_vs_S.7d.F_down <- 
+  readLines(paste0(prefix, "L.7d.F_vs_S.7d.F_downregulated", suffix))
+L.7d.F_vs_S.7d.F_up <- 
+  readLines(paste0(prefix, "L.7d.F_vs_S.7d.F_upregulated", suffix))
+L.7d.M_vs_S.7d.M_down <- 
+  readLines(paste0(prefix, "L.7d.M_vs_S.7d.M_downregulated", suffix))
+L.7d.M_vs_S.7d.M_up <- 
+  readLines(paste0(prefix, "L.7d.M_vs_S.7d.M_upregulated", suffix))
+
+H.8h.F_vs_S.8h.F_down <- 
+  readLines(paste0(prefix, "H.8h.F_vs_S.8h.F_downregulated", suffix))
+H.8h.F_vs_S.8h.F_up <- 
+  readLines(paste0(prefix, "H.8h.F_vs_S.8h.F_upregulated", suffix))
+H.8h.M_vs_S.8h.M_down <- 
+  readLines(paste0(prefix, "H.8h.M_vs_S.8h.M_downregulated", suffix))
+H.8h.M_vs_S.8h.M_up <- 
+  readLines(paste0(prefix, "H.8h.M_vs_S.8h.M_upregulated", suffix))
+
+
+H.24h.F_vs_S.24h.F_down <- 
+  readLines(paste0(prefix, "H.24h.F_vs_S.24h.F_downregulated", suffix))
+H.24h.F_vs_S.24h.F_up <- 
+  readLines(paste0(prefix, "H.24h.F_vs_S.24h.F_upregulated", suffix))
+H.24h.M_vs_S.24h.M_down <- 
+  readLines(paste0(prefix, "H.24h.M_vs_S.24h.M_downregulated", suffix))
+H.24h.M_vs_S.24h.M_up <- 
+  readLines(paste0(prefix, "H.24h.M_vs_S.24h.M_upregulated", suffix))
+
+H.7d.F_vs_S.7d.F_down <- 
+  readLines(paste0(prefix, "H.7d.F_vs_S.7d.F_downregulated", suffix))
+H.7d.F_vs_S.7d.F_up <- 
+  readLines(paste0(prefix, "H.7d.F_vs_S.7d.F_upregulated", suffix))
+H.7d.M_vs_S.7d.M_down <- 
+  readLines(paste0(prefix, "H.7d.M_vs_S.7d.M_downregulated", suffix))
+H.7d.M_vs_S.7d.M_up <- 
+  readLines(paste0(prefix, "H.7d.M_vs_S.7d.M_upregulated", suffix))
+
+# format in a list
+list_input <- list(
+  "L.8h.F vs S.8h.F down-regulated" = L.8h.F_vs_S.8h.F_down,
+  "L.8h.F vs S.8h.F up-regulated" = L.8h.F_vs_S.8h.F_up,
+  "L.8h.M vs S.8h.M down-regulated" = L.8h.M_vs_S.8h.M_down,
+  "L.8h.M vs S.8h.M up-regulated" = L.8h.M_vs_S.8h.M_up,
+  
+  "L.24h.F vs S.24h.F down-regulated" = L.24h.F_vs_S.24h.F_down,
+  "L.24h.F vs S.24h.F up-regulated" = L.24h.F_vs_S.24h.F_up,
+  "L.24h.M vs S.24h.M down-regulated" = L.24h.M_vs_S.24h.M_down,
+  "L.24h.M vs S.24h.M up-regulated" = L.24h.M_vs_S.24h.M_up,
+  
+  "L.7d.F vs S.7d.F down-regulated" = L.7d.F_vs_S.7d.F_down,
+  "L.7d.F vs S.7d.F up-regulated" = L.7d.F_vs_S.7d.F_up,
+  "L.7d.M vs S.7d.M down-regulated" = L.7d.M_vs_S.7d.M_down,
+  "L.7d.M vs S.7d.M up-regulated" = L.7d.M_vs_S.7d.M_up,
+  
+  "H.8h.F vs S.8h.F down-regulated" = H.8h.F_vs_S.8h.F_down,
+  "H.8h.F vs S.8h.F up-regulated" = H.8h.F_vs_S.8h.F_up,
+  "H.8h.M vs S.8h.M down-regulated" = H.8h.M_vs_S.8h.M_down,
+  "H.8h.M vs S.8h.M up-regulated" = H.8h.M_vs_S.8h.M_up,
+  
+  "H.24h.F vs S.24h.F down-regulated" = H.24h.F_vs_S.24h.F_down,
+  "H.24h.F vs S.24h.F up-regulated" = H.24h.F_vs_S.24h.F_up,
+  "H.24h.M vs S.24h.M down-regulated" = H.24h.M_vs_S.24h.M_down,
+  "H.24h.M vs S.24h.M up-regulated" = H.24h.M_vs_S.24h.M_up,
+  
+  "H.7d.F vs S.7d.F down-regulated" = H.7d.F_vs_S.7d.F_down,
+  "H.7d.F vs S.7d.F up-regulated" = H.7d.F_vs_S.7d.F_up,
+  "H.7d.M vs S.7d.M down-regulated" = H.7d.M_vs_S.7d.M_down,
+  "H.7d.M vs S.7d.M up-regulated" = H.7d.M_vs_S.7d.M_up
+)
+data <- UpSetR::fromList(list_input)
+
+# You will specify the male and female groups by their group number
+group_mapping <- data.frame(
+  Group_Number = 1:24,  # Group numbers (1-8)
+  Gene_Set_Name = sort(colnames(data))  # Sorted gene set names
+)
+group_mapping
+
+# Assign shapes based on group numbers
+male_groups <- c("3","4","7","8","11","12","15","16","19","20","23","24")  # Male group numbers
+female_groups <- c("1","2","5","6","9","10","13","14","17","18","21","22") # Female group numbers
+
+# Assign colors and shapes based on specific group numbers
+upregulated_groups <- c("2","4","6","8","10","12","14","16","18","20","22","24")
+downregulated_groups <- c("1","3","5","7","9","11","13","15","17","19","21","23")
+
+# Create the basic UpSet plot (no dynamic colors or shapes) to extract n_points
+dummy_upset <- ComplexUpset::upset(
+  data, 
+  colnames(data),  # Use column names (gene sets)
+  set_sizes = ComplexUpset::upset_set_size(),  # Display set sizes
+  sort_sets = FALSE,
+  
+  # Plot the intersection matrix with points (default shapes)
+  matrix = ComplexUpset::intersection_matrix(
+    ggplot2::geom_point(size = 3)  # Simple points without dynamic aesthetics
+  )
+)
+
+# Ensure n_points matches the actual data
+n_points <- nrow(dummy_upset$data)
+print(paste("Number of points being plotted:", n_points))  # Should be 300
+
+# Create empty vectors for colors and shapes
+color_vector <- rep(NA, n_points)  # To store colors
+shape_vector <- rep(NA, n_points)  # To store shapes
+
+# Assign shapes and colors based on group numbers
+for (i in 1:n_points) {
+  group_value <- as.character(dummy_upset$data$group[i])
+  
+  # Assign shapes
+  if (group_value %in% male_groups) {
+    shape_vector[i] <- 22  # Filled square for Male comparisons
+  } else if (group_value %in% female_groups) {
+    shape_vector[i] <- 21  # Circle for Female comparisons
+  }
+  
+  # Assign colors based on group numbers, only if the point is involved in an intersection
+  if (dummy_upset$data$value[i]) {  # If the point is part of an intersection
+    if (group_value %in% upregulated_groups) {
+      color_vector[i] <- "red"  # Red for Up-regulated
+    } else if (group_value %in% downregulated_groups) {
+      color_vector[i] <- "blue"  # Blue for Down-regulated
+    }
+  } else {
+    color_vector[i] <- NA  # No fill for points not involved in intersections
+  }
+}
+
+# Ensure both vectors are of correct length
+if (length(shape_vector) != n_points || length(color_vector) != n_points) {
+  stop("Error: shape_vector or color_vector length does not match the number of plotted points.")
+}
+
+# Print the color_vector to ensure correctness before plotting
+print(unique(color_vector))  # Ensure this contains only valid colors or NA
+
+# Reintroduce dynamic fill color for filled shapes
+upset_gene <- ComplexUpset::upset(
+  data, 
+  colnames(data),
+  set_sizes = (
+    ComplexUpset::upset_set_size() +
+    geom_text(aes(label = ..count..), hjust = 1.1, stat = 'count') +
+    expand_limits(y = 100)
+  ),
+  
+  # Prevent automatic sorting of sets
+  sort_sets = FALSE,
+  
+  matrix = ComplexUpset::intersection_matrix(
+    ggplot2::geom_point(
+      ggplot2::aes(shape = factor(shape_vector), fill = color_vector),  # Fill shapes with dynamic colors
+      size = 3,
+      stroke = 0.45  # Keeps the outline black
+    )
+  ) + ggplot2::scale_shape_manual(
+    name = "Sex",
+    labels = c("Male", "Female"),  # Legend labels
+    values = c(21, 22) # Circle=21, Filled square=22
+    ) + ggplot2::scale_fill_identity(na.translate = FALSE),  # Use the exact colors in color_vector and remove NA fill
+  
+    base_annotations = list(
+    'Intersection size' = (
+      intersection_size(bar_number_threshold = 1, width = 0.5) +
+      scale_y_continuous(expand = expansion(mult = c(0, 0.05)), limits = c(0, 75)) +
+      theme(
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.line = element_line(colour = 'black')
+      )
+    )
+  ),
+)
+
+# Add title
+upset_gene <- upset_gene + 
+  ggtitle("FDRq < 0.10, |LFC| > 0")
+
+# Remove legend
+upset_gene <- upset_gene + theme(legend.position = "None")
+
+# Save temp without legend
+pdf(file = paste0(out, "upset/sex_specific_upset.pdf"), 
+    height = 10, 
+    width = 12)
+upset_gene
+```
+
+# All DEGs
+```{r}
+# get file list
+qval_thresh <- 1
+b_thresh <- 0
+deg_files <- list.files(paste0(out, "DEG_tables/"))
+deg_files <- deg_files[grep("^[HL].+[MF]_vs_", deg_files)]
+
+# intitalize table for command line version of metascape
+all_degs <- data.frame()
+
+# loop through DEG files
+for (i in seq_along(deg_files)) {
+  # read table
+  data <- read.table(paste0(out, "DEG_tables/", deg_files[i]), header = TRUE, sep = "\t")
+  data <- data[!is.na(data$qval),]
+  
+  # filter based on adjusted p-value
+  data <- data[data$qval < qval_thresh,]
+  
+  # create up-regulated gene list
+  data <- data[data$b > b_thresh | data$b < -b_thresh,]
+ 
+ # bind
+ if (nrow(data) > 0) {
+   # get the comparison name
+   comparison <- deg_files[i]
+   comparison <- gsub("_DEGs.tsv", "", comparison)
+   data$comparison <- comparison
+   
+   # bind
+   all_degs <- rbind(all_degs, data)
+ }
+}
+
+# reformat columns
+all_degs <- all_degs[,c(20,13,40,30:39,1:12,14:19,21:29)]
+
+# remove sex-linked genes
+all_degs <- all_degs[!all_degs$gene_name %in% c("Ddx3y","Kdm5d","Uty","Xist"),]
+
+# save
+write.table(x = all_degs,
+            file = paste0(out, "isoform_switch_tables/all_sex_specific_degs_qval_1.00.tsv"),
+            quote = FALSE,
+            sep = "\t",
+            row.names = FALSE,
+            col.names = TRUE)
+
+# keep number of isoforms per gene
+iso_counts <- all_degs %>%
+  distinct(gene_name, transcript_name) %>%
+  count(gene_name, name = "n_isoforms")
+isoform_change <- left_join(all_degs, iso_counts, by = "gene_name")
+
+# group by gene_name : transcript_name pairs
+# need a gene_name to have at least 2 different transcript_names
+# need a gene_name to have at least 2 different comparisons
+isoform_change <- isoform_change %>%
+  distinct(gene_name, transcript_name, comparison, .keep_all = TRUE) %>%
+  group_by(gene_name) %>%
+  filter(
+    n_distinct(transcript_name) >= 2,
+    n_distinct(comparison) >= 2
+  ) %>%
+  ungroup()
+
+isoform_change2 <- isoform_change %>%
+  group_by(gene_name) %>%
+  mutate(b_spread = max(b, na.rm = TRUE) - min(b, na.rm = TRUE)) %>%
+  ungroup() %>%
+  filter(b_spread >= 9)
+
+
+
+# save
+write.table(x = all_degs2,
+            file = paste0(out, "isoform_switch_tables/remove_single_isoforms.tsv"),
+            quote = FALSE,
+            sep = "\t",
+            row.names = FALSE,
+            col.names = TRUE)
+```
+
+# Isoform switching
+## TPM
+```{r}
+tpm <- kallisto_table(so)
+tpm <- tpm %>% select(target_id, sample, tpm, group2)
+```
+
+## PIU
+```{r}
+# get mean TPM per group2
+tpm <- left_join(so$obs_norm_filt, so$sample_to_covariates[,c("sample","group2")])
+tpm <- tpm %>%
+  group_by(target_id, group2) %>%
+  summarise(
+    group2_mean_tpm = mean(tpm, na.rm = TRUE),
+    group2_var_tpm  = var(tpm, na.rm = TRUE),
+    group2_n_samples = n(),
+    .groups = "drop"
+  )
+
+# add transcript info
+tpm <- left_join(tpm, so$target_mapping[,c("gene_name","target_id")])
+
+# get total TPM per gene
+tpm <- tpm %>%
+  group_by(gene_name, group2) %>%
+  mutate(total_gene_tpm = sum(group2_mean_tpm, na.rm = TRUE)) %>%
+  ungroup()
+
+# calculate PIU
+tpm <- tpm %>%
+  mutate(group2_piu = group2_mean_tpm / total_gene_tpm)
+
+# remove genes that only have one isoform in all group2s
+genes_multi_all <- tpm %>%
+  group_by(gene_name, group2) %>%
+  summarise(n_iso = n_distinct(target_id[tpm > 0])) %>%
+  ungroup() %>%
+  group_by(gene_name) %>%
+  summarise(is_multi_all = all(n_iso > 1)) %>%
+  filter(is_multi_all) %>%
+  pull(gene_name)
+
+piu_filtered <- tpm %>% filter(gene_name %in% genes_multi_all)
+
+# compare
+dim(piu)
+dim(piu_filtered)
+```
+
+
+## Mean PIU per group
+```{r}
+piu_means <- piu_filtered %>%
+  group_by(gene_id, gene_name, target_id, transcript_name, group2) %>%
+  summarise(mean_piu = mean(piu), .groups = "drop")
+```
+
+## Change in PIU
+```{r}
+# contrasts table
+contrast_df <- tibble::tibble(
+  group1 = c("L.8h.F","L.8h.M","L.24h.F","L.24h.M","L.7d.F","L.7d.M",
+             "H.8h.F","H.8h.M","H.24h.F","H.24h.M","H.7d.F","H.7d.M",
+             "S.8h.F","S.24h.F","S.7d.F"),
+  group2 = c("S.8h.F","S.8h.M","S.24h.F","S.24h.M","S.7d.F","S.7d.M",
+             "S.8h.F","S.8h.M","S.24h.F","S.24h.M","S.7d.F","S.7d.M",
+             "S.8h.M","S.24h.M","S.7d.M")
+)
+
+# function
+compute_delta_piu <- function(piu_means, g1, g2) {
+
+  piu_means %>%
+    filter(group2 %in% c(g1, g2)) %>%
+    select(gene_id, gene_name, target_id, transcript_name, group2, mean_piu) %>%
+    tidyr::pivot_wider(
+      names_from = group2,
+      values_from = mean_piu,
+      values_fill = 0
+    ) %>%
+    mutate(
+      delta_piu = !!sym(g1) - !!sym(g2),
+      comparison = paste0(g1, "_vs_", g2)
+    )
+}
+
+delta_piu <- purrr::map_dfr(
+  1:nrow(contrast_df),
+  ~ compute_delta_piu(
+      piu_means,
+      contrast_df$group1[.x],
+      contrast_df$group2[.x]
+    )
+)
+```
+
+
+## Global switching
+- closer to 1 = this isoform fully dominates the gene in at least one condition \
+- closer to 0 = this isoform is never dominant anywhere
+- intermediate = isoform is neither always off nor always dominant
+```{r}
+piu_means <- piu %>%
+  group_by(gene_id, target_id, group2) %>%
+  summarize(mean_piu = mean(piu), .groups = "drop")
+
+piu_global <- piu_means %>%
+  group_by(gene_id, target_id) %>%
+  summarize(
+    max_piu = max(mean_piu, na.rm = TRUE),
+    min_piu = min(mean_piu, na.rm = TRUE),
+    range_piu = max(mean_piu, na.rm = TRUE) - min(mean_piu, na.rm = TRUE),
+    .groups = "drop"
+  )
+```
+
+```{r}
+# Which condition each isoform 'prefers'
+piu_pref <- piu_means %>%
+  group_by(gene_id, target_id) %>%
+  slice_max(order_by = mean_piu, n = 1, with_ties = FALSE) %>%
+  ungroup() %>%
+  rename(pref_group = group2)
+
+# Genes where different isoforms prefer different conditions
+switch_genes <- piu_pref %>%
+  group_by(gene_id) %>%
+  filter(n_distinct(pref_group) > 1) %>%
+  distinct(gene_id)
+
+```
+
+## DE isoform switches
+```{r}
+deg_files <- list.files(paste0(out, "DEGs/DEG_tables/"))
+deg_files <- deg_files[grep("[LH].+_vs_S.+", deg_files)]
+iso_gene_info <- data.frame()
+
+# loop through files
+for (i in deg_files) {
+  
+  # read table
+  data <- read.table(paste0(out, "DEGs/DEG_tables/", i), sep = "\t", header = TRUE)
+  
+  # filter
+  data <- data[!is.na(data$b),]
+  
+  # get comparison name
+  comparisonName <- gsub("_DEGs.tsv", "", i)
+  
+  # get fold change
+  direction <- data[,c("target_id","transcript_name","gene_id","gene_name","b")]
+  direction[[comparisonName]] <- data$b
+  direction$b <- NULL
+  
+  # add to master table
+  if (nrow(iso_gene_info) == 0) {
+    iso_gene_info <- direction
+  } else (
+    iso_gene_info <- left_join(x = iso_gene_info, y = direction)
+  )
+}
+
+# remove genes that only have one isoform
+iso_gene_info <- iso_gene_info %>%
+  group_by(gene_id) %>%
+  filter(n() > 1) %>%
+  ungroup()
+
+
+# count positives/negatives
+iso_gene_info$num_positive <- rowSums(iso_gene_info[,5:ncol(iso_gene_info)] > 0)
+iso_gene_info$num_negative <- rowSums(iso_gene_info[,5:ncol(iso_gene_info)] < 0)
+
+# remove transcripts that all trend the same way
+iso_gene_info <- iso_gene_info[!iso_gene_info$num_positive == 12,]
+iso_gene_info <- iso_gene_info[!iso_gene_info$num_negative == 12,]
+
+# save
+write.table(x = master_deg,
+            file = paste0(out, "DEGs/DEG_comparison/DEG_comparison_qval_", 
+                          format(qval_thresh, nsmall = 2),".tsv"),
+            sep = "\t",
+            row.names = TRUE,
+            col.names = TRUE,
+            quote = FALSE)
+
+# cleanup
+remove(df)
+```
+
+# isoformSwitchAnalyzeR
+## Import
+```{r}
+importIsoformExpression
+```
+
