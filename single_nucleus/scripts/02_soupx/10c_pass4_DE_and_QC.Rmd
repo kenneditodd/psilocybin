@@ -95,8 +95,8 @@ remove(u1)
 ```
 
 # Protein coding only
-## Write new tables
 Filtering DEG tables to protein coding only.
+Also removing ENSMUSG00000095041 because it's likely not meaningful and skewing volcanoes.
 ```{r compare_DEGs}
 # get file paths
 files <- list.files(paste0(out, "DEGs_MAST_pct_0.6/DEG_tables"))
@@ -111,16 +111,17 @@ if (file.exists("../../rObjects/annotation.rds")) {
   genes <- as.data.frame(genes)
   saveRDS(genes, "../../rObjects/annotation.rds")
 }
-genes <- genes[genes$gene_type == "protein_coding",]
+genes <- genes[genes$type == "gene",]
+genes$gene_name <- make.unique(genes$gene_name)
 
 # init data.frame
 deg.df <- data.frame()
 
 # loop through files
-for (i in files) {
+for (i in seq_along(files)) {
   
   # read table
-  df <- read.table(paste0(out, "DEGs_MAST_pct_0.6/DEG_tables/", i),
+  df <- read.table(paste0(out, "DEGs_MAST_pct_0.6/DEG_tables/", files[i]),
                    sep = "\t", 
                    header = TRUE)
   df <- df %>% rename(gene_name = gene)
@@ -128,120 +129,18 @@ for (i in files) {
   # add gene meta
   df <- left_join(x = df, y = genes, by = "gene_name")
   
+  # filter by protein_coding
+  df <- df[df$gene_type == "protein_coding",]
+  df <- df[!df$gene_id == "ENSMUSG00000095041",]
+  
   # save
   write.table(x = df, 
-              file = paste0(out, "DEGs_MAST_pct_0.6_protein_only/DEG_tables/", i), 
+              file = paste0(out, "DEGs_MAST_pct_0.6_protein_only/DEG_tables/", 
+                            files[i]), 
               sep = "\t", 
               quote = FALSE, 
               row.names = FALSE)
 }
-```
-
-# Filter tables
-Filtering DEG tables to protein coding only.
-```{r compare_DEGs}
-# set thresh
-adjpval_thresh <- 0.01
-lfc_thresh <- 0.2
-pct_thresh <- 0.6
-
-# get file paths
-files <- list.files(paste0(out, "DEGs_MAST_pct_", pct_thresh, "/DEG_tables"))
-files <- files[grepl(".+_DEGs.tsv", files)]
-
-# read in annotation file
-if (file.exists("../../rObjects/annotation.rds")) {
-  genes <- readRDS("../../rObjects/annotation.rds")
-} else {
-  file <- paste0(ann_dir, "/refdata-gex-GRCm39-2024-A/genes/genes.gtf")
-  genes <- rtracklayer::import(file)
-  genes <- as.data.frame(genes)
-  saveRDS(genes, "../../rObjects/annotation.rds")
-}
-genes <- genes[genes$gene_type == "protein_coding",]
-
-# init data.frame
-deg.df <- data.frame()
-
-# loop through files
-for (i in files) {
-  
-  # read table
-  df <- read.table(paste0(out, "DEGs_MAST_pct_", pct_thresh, "/DEG_tables/", i),
-                   sep = "\t", 
-                   header = TRUE)
-  df <- df %>% rename(gene_name = gene)
-  
-  # add gene meta
-  df <- left_join(x = df, y = genes, by = "gene_name")
-  
-  # save
-  out_dir <- paste0(out, "DEGs_MAST_pct_0.6_protein_only/DEG_tables/")
-  write.table(x = df, 
-              file = paste0(out_dir, i), 
-              sep = "\t", 
-              quote = FALSE, 
-              row.names = FALSE)
-  
-  # filter by adjusted p-value and LFC
-  df <- df[!is.na(df$p_val_adj),]
-  df <- df[df$p_val_adj < adjpval_thresh,]
-  df <- df[df$avg_log2FC < -lfc_thresh | df$avg_log2FC > lfc_thresh,]
-  
-  # add direction column
-  comparisonName <- gsub("_DEGs.tsv", "", i)
-  direction <- df$avg_log2FC > 0 # already filtered on lfc so only matters it's positive/negative
-  direction <- gsub(TRUE, paste0(comparisonName, "_up"), direction)
-  direction <- gsub(FALSE, paste0(comparisonName, "_down"), direction)
-  df$direction <- direction
-  
-  # reformat table
-  df <- df %>% 
-    dplyr::count(cluster, direction) %>%
-    tidyr::spread(cluster, n)
-  
-  # add to MASTer table
-  deg.df <- smartbind(deg.df, df)
-}
-
-# reorder rows
-rownames(deg.df) <- 1:nrow(deg.df)
-deg.df <- deg.df[c(7:12,1:6),]
-rownames(deg.df) <- deg.df$direction
-deg.df$direction <- NULL
-
-# reformat
-deg.df[is.na(deg.df)] <- 0
-
-# save
-prefix <- paste0(out, "DEGs_MAST_pct_", pct_thresh, "_protein_only/DEG_comparison/",
-                 "all_comparisons_FDRq_", format(adjpval_thresh, nsmall = 2),
-                 "_LFC_", format(lfc_thresh, nsmall = 2))
-write.table(deg.df, 
-            paste0(prefix, ".tsv"),
-            sep = "\t", quote = FALSE, row.names = TRUE)
-
-# set heatmap colors and names
-paletteLength <- 100
-myColor <- colorRampPalette(c("white","#f0eb9e","darkgreen"))(paletteLength)
-
-# save
-pdf(paste0(prefix, ".pdf"), width = 10, height = 6)
-
-# plot
-pheatmap::pheatmap(deg.df,
-                   main = paste0("FDRq < ", format(adjpval_thresh, nsmall = 2), 
-                                 ", |LFC| > ", format(lfc_thresh, nsmall = 2)),
-                   treeheight_row = 0,
-                   treeheight_col = 0,
-                   color = myColor,
-                   cluster_rows = FALSE,
-                   display_numbers = round(deg.df, digits = 0),
-                   fontsize_number = 12,
-                   number_color = "black")
-
-# cleanup
-remove(ann_colors, deg.df, df, meta)
 ```
 
 # QC
@@ -681,15 +580,14 @@ remove(dot)
 
 # DEG Plots
 ## Compare DEGs
-### All 
 ```{r compare_DEGs}
 # set thresh
-adjpval_thresh <- 0.001
+adjpval_thresh <- 0.01
 lfc_thresh <- 0.2
 pct_thresh <- 0.6
 
 # get file paths
-files <- list.files(paste0(out, "DEGs_MAST_pct_", pct_thresh, "/DEG_tables"))
+files <- list.files(paste0(out, "DEGs_MAST_pct_", pct_thresh, "_protein_only/DEG_tables"))
 files <- files[grepl(".+_DEGs.tsv", files)]
 
 # init data.frame
@@ -699,9 +597,12 @@ deg.df <- data.frame()
 for (i in files) {
   
   # read table
-  df <- read.table(paste0(out, "DEGs_MAST_pct_", pct_thresh, "/DEG_tables/", i),
+  df <- read.table(paste0(out, "DEGs_MAST_pct_", pct_thresh, "_protein_only/DEG_tables/", i),
                    sep = "\t", 
                    header = TRUE)
+  
+  # get cell types
+  cell_types <- unique(df$cluster)
   
   # filter
   df <- df[!is.na(df$p_val_adj),]
@@ -724,6 +625,13 @@ for (i in files) {
   deg.df <- smartbind(deg.df, df)
 }
 
+# add any cell types missing (0 DEGs)
+for (i in cell_types) {
+  if (!i %in% colnames(deg.df)) {
+    deg.df[[i]] <- 0
+  }
+}
+
 # reorder rows
 rownames(deg.df) <- 1:nrow(deg.df)
 deg.df <- deg.df[c(7:12,1:6),]
@@ -733,8 +641,11 @@ deg.df$direction <- NULL
 # reformat
 deg.df[is.na(deg.df)] <- 0
 
+# reorder columns based on levels
+deg.df <- deg.df[,cell_types]
+
 # save
-prefix <- paste0(out, "DEGs_MAST_pct_", pct_thresh, "/DEG_comparison/",
+prefix <- paste0(out, "DEGs_MAST_pct_", pct_thresh, "_protein_only/DEG_comparison/",
                  "all_comparisons_FDRq_", format(adjpval_thresh, nsmall = 2),
                  "_LFC_", format(lfc_thresh, nsmall = 2))
 write.table(deg.df, 
@@ -786,199 +697,16 @@ pheatmap::pheatmap(deg.df,
 remove(ann_colors, deg.df, df, meta)
 ```
 
-### Sex specific
-```{r compare_sex_specific_DEGs, eval=FALSE}
-# set thresh
-adjpval_thresh <- 0.001
-lfc_thresh <- 0.2
-pct_thresh <- 0.6
-
-# get file paths
-files <- list.files(paste0(out, "DEGs_MAST_pct_", pct_thresh, "/DEG_tables"))
-files <- files[grepl(".+[MF]_vs_.+[MF]_DEGs.tsv", files)]
-
-# init data.frame
-deg.df <- data.frame()
-
-# loop through files
-for (i in files) {
-  
-  # read table
-  df <- read.table(paste0(out, "DEGs_MAST_pct_", pct_thresh, "/DEG_tables/", i),
-                   sep = "\t", 
-                   header = TRUE)
-  
-  # filter
-  df <- df[!is.na(df$p_val_adj),]
-  df <- df[df$p_val_adj < adjpval_thresh,]
-  df <- df[df$avg_log2FC < -lfc_thresh | df$avg_log2FC > lfc_thresh,]
-  
-  # add direction column
-  comparisonName <- gsub("_DEGs.tsv", "", i)
-  direction <- df$avg_log2FC > 0 # already filtered on lfc so only matters it's positive/negative
-  direction <- gsub(TRUE, paste0(comparisonName, "_up"), direction)
-  direction <- gsub(FALSE, paste0(comparisonName, "_down"), direction)
-  df$direction <- direction
-  
-  # reformat table
-  df <- df %>% 
-    dplyr::count(cluster, direction) %>%
-    tidyr::spread(cluster, n)
-  
-  # add to MASTer table
-  deg.df <- smartbind(deg.df, df)
-}
-
-# reformat
-rownames(deg.df) <- 1:nrow(deg.df)
-deg.df[is.na(deg.df)] <- 0
-deg.df <- deg.df[c(5:8,1:4),]
-rownames(deg.df) <- deg.df$direction
-deg.df$direction <- NULL
-
-# save
-prefix <- paste0(out, "DEGs_MAST_pct_", pct_thresh, "/DEG_comparison/",
-                 "sex_specific_comparison_FDRq_", format(adjpval_thresh, nsmall = 2),
-                 "_LFC_", format(lfc_thresh, nsmall = 2))
-write.table(deg.df, 
-            paste0(prefix, ".tsv"),
-            sep = "\t", quote = FALSE, row.names = TRUE)
-
-# set heatmap colors and names
-paletteLength <- 100
-myColor <- colorRampPalette(c("white","#f0eb9e","darkgreen"))(paletteLength)
-
-meta <- data.frame(treatment = c(rep("Low psilocybin", 4),
-                                 rep("High psilocybin", 4)),
-                   sex = c(rep("Female", 2), rep("Male", 2),
-                           rep("Female", 2), rep("Male", 2)),
-                   direction = rep(c("down-regulated","up-regulated"), 4))
-rownames(meta) <- rownames(deg.df)
-
-ann_colors <- list(treatment = c(`Low psilocybin` = "green", `High psilocybin` = "purple"),
-                   sex = c(`Female` = "gold", `Male` = "gray"),
-                   direction = c(`down-regulated` = "#0271f0", `up-regulated` = "tomato"))
-
-# save
-pdf(paste0(prefix, ".pdf"), width = 10, height = 6)
-
-# plot
-pheatmap::pheatmap(deg.df,
-                   main = paste0("FDRq < ", format(adjpval_thresh, nsmall = 2), 
-                                 ", |LFC| > ", format(lfc_thresh, nsmall = 2)),
-                   treeheight_row = 0,
-                   treeheight_col = 0,
-                   color = myColor,
-                   cluster_rows = FALSE,
-                   annotation_row = meta,
-                   annotation_colors = ann_colors,
-                   display_numbers = round(deg.df, digits = 0),
-                   fontsize_number = 12,
-                   number_color = "black")
-
-remove(ann_colors, deg.df, df, meta)
-```
-
-### Both sexes
-```{r compare_both_sexes_DEGs}
-# set thresh
-adjpval_thresh <- 0.001
-lfc_thresh <- 0.2
-pct_thresh <- 0.6
-
-# get file paths
-files <- list.files(paste0(out, "DEGs_MAST_pct_", pct_thresh, "/DEG_tables"))
-files <- files[grepl("[LH].24h_vs_S.24h_DEGs.tsv", files)]
-
-# init data.frame
-deg.df <- data.frame()
-
-# loop through files
-for (i in files) {
-  
-  # read table
-  df <- read.table(paste0(out, "DEGs_MAST_pct_", pct_thresh, "/DEG_tables/", i),
-                   sep = "\t", 
-                   header = TRUE)
-  
-  # filter
-  df <- df[!is.na(df$p_val_adj),]
-  df <- df[df$p_val_adj < adjpval_thresh,]
-  df <- df[df$avg_log2FC < -lfc_thresh | df$avg_log2FC > lfc_thresh,]
-  
-  # add direction column
-  comparisonName <- gsub("_DEGs.tsv", "", i)
-  direction <- df$avg_log2FC > 0 # already filtered on lfc so only matters it's positive/negative
-  direction <- gsub(TRUE, paste0(comparisonName, "_up"), direction)
-  direction <- gsub(FALSE, paste0(comparisonName, "_down"), direction)
-  df$direction <- direction
-  
-  # reformat table
-  df <- df %>% 
-    dplyr::count(cluster, direction) %>%
-    tidyr::spread(cluster, n)
-  
-  # add to master table
-  deg.df <- smartbind(deg.df, df)
-}
-
-# reformat
-deg.df[is.na(deg.df)] <- 0
-rownames(deg.df) <- deg.df$direction
-deg.df$direction <- NULL
-
-# reorder rows
-deg.df <- deg.df[c(3:4,1:2),]
-
-# save
-prefix <- paste0(out, "DEGs_MAST_pct_", pct_thresh, "/DEG_comparison/",
-                 "both_sexes_DEG_comparison_FDRq_", format(adjpval_thresh, nsmall = 2),
-                 "_LFC_", format(lfc_thresh, nsmall = 2))
-write.table(deg.df, 
-            paste0(prefix, ".tsv"),
-            sep = "\t", quote = FALSE, row.names = TRUE)
-
-# set heatmap colors and names
-paletteLength <- 100
-myColor <- colorRampPalette(c("white","#f0eb9e","darkgreen"))(paletteLength)
-
-meta <- data.frame(treatment = c(rep("Low psilocybin", 2),
-                                 rep("High psilocybin", 2)),
-                   direction = rep(c("down-regulated","up-regulated"), 2))
-rownames(meta) <- rownames(deg.df)
-
-ann_colors <- list(treatment = c(`Low psilocybin` = "green", `High psilocybin` = "purple"),
-                   direction = c(`down-regulated` = "#0271f0", `up-regulated` = "tomato"))
-
-# save
-pdf(paste0(prefix, ".pdf"), width = 10, height = 6)
-
-# plot
-pheatmap::pheatmap(deg.df,
-                   main = paste0("FDRq < ", format(adjpval_thresh, nsmall = 2), 
-                                 ", |LFC| > ", format(lfc_thresh, nsmall = 2)),
-                   treeheight_row = 0,
-                   treeheight_col = 0,
-                   color = myColor,
-                   cluster_rows = FALSE,
-                   annotation_row = meta,
-                   annotation_colors = ann_colors,
-                   display_numbers = round(deg.df, digits = 0),
-                   fontsize_number = 12,
-                   number_color = "black")
-
-remove(ann_colors, deg.df, df, meta)
-```
-
 ## Volcano 
 ```{r volcano, message=FALSE, eval=FALSE}
 # set thresh
-adjpval_thresh <- 0.001
+adjpval_thresh <- 0.01
 lfc_thresh <- 0.2
 pct_thresh <- 0.6
 
 # get file paths
-files <- list.files(paste0(out, "DEGs_MAST_pct_", pct_thresh, "/DEG_tables"), full.names = TRUE)
+files <- list.files(paste0(out, "DEGs_MAST_pct_", pct_thresh, "_protein_only/DEG_tables"), 
+                    full.names = TRUE)
 files <- files[grepl(".+_DEGs.tsv", files)]
 
 for (file in files) {
@@ -1077,13 +805,13 @@ for (file in files) {
         ggtitle(paste0(j, "\n", p.comparison, ", q < ", format(adjpval_thresh, nsmall = 2), 
                        ", |LFC| > ", format(lfc_thresh, nsmall = 2))) +
         geom_text_repel(data = up30,
-                        aes(x = avg_log2FC, y= -log10(p_val), label = gene), 
+                        aes(x = avg_log2FC, y= -log10(p_val), label = gene_name), 
                         color = "maroon", 
                         fontface="italic",
                         max.overlaps = getOption("ggrepel.max.overlaps", default = 30)
                         ) +
         geom_text_repel(data = down30,
-                        aes(x = avg_log2FC, y= -log10(p_val), label = gene), 
+                        aes(x = avg_log2FC, y= -log10(p_val), label = gene_name), 
                         color = "navyblue", 
                         fontface="italic",
                         max.overlaps = getOption("ggrepel.max.overlaps", default = 30)
@@ -1091,7 +819,7 @@ for (file in files) {
       p
       
       # create dir if doesn't exist
-      prefix <- paste0(out, "DEGs_MAST_pct_", pct_thresh, "/volcano/", p.comparison)
+      prefix <- paste0(out, "DEGs_MAST_pct_", pct_thresh, "_protein_only/volcano/", p.comparison)
       if (!dir.exists(prefix)) {
         dir.create(prefix, recursive = TRUE)
       }
@@ -1116,12 +844,12 @@ for (file in files) {
 ## Metascape input
 ```{r metascape_sex_specific}
 # set thresh
-adjpval_thresh <- 0.001
+adjpval_thresh <- 0.01
 lfc_thresh <- 0.2
 pct_thresh <- 0.6
 
 # get file paths
-files <- list.files(paste0(out, "DEGs_MAST_pct_", pct_thresh, "/DEG_tables"), full.names = TRUE)
+files <- list.files(paste0(out, "DEGs_MAST_pct_", pct_thresh, "_protein_only/DEG_tables"), full.names = TRUE)
 files <- files[grepl(".+_DEGs.tsv", files)]
 
 # loop through files
@@ -1143,7 +871,8 @@ for (i in 1:length(files)) {
   
   # create dir if doesn't exist
   p.comparison <- str_match(files[i], "DEG_tables/(.+)_DEGs.tsv")[,2]
-  prefix <- paste0(out, "DEGs_MAST_pct_", pct_thresh, "/metascape_input/", p.comparison)
+  prefix <- paste0(out, "DEGs_MAST_pct_", pct_thresh, "_protein_only/metascape_input/", 
+                   p.comparison)
   if (!dir.exists(prefix)) {
     dir.create(prefix, recursive = TRUE)
   }
@@ -1154,13 +883,13 @@ for (i in 1:length(files)) {
     # subset based on cell_type
     print(paste0(p.comparison, ": ", j))
     up <- up.df[up.df$cluster == j,]
-    up <- up$gene
+    up <- up$gene_name
     down <- down.df[down.df$cluster == j,]
-    down <- down$gene
+    down <- down$gene_name
     
     # file name
-    prefix <- paste0(out, "DEGs_MAST_pct_", pct_thresh, "/metascape_input/", p.comparison,
-                     "/", p.comparison, "_", gsub(" ", "_", tolower(j)), 
+    prefix <- paste0(out, "DEGs_MAST_pct_", pct_thresh, "_protein_only/metascape_input/", 
+                     p.comparison, "/", p.comparison, "_", gsub(" ", "_", tolower(j)), 
                      "_FDRq_", format(adjpval_thresh, nsmall = 2), 
                      "_LFC_", format(lfc_thresh, nsmall = 2))
      
