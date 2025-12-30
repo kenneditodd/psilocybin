@@ -91,4 +91,6 @@ bulk_isoform/results
 bulk_isoform/rObjects
 bulk_isoform/scripts/logs
 bulk_isoform/scripts/old
+bulk_isoform/scripts/07_shiny_app/*.rds
+bulk_isoform/scripts/07_shiny_app/rsconnect
 

@@ -1,5 +1,5 @@
 # Kennedi Todd
-# November 18, 2025
+# December 29, 2025
 # Sex-specific model
 
 # Load libraries
@@ -54,6 +54,9 @@ so <- sleuth_prep(
   read_bootstrap_tpm = TRUE,
   target_mapping = transcripts)
 
+# transcripts that passed filtering
+sleuth_keep <- so$filter_df$target_id
+
 # Extract Hbb-bs TPM and add to meta
 # est_counts = Kallisto’s estimated number of fragments assigned to this transcript
 # obs_norm = est_counts but with but normalized across samples using DESeq-style size factors
@@ -65,16 +68,26 @@ hbb_log2_tpm <- tpm %>%
   mutate(hbb_log2_tpm = log2(tpm + 0.5)) %>%
   select(sample, hbb_log2_tpm)
 meta <- meta %>% left_join(hbb_log2_tpm, by = "sample")
-# cleanup
-remove(hbb_log2_tpm, tpm)
+
+# Filter by transcript_type and remove MT genes
+custom_keep <- transcripts %>%
+  dplyr::filter(
+    transcript_type %in% c("protein_coding",
+                           "retained_intron",
+                           "nonsense_mediated_decay"),
+    seqnames != "chrM"
+  ) %>%
+  dplyr::pull(target_id)
+final_keep <- intersect(sleuth_keep, custom_keep)
 
 # Re-create sleuth object with new design
 so <- sleuth_prep(
-  sample_to_covariates = meta, 
+  sample_to_covariates = meta,
   full_model = ~ group + sex + hbb_log2_tpm,
   num_cores = 12,
   read_bootstrap_tpm = TRUE,
-  target_mapping = transcripts)
+  target_mapping = transcripts,
+  filter_target_id = final_keep)
 
 # Calculate percentage isoform used (PIU)
 piu <- so$obs_norm_filt %>% 
@@ -122,11 +135,6 @@ for (ctr in myContrasts) {
   
   # Extract results
   res <- sleuth_results(so, test = beta_name, test_type = "wt", which_model = fit_name)
-  
-  # Filter by transcript_type
-  res <- subset(res, transcript_type %in% c("protein_coding",
-                                            "retained_intron",
-                                            "nonsense_mediated_decay"))
   
   # Save
   out_file <- paste0(out, "DEG_tables/", num, "_vs_", ref, "_DEGs.tsv")
