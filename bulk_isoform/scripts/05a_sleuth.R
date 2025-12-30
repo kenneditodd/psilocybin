@@ -90,16 +90,6 @@ so <- sleuth_prep(
   filter_target_id = final_keep
 )
 
-# Calculate percentage isoform used (PIU)
-piu <- so$obs_norm_filt %>% 
-  left_join(so$target_mapping, by = "target_id") %>%
-  group_by(gene_id, sample) %>%
-  filter(sum(tpm) > 0) %>% 
-  mutate(piu = tpm / sum(tpm)) %>%
-  ungroup() %>% 
-  select(target_id, sample, tpm, piu)
-so$piu <- piu
-
 # Set comparisons
 myContrasts <- list(
   c("L.8h.F", "S.8h.F"), 
